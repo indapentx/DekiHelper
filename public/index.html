@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anki Card Generator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* Custom styles remain largely the same */
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background-color: #000; }
+        .anki-input, .anki-readonly-box { background-color: #1e1e1e; border: 1px solid #444; color: #ecf0f1; border-radius: 8px; padding: 12px; width: 100%; font-size: 16px; margin-top: 4px; transition: border-color 0.2s; }
+        .anki-input:focus { outline: none; border-color: #007acc; }
+        .anki-readonly-box { min-height: 48px; display: flex; align-items: center; }
+        .anki-label { color: #bdc3c7; font-weight: 600; font-size: 14px; }
+        .btn { padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-primary { background-color: #007acc; color: white; } .btn-primary:hover { background-color: #005f9e; }
+        .btn-secondary { background-color: #555; color: white; } .btn-secondary:hover { background-color: #444; }
+        .btn-danger { background-color: #c93c3c; color: white; } .btn-danger:hover { background-color: #a52828; }
+        .btn-icon { background: transparent; border: none; color: #777; padding: 4px; border-radius: 50%; } .btn-icon:hover { background-color: #333; color: #eee; }
+        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 50;}
+        .modal-content { background-color: #1a1a1a; padding: 30px; border-radius: 12px; width: 90%; max-width: 500px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .card-item { background-color: #1e1e1e; border: 1px solid #333; padding: 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .card-item-content { flex-grow: 1; overflow: hidden; }
+        .card-item-front { font-weight: 600; color: #eee; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .card-item-back { color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+    </style>
+</head>
+<body class="text-white">
+
+    <div id="app-container" class="container mx-auto max-w-2xl p-4 sm:p-8">
+        
+        <form id="anki-form" class="space-y-6 mb-12">
+            <div>
+                <div class="flex justify-between items-center">
+                    <label for="front" class="anki-label">Front</label>
+                    <button type="button" id="generate-img-tag-btn" class="text-sm text-blue-400 hover:text-blue-300 cursor-pointer" title="Generate Image Tag from Back field">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Image Tag
+                    </button>
+                </div>
+                <input type="text" id="front" class="anki-input" autocomplete="off">
+            </div>
+            <!-- Other form fields remain the same -->
+            <div><label for="back" class="anki-label">Back</label><input type="text" id="back" class="anki-input" autocomplete="off"></div>
+            <div><label class="anki-label">Speech</label><div id="speech" class="anki-readonly-box"></div></div>
+            <div><label for="beispiel" class="anki-label">Beispiel</label><input type="text" id="beispiel" class="anki-input" autocomplete="off"></div>
+            <div><label class="anki-label">Beispiel (Speech)</label><div id="beispiel-speech" class="anki-readonly-box"></div></div>
+            <div><label for="translation" class="anki-label">Translation</label><input type="text" id="translation" class="anki-input" autocomplete="off"></div>
+            <button type="submit" style="display: none;"></button>
+        </form>
+
+        <!-- Action Bar, Card List, Modals, etc. remain the same -->
+        <div id="action-bar" class="mt-8 flex justify-between items-center">
+             <p class="text-base font-semibold text-gray-400">Cards Saved: <span id="counter" class="text-blue-400 font-bold">0</span></p>
+             <div id="default-actions">
+                <button id="finish-btn" class="btn btn-primary text-lg"><i class="fas fa-download"></i> Export to .txt</button>
+             </div>
+             <div id="edit-actions" class="hidden space-x-4">
+                <button id="update-btn" class="btn btn-primary text-lg"><i class="fas fa-check"></i> Update Card</button>
+                <button id="cancel-btn" class="btn btn-secondary text-lg"><i class="fas fa-times"></i> Cancel</button>
+             </div>
+        </div>
+        <hr class="border-gray-700 my-8">
+        <div>
+            <h2 class="text-2xl font-bold mb-4 text-gray-300">Saved Cards</h2>
+            <div id="card-list"></div>
+        </div>
+    </div>
+    <div id="delete-modal" class="modal-backdrop hidden">
+        <div class="modal-content text-center">
+             <h2 class="text-2xl font-bold mb-4">Confirm Deletion</h2>
+             <p class="text-gray-300 mb-6">Are you sure you want to delete this card?</p>
+             <div class="flex justify-center items-center space-x-4">
+                <button id="confirm-delete-btn" class="btn btn-danger">Yes, Delete</button>
+                <button id="cancel-delete-btn" class="btn btn-secondary">Cancel</button>
+             </div>
+        </div>
+    </div>
+    <div id="notification" class="fixed top-5 right-5 bg-red-600 text-white py-2 px-4 rounded-lg shadow-lg hidden z-50">
+        <p id="notification-message"></p>
+    </div>
+
+    <!-- Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, getDocs, query, doc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyD6zpZUM_ABNngOX-RKFxwNoTqePDivrGE",
+            authDomain: "deki-helper.firebaseapp.com",
+            projectId: "deki-helper",
+            storageBucket: "deki-helper.firebasestorage.app",
+            messagingSenderId: "612229919023",
+            appId: "1:612229919023:web:c6507af0e5a2ddd84731da"
+        };
+        
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'anki-card-generator-default';
+        
+        let app, auth, db, userId, cardsCollectionRef;
+        let unsubscribe;
+        let currentEditId = null; 
+        let cardToDeleteId = null;
+
+        // DOM Elements
+        const ankiForm = document.getElementById('anki-form');
+        const { front, back, beispiel, translation } = ankiForm.elements;
+        const speechBox = document.getElementById('speech');
+        const beispielSpeechBox = document.getElementById('beispiel-speech');
+        const generateImgTagBtn = document.getElementById('generate-img-tag-btn');
+        const counterSpan = document.getElementById('counter');
+        const cardList = document.getElementById('card-list');
+        const defaultActions = document.getElementById('default-actions');
+        const editActions = document.getElementById('edit-actions');
+        const finishBtn = document.getElementById('finish-btn');
+        const updateBtn = document.getElementById('update-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const deleteModal = document.getElementById('delete-modal');
+        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+        const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+        const notification = document.getElementById('notification');
+        const notificationMessage = document.getElementById('notification-message');
+
+        // --- Helper & UI Functions ---
+        function showNotification(message, level = 'error', duration = 3000) {
+            notificationMessage.innerHTML = message;
+            notification.className = `fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg ${level === 'error' ? 'bg-red-600' : 'bg-green-600'}`;
+            notification.classList.remove('hidden');
+            setTimeout(() => { notification.classList.add('hidden'); }, duration);
+        }
+
+        /**
+         * Prepares text for the Anki [sound:] tag by trimming whitespace.
+         * @param {string} text The input text.
+         * @returns {string} The trimmed text.
+         */
+        function prepareForSoundTag(text) { 
+            if (!text) return ''; 
+            return text.trim(); 
+        }
+
+        function updateSpeechFields() { 
+            const backValue = back.value; 
+            const soundTagText = prepareForSoundTag(backValue); 
+            speechBox.textContent = soundTagText ? `[sound:${soundTagText}.mp3]` : ''; 
+            beispielSpeechBox.textContent = soundTagText ? `[sound:sentences/${soundTagText}.mp3]` : ''; 
+        }
+        
+        function clearForm() {
+            ankiForm.reset();
+            updateSpeechFields();
+            front.focus();
+        }
+
+        function setEditMode(isEditing, cardData = null) {
+            if (isEditing) {
+                document.getElementById('app-container').scrollIntoView();
+                currentEditId = cardData.id;
+                front.value = cardData.front || '';
+                back.value = cardData.back || '';
+                beispiel.value = cardData.beispiel || '';
+                translation.value = cardData.translation || '';
+                updateSpeechFields();
+                defaultActions.classList.add('hidden');
+                editActions.classList.remove('hidden');
+            } else {
+                currentEditId = null;
+                defaultActions.classList.remove('hidden');
+                editActions.classList.add('hidden');
+                clearForm();
+            }
+        }
+        
+        function renderCards(snapshot) {
+            cardList.innerHTML = '';
+            if (snapshot.empty) { cardList.innerHTML = '<p class="text-gray-500 text-center">No cards saved yet.</p>'; return; }
+            const docs = [];
+            snapshot.forEach(doc => docs.push({ id: doc.id, ...doc.data() }));
+            docs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            docs.forEach(cardData => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'card-item';
+                cardEl.innerHTML = `
+                    <div class="card-item-content mr-4">
+                        <p class="card-item-front">${cardData.front || '<em>No Front</em>'}</p>
+                        <p class="card-item-back">${cardData.back || '<em>No Back</em>'}</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button class="btn-icon edit-btn" title="Edit"><i class="fas fa-pencil-alt"></i></button>
+                        <button class="btn-icon delete-btn" title="Delete"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                `;
+                cardList.appendChild(cardEl);
+                cardEl.querySelector('.edit-btn').addEventListener('click', () => setEditMode(true, cardData));
+                cardEl.querySelector('.delete-btn').addEventListener('click', () => { cardToDeleteId = cardData.id; deleteModal.classList.remove('hidden'); });
+            });
+        }
+        
+        function triggerDownload(content, fileName) {
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // --- CRUD & Main Logic ---
+        async function initialize() {
+             try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                onAuthStateChanged(auth, user => {
+                    if (user) {
+                        userId = user.uid;
+                        const collectionPath = `artifacts/${appId}/users/${userId}/cards`;
+                        cardsCollectionRef = collection(db, collectionPath);
+                        if(unsubscribe) unsubscribe();
+                        unsubscribe = onSnapshot(cardsCollectionRef, (snapshot) => {
+                            counterSpan.textContent = snapshot.size;
+                            renderCards(snapshot);
+                        });
+                    }
+                });
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else { await signInAnonymously(auth); }
+            } catch (error) { showNotification("Could not connect to the database."); }
+        }
+        
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            if (currentEditId) return;
+            if (!userId) { showNotification("Not connected."); return; }
+            const cardData = {
+                front: front.value.trim(),
+                back: back.value.trim(),
+                speech: speechBox.textContent,
+                beispiel: beispiel.value.trim(),
+                beispielSpeech: beispielSpeechBox.textContent,
+                translation: translation.value.trim(),
+                createdAt: new Date().toISOString()
+            };
+            if (!cardData.front && !cardData.back) return;
+            try {
+                await addDoc(cardsCollectionRef, cardData);
+                clearForm();
+            } catch (error) { showNotification("Failed to save the card."); }
+        }
+
+        async function handleUpdateCard() {
+             if (!currentEditId || !userId) return;
+             const cardData = {
+                front: front.value.trim(),
+                back: back.value.trim(),
+                speech: speechBox.textContent,
+                beispiel: beispiel.value.trim(),
+                beispielSpeech: beispielSpeechBox.textContent,
+                translation: translation.value.trim(),
+                createdAt: new Date().toISOString()
+            };
+            try {
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/cards`, currentEditId);
+                await setDoc(docRef, cardData);
+                showNotification("Card updated successfully.", "success");
+                setEditMode(false);
+            } catch (error) { showNotification("Failed to update card."); }
+        }
+        
+        async function handleDeleteConfirmed() {
+            if (!cardToDeleteId || !userId) return;
+            try {
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/cards`, cardToDeleteId);
+                await deleteDoc(docRef);
+                deleteModal.classList.add('hidden');
+                cardToDeleteId = null;
+                showNotification("Card deleted.", "success");
+            } catch (error) { showNotification("Failed to delete card."); }
+        }
+        
+        async function exportCardsToFile() {
+            if (!userId) { showNotification("Not connected."); return; }
+            try {
+                const querySnapshot = await getDocs(query(cardsCollectionRef));
+                if (querySnapshot.empty) { showNotification("No cards to export.", "success"); return; }
+                
+                const docs = [];
+                querySnapshot.forEach((doc) => { docs.push(doc.data()); });
+                docs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+                
+                const outputContent = docs.map(data => {
+                    return [
+                        data.front || '', data.back || '', data.speech || '',
+                        data.beispiel || '', data.beispielSpeech || '', data.translation || ''
+                    ].join(';');
+                }).join('\n');
+                
+                const today = new Date().toISOString().split('T')[0];
+                triggerDownload(outputContent, `anki_export_${today}.txt`);
+
+            } catch(error) { showNotification("Could not retrieve cards for export."); }
+        }
+        
+        // --- Event Listeners ---
+        ankiForm.addEventListener('submit', handleFormSubmit);
+        back.addEventListener('input', updateSpeechFields);
+        
+        generateImgTagBtn.addEventListener('click', () => {
+            const backValue = back.value.trim();
+            if (backValue) {
+                front.value = `<img src="${backValue}.jpg">`;
+            } else {
+                showNotification("Please enter a word in the 'Back' field first.");
+            }
+        });
+        
+        finishBtn.addEventListener('click', exportCardsToFile);
+        updateBtn.addEventListener('click', handleUpdateCard);
+        cancelBtn.addEventListener('click', () => setEditMode(false));
+        
+        confirmDeleteBtn.addEventListener('click', handleDeleteConfirmed);
+        cancelDeleteBtn.addEventListener('click', () => deleteModal.classList.add('hidden'));
+
+        // Initial Load
+        document.addEventListener('DOMContentLoaded', initialize);
+    </script>
+</body>
+</html>
