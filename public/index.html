@@ -83,11 +83,13 @@
         <div id="action-bar" class="mt-8 flex justify-between items-center">
              <p class="text-base font-semibold text-gray-400">Cards Saved: <span id="counter" class="text-blue-400 font-bold">0</span></p>
              <div id="default-actions" class="flex space-x-4">
-                <button id="review-btn" class="btn btn-secondary text-lg"><i class="fas fa-eye"></i> Start Review</button>
-                <button id="finish-btn" class="btn btn-primary text-lg"><i class="fas fa-download"></i> Export to .txt</button>
+                <button id="import-btn" class="btn btn-secondary text-lg"><i class="fas fa-upload"></i> Import</button>
+                <button id="review-btn" class="btn btn-secondary text-lg"><i class="fas fa-eye"></i> Review</button>
+                <button id="finish-btn" class="btn btn-primary text-lg"><i class="fas fa-download"></i> Export</button>
+                <input type="file" id="import-file-input" class="hidden" accept=".txt">
              </div>
              <div id="edit-actions" class="hidden space-x-4">
-                <button id="update-btn" class="btn btn-primary text-lg"><i class="fas fa-check"></i> Update Card</button>
+                <button id="update-btn" class="btn btn-primary text-lg"><i class="fas fa-check"></i> Update</button>
                 <button id="cancel-btn" class="btn btn-secondary text-lg"><i class="fas fa-times"></i> Cancel</button>
              </div>
         </div>
@@ -97,7 +99,7 @@
             <div id="card-list"></div>
         </div>
     </div>
-    <!-- Review & Other Modals -->
+    <!-- Review Modal -->
     <div id="review-modal" class="modal-backdrop hidden fixed inset-0 bg-black p-4 sm:p-8 z-50">
         <div class="w-full max-w-3xl mx-auto flex flex-col h-full">
             <div id="review-setup" class="flex-grow flex flex-col items-center justify-center">
@@ -154,7 +156,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, getDocs, query, doc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, getDocs, query, doc, deleteDoc, setDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Firebase Config
         const firebaseConfig = {
@@ -173,7 +175,7 @@
         let reviewSession = { cards: [], currentIndex: -1, timerId: null, startTime: null };
         let isSignUpMode = false;
 
-        // --- Helper Functions ---
+        // --- All Helper & UI Functions ---
         function showNotification(message, level = 'error', duration = 3000) {
             const notification = document.getElementById('notification');
             const notificationMessage = document.getElementById('notification-message');
@@ -279,8 +281,10 @@
             const reviewBtn = document.getElementById('review-btn');
             const dates = new Set();
             allCards.forEach(card => {
-                const datePart = card.createdAt.split('T')[0];
-                dates.add(datePart);
+                if (card.createdAt && typeof card.createdAt === 'string') {
+                    const datePart = card.createdAt.split('T')[0];
+                    dates.add(datePart);
+                }
             });
             
             const sortedDates = Array.from(dates).sort().reverse();
@@ -302,7 +306,7 @@
             }
 
             const cardsForDate = allCards
-                .filter(card => card.createdAt.startsWith(selectedDate))
+                .filter(card => card.createdAt && card.createdAt.startsWith(selectedDate))
                 .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
             if (cardsForDate.length === 0) {
@@ -528,6 +532,54 @@
                 updateReviewDateSelector();
             });
         }
+
+        async function importCardsFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const content = e.target.result;
+                const lines = content.split('\n').filter(line => line.trim() !== '');
+
+                if (lines.length === 0) {
+                    showNotification("The selected file is empty.");
+                    return;
+                }
+                
+                if (!userId) {
+                    showNotification("You must be logged in to import cards.");
+                    return;
+                }
+
+                try {
+                    const batch = writeBatch(db);
+                    lines.forEach(line => {
+                        const fields = line.split(';');
+                        const cardData = {
+                            front: fields[0] || '',
+                            back: fields[1] || '',
+                            speech: fields[2] || '',
+                            beispiel: fields[3] || '',
+                            beispielSpeech: fields[4] || '',
+                            translation: fields[5] || '',
+                            createdAt: new Date().toISOString()
+                        };
+                        const newCardRef = doc(collection(db, `artifacts/${appId}/users/${userId}/cards`));
+                        batch.set(newCardRef, cardData);
+                    });
+
+                    await batch.commit();
+                    showNotification(`Successfully imported ${lines.length} cards!`, 'success');
+                } catch (error) {
+                    console.error("Import error: ", error);
+                    showNotification("An error occurred during import.");
+                } finally {
+                    event.target.value = '';
+                }
+            };
+            reader.readAsText(file);
+        }
         
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -541,7 +593,6 @@
                  return;
             }
             
-            // DOM Elements
             const logoutBtn = document.getElementById('logout-btn');
             const authForm = document.getElementById('auth-form');
             const authToggleBtn = document.getElementById('auth-toggle-btn');
@@ -556,11 +607,14 @@
             const reviewBtn = document.getElementById('review-btn');
             const closeReviewSetupBtn = document.getElementById('close-review-setup-btn');
             const startSessionBtn = document.getElementById('start-session-btn');
+
             const nextCardBtn = document.getElementById('next-card-btn');
             const prevCardBtn = document.getElementById('prev-card-btn');
             const endReviewBtn = document.getElementById('end-review-btn');
 
-            // Attach listeners
+            const importBtn = document.getElementById('import-btn');
+            const importFileInput = document.getElementById('import-file-input');
+
             authForm.addEventListener('submit', handleAuthSubmit);
             authToggleBtn.addEventListener('click', toggleAuthMode);
             logoutBtn.addEventListener('click', userSignOut);
@@ -604,11 +658,14 @@
                 });
             });
 
+            importBtn.addEventListener('click', () => importFileInput.click());
+            importFileInput.addEventListener('change', importCardsFromFile);
+
+
             onAuthStateChanged(auth, user => {
                 if (user) { showAppUI(user); } else { showLoginUI(); }
             });
         });
-
     </script>
 </body>
 </html>
