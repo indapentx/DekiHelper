@@ -31,7 +31,7 @@
         .card-item-front { font-weight: 600; color: #eee; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .card-item-back { color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         #review-modal { background-color: #000; }
-        .review-card { background-color: #1e1e1e; border-radius: 12px; padding: 24px; min-height: 150px; display: flex; justify-content: space-between; align-items: flex-start; text-align: left; }
+        .review-card { background-color: #1e1e1e; border-radius: 12px; padding: 24px; min-height: 120px; display: flex; justify-content: space-between; align-items: flex-start; text-align: left; }
         .review-content { font-size: 1.5rem; word-break: break-word; flex-grow: 1; }
         .review-copy-btn { background-color: #333; color: #fff; border: none; border-radius: 8px; padding: 12px 16px; cursor: pointer; align-self: center; margin-left: 16px; }
         .review-copy-btn:hover { background-color: #444; }
@@ -117,7 +117,7 @@
                 <div class="progress-bar-container mb-6">
                     <div id="review-progress-bar" class="progress-bar"></div>
                 </div>
-                <div class="flex-grow flex flex-col justify-center space-y-6">
+                <div class="flex-grow flex flex-col justify-center space-y-4">
                     <div>
                         <label class="anki-label ml-2 flex justify-between"><span>Back</span> <span class="text-gray-500">Shortcut: B</span></label>
                         <div class="review-card">
@@ -130,6 +130,13 @@
                         <div class="review-card">
                             <span id="review-beispiel" class="review-content"></span>
                             <button class="review-copy-btn" data-target="review-beispiel" title="Copy Beispiel (E)"><i class="fas fa-copy fa-lg"></i></button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="anki-label ml-2 flex justify-between"><span>Beispiel Filename</span> <span class="text-gray-500">Shortcut: S</span></label>
+                        <div class="review-card">
+                            <span id="review-beispiel-filename" class="review-content"></span>
+                            <button class="review-copy-btn" data-target="review-beispiel-filename" title="Copy Filename (S)"><i class="fas fa-copy fa-lg"></i></button>
                         </div>
                     </div>
                 </div>
@@ -189,7 +196,7 @@
             const backValue = back.value; 
             const soundTagText = prepareForSoundTag(backValue); 
             speechBox.textContent = soundTagText ? `[sound:${soundTagText}.mp3]` : ''; 
-            beispielSpeechBox.textContent = soundTagText ? `[sound:sentences/${soundTagText}.mp3]` : ''; 
+            beispielSpeechBox.textContent = soundTagText ? `[sound:s_${soundTagText}.mp3]` : ''; 
         }
         
         function clearForm() {
@@ -303,6 +310,7 @@
             const card = reviewSession.cards[reviewSession.currentIndex];
             document.getElementById('review-back').textContent = card.back || '—';
             document.getElementById('review-beispiel').textContent = card.beispiel || '—';
+            document.getElementById('review-beispiel-filename').textContent = `s_${card.back || ''}`;
             document.getElementById('review-progress-text').textContent = `Card ${reviewSession.currentIndex + 1} of ${reviewSession.cards.length}`;
             document.getElementById('prev-card-btn').disabled = reviewSession.currentIndex === 0;
             document.getElementById('next-card-btn').disabled = reviewSession.currentIndex === reviewSession.cards.length - 1;
@@ -322,6 +330,7 @@
             if (e.key === 'ArrowLeft') handleReviewNav(-1);
             if (e.key === 'b' || e.key === 'B') document.querySelector('[data-target="review-back"]').click();
             if (e.key === 'e' || e.key === 'E') document.querySelector('[data-target="review-beispiel"]').click();
+            if (e.key === 's' || e.key === 'S') document.querySelector('[data-target="review-beispiel-filename"]').click();
         }
 
         function startReviewSession() {
