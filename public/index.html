@@ -243,9 +243,14 @@
             docs.forEach(cardData => {
                 const cardEl = document.createElement('div');
                 cardEl.className = 'card-item';
+                // BUG FIX: Check if front content is an image tag
+                const frontDisplay = (cardData.front && cardData.front.startsWith('<img')) 
+                    ? '🖼️ Image Card' 
+                    : (cardData.front || '<em>No Front</em>');
+
                 cardEl.innerHTML = `
                     <div class="card-item-content mr-4">
-                        <p class="card-item-front">${cardData.front || '<em>No Front</em>'}</p>
+                        <p class="card-item-front">${frontDisplay}</p>
                         <p class="card-item-back">${cardData.back || '<em>No Back</em>'}</p>
                     </div>
                     <div class="flex items-center space-x-2">
@@ -283,14 +288,15 @@
             });
             
             const sortedDates = Array.from(dates).sort().reverse();
-            reviewDateSelector.innerHTML = sortedDates.map(date => `<option value="${date}">${date}</option>`).join('');
-            
+            if (reviewDateSelector) {
+                reviewDateSelector.innerHTML = sortedDates.map(date => `<option value="${date}">${date}</option>`).join('');
+            }
             if(reviewBtn) reviewBtn.disabled = sortedDates.length === 0;
         }
 
         function updateProgressBar() {
             const bar = document.getElementById('review-progress-bar');
-            if(!bar) return;
+            if(!bar || !reviewSession.cards || reviewSession.cards.length === 0) return;
             const progress = (reviewSession.currentIndex + 1) / reviewSession.cards.length * 100;
             bar.style.width = `${progress}%`;
         }
@@ -340,8 +346,9 @@
         function endReviewSession() {
             reviewSession = { cards: [], currentIndex: -1 };
             document.getElementById('review-modal').classList.add('hidden');
-            document.getElementById('review-setup').classList.remove('hidden');
+            document.getElementById('review-setup').classList.remove('hidden'); // Reset for next time
             document.getElementById('review-session').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden'); // BUG FIX: Show main app
             document.removeEventListener('keydown', handleReviewKeyboard);
         }
         
