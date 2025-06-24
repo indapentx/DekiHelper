@@ -61,12 +61,7 @@
 
     <!-- Main App View -->
     <div id="main-app" class="container mx-auto max-w-2xl p-4 sm:p-8 hidden">
-        <header class="flex justify-between items-center mb-8">
-            <div id="user-info" class="flex items-center gap-3">
-                <span id="user-email" class="font-semibold text-gray-300"></span>
-            </div>
-            <button id="logout-btn" class="btn btn-secondary">Sign Out</button>
-        </header>
+        <h1 class="text-4xl font-bold text-center mb-8">Deki Helper</h1>
         <form id="anki-form" class="space-y-6 mb-12">
             <div>
                 <div class="flex justify-between items-center">
@@ -84,11 +79,11 @@
             <div><label for="translation" class="anki-label">Translation</label><input type="text" id="translation" class="anki-input" autocomplete="off"></div>
             <button type="submit" style="display: none;"></button>
         </form>
-        <div id="action-bar" class="mt-8 flex justify-between items-center">
+        <div id="action-bar" class="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
              <p class="text-base font-semibold text-gray-400">Cards Saved: <span id="counter" class="text-blue-400 font-bold">0</span></p>
-             <div id="default-actions" class="flex space-x-4">
-                <button id="review-btn" class="btn btn-secondary text-lg"><i class="fas fa-eye"></i> Review</button>
-                <button id="finish-btn" class="btn btn-primary text-lg"><i class="fas fa-download"></i> Export</button>
+             <div id="default-actions" class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+                <button id="review-btn" class="btn btn-secondary text-lg w-full sm:w-auto"><i class="fas fa-eye"></i> Review</button>
+                <button id="finish-btn" class="btn btn-primary text-lg w-full sm:w-auto"><i class="fas fa-download"></i> Export</button>
              </div>
              <div id="edit-actions" class="hidden space-x-4">
                 <button id="update-btn" class="btn btn-primary text-lg"><i class="fas fa-check"></i> Update</button>
@@ -100,6 +95,13 @@
             <h2 class="text-2xl font-bold mb-4 text-gray-300">Saved Cards</h2>
             <div id="card-list"></div>
         </div>
+
+        <footer class="mt-12 pt-8 border-t border-gray-700 flex justify-between items-center">
+            <div id="user-info" class="flex items-center gap-3">
+                <span id="user-email" class="font-semibold text-gray-300 text-sm"></span>
+            </div>
+            <button id="logout-btn" class="btn btn-secondary">Sign Out</button>
+        </footer>
     </div>
     <!-- Review Modal -->
     <div id="review-modal" class="modal-backdrop hidden fixed inset-0 bg-black p-4 sm:p-8 z-50">
@@ -243,7 +245,6 @@
             docs.forEach(cardData => {
                 const cardEl = document.createElement('div');
                 cardEl.className = 'card-item';
-                // BUG FIX: Check if front content is an image tag
                 const frontDisplay = (cardData.front && cardData.front.startsWith('<img')) 
                     ? '🖼️ Image Card' 
                     : (cardData.front || '<em>No Front</em>');
@@ -345,10 +346,10 @@
         
         function endReviewSession() {
             reviewSession = { cards: [], currentIndex: -1 };
+            document.getElementById('main-app').classList.remove('hidden');
             document.getElementById('review-modal').classList.add('hidden');
-            document.getElementById('review-setup').classList.remove('hidden'); // Reset for next time
+            document.getElementById('review-setup').classList.remove('hidden');
             document.getElementById('review-session').classList.add('hidden');
-            document.getElementById('main-app').classList.remove('hidden'); // BUG FIX: Show main app
             document.removeEventListener('keydown', handleReviewKeyboard);
         }
         
@@ -532,7 +533,6 @@
                  return;
             }
             
-            // DOM Elements
             const logoutBtn = document.getElementById('logout-btn');
             const authForm = document.getElementById('auth-form');
             const authToggleBtn = document.getElementById('auth-toggle-btn');
@@ -552,7 +552,6 @@
             const prevCardBtn = document.getElementById('prev-card-btn');
             const endReviewBtn = document.getElementById('end-review-btn');
 
-            // Attach listeners
             authForm.addEventListener('submit', handleAuthSubmit);
             authToggleBtn.addEventListener('click', toggleAuthMode);
             logoutBtn.addEventListener('click', userSignOut);
