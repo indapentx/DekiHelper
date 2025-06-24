@@ -61,7 +61,6 @@
 
     <!-- Main App View -->
     <div id="main-app" class="container mx-auto max-w-2xl p-4 sm:p-8 hidden">
-        <h1 class="text-4xl font-bold text-center mb-8">Deki Helper</h1>
         <form id="anki-form" class="space-y-6 mb-12">
             <div>
                 <div class="flex justify-between items-center">
@@ -235,7 +234,7 @@
         
         function renderCards(snapshot) {
             const cardList = document.getElementById('card-list');
-            const deleteModal = document.getElementById('delete-modal');
+            if (!cardList) return;
 
             cardList.innerHTML = '';
             if (snapshot.empty) { cardList.innerHTML = '<p class="text-gray-500 text-center">No cards saved yet.</p>'; return; }
@@ -261,7 +260,11 @@
                 `;
                 cardList.appendChild(cardEl);
                 cardEl.querySelector('.edit-btn').addEventListener('click', () => setEditMode(true, cardData));
-                cardEl.querySelector('.delete-btn').addEventListener('click', () => { cardToDeleteId = cardData.id; deleteModal.classList.remove('hidden'); });
+                cardEl.querySelector('.delete-btn').addEventListener('click', () => { 
+                    cardToDeleteId = cardData.id; 
+                    const deleteModal = document.getElementById('delete-modal');
+                    if (deleteModal) deleteModal.classList.remove('hidden'); 
+                });
             });
         }
         
@@ -333,7 +336,7 @@
 
             const cardsForDate = allCards
                 .filter(card => card.createdAt && card.createdAt.startsWith(selectedDate))
-                .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+                .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)); // BUG FIX: Correctly sort oldest to newest
 
             if (cardsForDate.length === 0) { showNotification(`No cards found for ${selectedDate}.`); return; }
 
@@ -439,7 +442,6 @@
             } catch(error) { showNotification("Could not retrieve cards for export."); }
         }
 
-        // --- Auth Functions ---
         async function handleAuthSubmit(e) {
             e.preventDefault();
             const email = document.getElementById('auth-email').value;
@@ -521,7 +523,6 @@
             });
         }
         
-        // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             try {
                 app = initializeApp(firebaseConfig);
