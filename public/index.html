@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deki Helper</title>
-    <link rel="icon" href="shortcut.png"/>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,6 +21,7 @@
         .btn-primary { background-color: #007acc; color: white; } .btn-primary:hover:not(:disabled) { background-color: #005f9e; }
         .btn-secondary { background-color: #555; color: white; } .btn-secondary:hover:not(:disabled) { background-color: #444; }
         .btn-danger { background-color: #c93c3c; color: white; } .btn-danger:hover:not(:disabled) { background-color: #a52828; }
+        .btn-success { background-color: #27ae60; color: white; } .btn-success:hover:not(:disabled) { background-color: #229954; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-icon { background: transparent; border: none; color: #777; padding: 4px; border-radius: 50%; } .btn-icon:hover { background-color: #333; color: #eee; }
         .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 50;}
@@ -77,7 +78,8 @@
              <p class="text-base font-semibold text-gray-400">Cards Saved: <span id="counter" class="text-blue-400 font-bold">0</span></p>
              <div id="default-actions" class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
                 <button id="review-btn" class="btn btn-secondary text-lg w-full sm:w-auto"><i class="fas fa-eye"></i> Review</button>
-                <button id="finish-btn" class="btn btn-primary text-lg w-full sm:w-auto"><i class="fas fa-download"></i> Export</button>
+                <button id="finish-btn" class="btn btn-primary text-lg w-full sm:w-auto"><i class="fas fa-download"></i> Export TXT</button>
+                <button id="export-json-btn" class="btn btn-success text-lg w-full sm:w-auto"><i class="fas fa-file-code"></i> Export JSON</button>
              </div>
              <div id="edit-actions" class="hidden space-x-4">
                 <button id="update-btn" class="btn btn-primary text-lg"><i class="fas fa-check"></i> Update</button>
@@ -260,8 +262,8 @@
             });
         }
         
-        function triggerDownload(content, fileName) {
-            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        function triggerDownload(content, fileName, mimeType = 'text/plain;charset=utf-8') {
+            const blob = new Blob([content], { type: mimeType });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -411,7 +413,7 @@
             } catch (error) { showNotification("Failed to delete card."); }
         }
         
-        async function exportCardsToFile() {
+        async function exportCardsToFile(format = 'txt') {
             if (!userId) { showNotification("Not connected."); return; }
             try {
                 const querySnapshot = await getDocs(query(cardsCollectionRef));
@@ -421,16 +423,24 @@
                 querySnapshot.forEach((doc) => { docs.push(doc.data()); });
                 docs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
                 
-                const outputContent = docs.map(data => {
-                    return [
-                        data.front || '', data.back || '', data.speech || '',
-                        data.beispiel || '', data.beispielSpeech || '', data.translation || ''
-                    ].join(';');
-                }).join('\n');
-                
                 const today = new Date().toISOString().split('T')[0];
-                triggerDownload(outputContent, `anki_export_${today}.txt`);
 
+                if (format === 'json') {
+                    const jsonData = docs.map(data => ({
+                        back: data.back || '',
+                        beispiel: data.beispiel || ''
+                    }));
+                    const jsonContent = JSON.stringify(jsonData, null, 2);
+                    triggerDownload(jsonContent, `deki_export_${today}.json`, 'application/json');
+                } else {
+                    const outputContent = docs.map(data => {
+                        return [
+                            data.front || '', data.back || '', data.speech || '',
+                            data.beispiel || '', data.beispielSpeech || '', data.translation || ''
+                        ].join(';');
+                    }).join('\n');
+                    triggerDownload(outputContent, `anki_export_${today}.txt`);
+                }
             } catch(error) { showNotification("Could not retrieve cards for export."); }
         }
 
@@ -556,6 +566,7 @@
             const beispielInput = document.getElementById('beispiel');
             const generateImgTagBtn = document.getElementById('generate-img-tag-btn');
             const finishBtn = document.getElementById('finish-btn');
+            const exportJsonBtn = document.getElementById('export-json-btn');
             const updateBtn = document.getElementById('update-btn');
             const cancelBtn = document.getElementById('cancel-btn');
             const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
@@ -579,7 +590,8 @@
                 if (backValue) { document.getElementById('front').value = `<img src="${backValue}.jpg">`; } 
                 else { showNotification("Please enter a word in the 'Back' field first."); }
             });
-            finishBtn.addEventListener('click', exportCardsToFile);
+            finishBtn.addEventListener('click', () => exportCardsToFile('txt'));
+            exportJsonBtn.addEventListener('click', () => exportCardsToFile('json'));
             updateBtn.addEventListener('click', handleUpdateCard);
             cancelBtn.addEventListener('click', () => setEditMode(false));
             confirmDeleteBtn.addEventListener('click', handleDeleteConfirmed);
