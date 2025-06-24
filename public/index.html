@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anki Card Generator & Review</title>
-    <!-- Tailwind CSS -->
+    <title>Deki Helper</title>
+    <link rel="icon" href="shortcut.png"/>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         html { scroll-behavior: smooth; }
@@ -31,7 +29,6 @@
         .card-item-content { flex-grow: 1; overflow: hidden; }
         .card-item-front { font-weight: 600; color: #eee; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .card-item-back { color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
-        
         #review-modal { background-color: #000; }
         .review-card { background-color: #1e1e1e; border-radius: 12px; padding: 24px; min-height: 150px; display: flex; justify-content: space-between; align-items: flex-start; text-align: left; }
         .review-content { font-size: 1.5rem; word-break: break-word; flex-grow: 1; }
@@ -42,7 +39,6 @@
     </style>
 </head>
 <body class="text-white">
-    <!-- Login View -->
     <div id="login-view" class="h-screen flex flex-col items-center justify-center text-center p-4 hidden">
         <h1 class="text-4xl font-bold mb-4">Deki Helper</h1>
         <div class="w-full max-w-sm bg-[#1e1e1e] p-8 rounded-lg">
@@ -59,7 +55,6 @@
         </div>
     </div>
 
-    <!-- Main App View -->
     <div id="main-app" class="container mx-auto max-w-2xl p-4 sm:p-8 hidden">
         <form id="anki-form" class="space-y-6 mb-12">
             <div>
@@ -102,7 +97,6 @@
             <button id="logout-btn" class="btn btn-secondary">Sign Out</button>
         </footer>
     </div>
-    <!-- Review Modal -->
     <div id="review-modal" class="modal-backdrop hidden fixed inset-0 bg-black p-4 sm:p-8 z-50">
         <div class="w-full max-w-3xl mx-auto flex flex-col h-full">
             <div id="review-setup" class="flex-grow flex flex-col items-center justify-center">
@@ -157,7 +151,6 @@
     </div>
     <div id="notification" class="fixed top-5 right-5 bg-red-600 text-white py-2 px-4 rounded-lg shadow-lg hidden z-50"><p id="notification-message"></p></div>
 
-    <!-- Firebase -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -171,7 +164,6 @@
         let reviewSession = { cards: [], currentIndex: -1 };
         let isSignUpMode = false;
 
-        // --- All Helper & UI Functions ---
         function showNotification(message, level = 'error', duration = 3000) {
             const notification = document.getElementById('notification');
             const notificationMessage = document.getElementById('notification-message');
@@ -336,7 +328,7 @@
 
             const cardsForDate = allCards
                 .filter(card => card.createdAt && card.createdAt.startsWith(selectedDate))
-                .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)); // BUG FIX: Correctly sort oldest to newest
+                .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
             if (cardsForDate.length === 0) { showNotification(`No cards found for ${selectedDate}.`); return; }
 
