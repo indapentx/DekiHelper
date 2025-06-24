@@ -518,13 +518,19 @@
         function handleSmartPaste(event) {
             const beispielInput = document.getElementById('beispiel');
             const translationInput = document.getElementById('translation');
+            const backInput = document.getElementById('back');
 
             let paste = (event.clipboardData || window.clipboardData).getData('text');
             
             if (paste.includes(';') && paste.includes('"')) {
                 event.preventDefault(); 
                 const parts = paste.split(';').map(part => part.replace(/"/g, '').trim());
-                if (parts.length >= 2) {
+                if (parts.length >= 3) {
+                    beispielInput.value = parts[0];
+                    translationInput.value = parts[1];
+                    backInput.value = parts[2];
+                    updateSpeechFields();
+                } else if (parts.length >= 2) {
                     beispielInput.value = parts[0];
                     translationInput.value = parts[1];
                 }
