@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deki Helper</title>
-    <link rel="icon" href="shortcut.png">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -77,6 +77,8 @@
         <div id="action-bar" class="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
              <p class="text-base font-semibold text-gray-400">Cards Saved: <span id="counter" class="text-blue-400 font-bold">0</span></p>
              <div id="default-actions" class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+                <button id="import-btn" class="btn btn-secondary w-full sm:w-auto"><i class="fas fa-upload"></i> Import</button>
+                <input type="file" id="import-file-input" class="hidden" accept=".txt, .tsv">
                 <button id="review-btn" class="btn btn-secondary w-full sm:w-auto"><i class="fas fa-eye"></i> Review</button>
                 <button id="finish-btn" class="btn btn-primary w-full sm:w-auto"><i class="fas fa-download"></i> Export TXT</button>
                 <button id="export-json-btn" class="btn btn-success w-full sm:w-auto"><i class="fas fa-file-code"></i> Export JSON</button>
@@ -555,6 +557,54 @@
                 }
             }
         }
+
+        async function importCardsFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const content = e.target.result;
+                const lines = content.split('\n').filter(line => line.trim() !== '' && !line.trim().startsWith('#'));
+
+                if (lines.length === 0) {
+                    showNotification("The selected file is empty or contains no valid data.");
+                    return;
+                }
+                
+                if (!userId) {
+                    showNotification("You must be logged in to import cards.");
+                    return;
+                }
+
+                try {
+                    const batch = writeBatch(db);
+                    lines.forEach(line => {
+                        const fields = line.split('\t');
+                        const cardData = {
+                            front: fields[0] || '',
+                            back: fields[1] || '',
+                            speech: fields[2] || '',
+                            beispiel: fields[3] || '',
+                            beispielSpeech: fields[4] || '',
+                            translation: fields[5] || '',
+                            createdAt: new Date().toISOString()
+                        };
+                        const newCardRef = doc(collection(db, `artifacts/${appId}/users/${userId}/cards`));
+                        batch.set(newCardRef, cardData);
+                    });
+
+                    await batch.commit();
+                    showNotification(`Successfully imported ${lines.length} cards!`, 'success');
+                } catch (error) {
+                    console.error("Import error: ", error);
+                    showNotification("An error occurred during import.");
+                } finally {
+                    event.target.value = '';
+                }
+            };
+            reader.readAsText(file);
+        }
         
         document.addEventListener('DOMContentLoaded', () => {
             try {
@@ -586,6 +636,8 @@
             const nextCardBtn = document.getElementById('next-card-btn');
             const prevCardBtn = document.getElementById('prev-card-btn');
             const endReviewBtn = document.getElementById('end-review-btn');
+            const importBtn = document.getElementById('import-btn');
+            const importFileInput = document.getElementById('import-file-input');
 
             authForm.addEventListener('submit', handleAuthSubmit);
             authToggleBtn.addEventListener('click', toggleAuthMode);
@@ -605,6 +657,10 @@
             cancelBtn.addEventListener('click', () => setEditMode(false));
             confirmDeleteBtn.addEventListener('click', handleDeleteConfirmed);
             cancelDeleteBtn.addEventListener('click', () => document.getElementById('delete-modal').classList.add('hidden'));
+            
+            importBtn.addEventListener('click', () => importFileInput.click());
+            importFileInput.addEventListener('change', importCardsFromFile);
+            
             reviewBtn.addEventListener('click', () => {
                 document.getElementById('main-app').classList.add('hidden');
                 document.getElementById('review-modal').classList.remove('hidden');
