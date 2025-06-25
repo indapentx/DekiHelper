@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deki Helper</title>
-    <link rel="icon" href="shortcut.png">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -682,7 +682,16 @@
                 btn.addEventListener('click', (e) => {
                     const targetId = e.currentTarget.dataset.target;
                     const textToCopy = document.getElementById(targetId).textContent;
-                    navigator.clipboard.writeText(textToCopy).then(() => { showNotification("Copied!", "success", 1500); }).catch(err => { showNotification("Failed to copy."); });
+                    navigator.clipboard.writeText(textToCopy).then(() => { 
+                        showNotification("Copied!", "success", 1500);
+                        setTimeout(() => {
+                           if (reviewSession.currentIndex < reviewSession.cards.length - 1) {
+                                handleReviewNav(1);
+                           }
+                        }, 400);
+                    }).catch(err => { 
+                        showNotification("Failed to copy."); 
+                    });
                 });
             });
 
