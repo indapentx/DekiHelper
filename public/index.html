@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deki Helper</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
+    <link rel="icon" href="shortcut.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,8 +31,8 @@
         .card-item-front { font-weight: 600; color: #eee; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .card-item-back { color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         #review-modal { background-color: #000; }
-        .review-card { background-color: #1e1e1e; border-radius: 12px; padding: 24px; min-height: 120px; display: flex; justify-content: space-between; align-items: flex-start; text-align: left; }
-        .review-content { font-size: 1.5rem; word-break: break-word; flex-grow: 1; }
+        .review-card { background-color: #1e1e1e; border-radius: 12px; padding: 20px; min-height: 90px; display: flex; justify-content: space-between; align-items: flex-start; text-align: left; }
+        .review-content { font-size: 1.25rem; word-break: break-word; flex-grow: 1; padding-top: 4px; }
         .review-copy-btn { background-color: #333; color: #fff; border: none; border-radius: 8px; padding: 12px 16px; cursor: pointer; align-self: center; margin-left: 16px; }
         .review-copy-btn:hover { background-color: #444; }
         .progress-bar-container { background-color: #333; border-radius: 9999px; height: 8px; width: 100%; overflow: hidden;}
@@ -119,7 +119,7 @@
                 <div class="progress-bar-container mb-6">
                     <div id="review-progress-bar" class="progress-bar"></div>
                 </div>
-                <div class="flex-grow flex flex-col justify-center space-y-4">
+                <div class="flex-grow flex flex-col justify-center space-y-2">
                     <div>
                         <label class="anki-label ml-2 flex justify-between"><span>Back</span> <span class="text-gray-500">Shortcut: B</span></label>
                         <div class="review-card">
@@ -139,6 +139,12 @@
                         <div class="review-card">
                             <span id="review-beispiel-filename" class="review-content"></span>
                             <button class="review-copy-btn" data-target="review-beispiel-filename" title="Copy Filename (S)"><i class="fas fa-copy fa-lg"></i></button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="anki-label ml-2 flex justify-between"><span>Translation</span></label>
+                        <div class="review-card">
+                            <span id="review-translation" class="review-content"></span>
                         </div>
                     </div>
                 </div>
@@ -313,6 +319,7 @@
             document.getElementById('review-back').textContent = card.back || '—';
             document.getElementById('review-beispiel').textContent = card.beispiel || '—';
             document.getElementById('review-beispiel-filename').textContent = `s_${card.back || ''}`;
+            document.getElementById('review-translation').textContent = card.translation || '—';
             document.getElementById('review-progress-text').textContent = `Card ${reviewSession.currentIndex + 1} of ${reviewSession.cards.length}`;
             document.getElementById('prev-card-btn').disabled = reviewSession.currentIndex === 0;
             document.getElementById('next-card-btn').disabled = reviewSession.currentIndex === reviewSession.cards.length - 1;
