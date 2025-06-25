@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deki Helper</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
+    <link rel="icon" href="assets/images/shortcut.png"/>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,7 +17,8 @@
         .anki-input:focus { outline: none; border-color: #007acc; }
         .anki-readonly-box { min-height: 48px; display: flex; align-items: center; }
         .anki-label { color: #bdc3c7; font-weight: 600; font-size: 14px; }
-        .btn { padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn { padding: 6px 14px; font-size: 0.95rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn-lg { padding: 10px 20px; font-size: 1.125rem; }
         .btn-primary { background-color: #007acc; color: white; } .btn-primary:hover:not(:disabled) { background-color: #005f9e; }
         .btn-secondary { background-color: #555; color: white; } .btn-secondary:hover:not(:disabled) { background-color: #444; }
         .btn-danger { background-color: #c93c3c; color: white; } .btn-danger:hover:not(:disabled) { background-color: #a52828; }
@@ -47,7 +48,7 @@
             <form id="auth-form" class="space-y-4">
                 <input type="email" id="auth-email" placeholder="Email" class="anki-input" required>
                 <input type="password" id="auth-password" placeholder="Password" class="anki-input" required>
-                <button type="submit" id="auth-submit-btn" class="btn btn-primary w-full text-lg">Sign In</button>
+                <button type="submit" id="auth-submit-btn" class="btn btn-primary btn-lg w-full">Sign In</button>
             </form>
             <p class="text-sm text-gray-400 mt-6">
                 <span id="auth-prompt-text">Don't have an account?</span>
@@ -108,7 +109,7 @@
                 <div class="w-full max-w-xs">
                     <label for="review-date-selector" class="anki-label mb-2 block">Select a date to review:</label>
                     <select id="review-date-selector" class="anki-input"></select>
-                    <button id="start-session-btn" class="btn btn-primary w-full mt-6 text-lg">Start Session</button>
+                    <button id="start-session-btn" class="btn btn-primary btn-lg w-full mt-6">Start Session</button>
                 </div>
                  <button id="close-review-setup-btn" class="btn btn-secondary mt-20">Close</button>
             </div>
@@ -149,9 +150,9 @@
                     </div>
                 </div>
                 <div class="flex justify-between items-center mt-6">
-                    <button id="prev-card-btn" class="btn btn-secondary text-lg"><i class="fas fa-arrow-left"></i> Previous</button>
-                    <button id="end-review-btn" class="btn btn-danger text-lg">End Review</button>
-                    <button id="next-card-btn" class="btn btn-secondary text-lg">Next <i class="fas fa-arrow-right"></i></button>
+                    <button id="prev-card-btn" class="btn btn-secondary btn-lg"><i class="fas fa-arrow-left"></i> Previous</button>
+                    <button id="end-review-btn" class="btn btn-danger btn-lg">End Review</button>
+                    <button id="next-card-btn" class="btn btn-secondary btn-lg">Next <i class="fas fa-arrow-right"></i></button>
                 </div>
             </div>
         </div>
