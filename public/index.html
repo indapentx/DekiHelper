@@ -76,7 +76,7 @@
             <button type="submit" style="display: none;"></button>
         </form>
         <div id="action-bar" class="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-             <p class="text-base font-semibold text-gray-400">Cards: <span id="session-counter" title="Saved this session" class="text-green-400 font-bold">0</span> / <span id="total-counter" title="Total cards" class="text-blue-400 font-bold">0</span></p>
+             <p class="text-base font-semibold text-gray-400">Cards: <span id="session-counter" title="Cards from latest session" class="text-green-400 font-bold">0</span> / <span id="total-counter" title="Total cards" class="text-blue-400 font-bold">0</span></p>
              <div id="default-actions" class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
                 <button id="import-btn" class="btn btn-secondary w-full sm:w-auto"><i class="fas fa-upload"></i> Import</button>
                 <input type="file" id="import-file-input" class="hidden" accept=".txt, .tsv">
@@ -181,8 +181,7 @@
         let currentEditId = null, cardToDeleteId = null, allCards = [];
         let reviewSession = { cards: [], currentIndex: -1 };
         let isSignUpMode = false;
-        let cardsSavedThisSession = 0;
-
+        
         function showNotification(message, level = 'error', duration = 3000) {
             const notification = document.getElementById('notification');
             const notificationMessage = document.getElementById('notification-message');
@@ -393,8 +392,6 @@
             if (!cardData.front && !cardData.back) return;
             try {
                 await addDoc(cardsCollectionRef, cardData);
-                cardsSavedThisSession++;
-                document.getElementById('session-counter').textContent = cardsSavedThisSession;
                 clearForm();
             } catch (error) { showNotification("Failed to save the card."); }
         }
@@ -530,8 +527,7 @@
             const loginView = document.getElementById('login-view');
             const mainApp = document.getElementById('main-app');
             const userEmail = document.getElementById('user-email');
-            
-            cardsSavedThisSession = 0;
+
             document.getElementById('session-counter').textContent = '0';
 
             loginView.classList.add('hidden');
@@ -546,7 +542,17 @@
                 allCards = [];
                 snapshot.forEach(doc => allCards.push({ id: doc.id, ...doc.data() }));
                 const totalCounter = document.getElementById('total-counter');
+                const sessionCounter = document.getElementById('session-counter');
                 if(totalCounter) totalCounter.textContent = allCards.length;
+                
+                if (allCards.length > 0) {
+                    const latestDate = allCards.map(c => c.createdAt.split('T')[0]).sort().reverse()[0];
+                    const cardsFromLatestDate = allCards.filter(c => c.createdAt.startsWith(latestDate)).length;
+                    sessionCounter.textContent = cardsFromLatestDate;
+                } else {
+                    sessionCounter.textContent = 0;
+                }
+
                 renderCards(snapshot);
                 updateReviewDateSelector();
             });
@@ -639,6 +645,8 @@
             const ankiFormEl = document.getElementById('anki-form');
             const backInput = document.getElementById('back');
             const beispielInput = document.getElementById('beispiel');
+            const frontInput = document.getElementById('front');
+            const translationInput = document.getElementById('translation');
             const generateImgTagBtn = document.getElementById('generate-img-tag-btn');
             const finishBtn = document.getElementById('finish-btn');
             const exportJsonBtn = document.getElementById('export-json-btn');
@@ -660,6 +668,11 @@
             logoutBtn.addEventListener('click', userSignOut);
             
             ankiFormEl.addEventListener('submit', handleFormSubmit);
+            
+            [frontInput, backInput, beispielInput, translationInput].forEach(input => {
+                input.addEventListener('blur', (e) => { e.target.value = e.target.value.trim(); });
+            });
+
             backInput.addEventListener('input', updateSpeechFields);
             beispielInput.addEventListener('paste', handleSmartPaste);
             generateImgTagBtn.addEventListener('click', () => {
