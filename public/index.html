@@ -553,6 +553,7 @@
                     .join('\n');
                 clipboardOutput.value = clipboardText;
                 clipboardOutputContainer.classList.remove('hidden');
+                clipboardOutput.select(); // Automatically select the text
             } else {
                 triggerExportDownload(cardsToExport, format);
                 document.getElementById('export-modal').classList.add('hidden');
