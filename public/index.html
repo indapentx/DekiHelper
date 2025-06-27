@@ -81,8 +81,7 @@
                 <button id="import-btn" class="btn btn-secondary w-full sm:w-auto"><i class="fas fa-upload"></i> Import</button>
                 <input type="file" id="import-file-input" class="hidden" accept=".txt, .tsv">
                 <button id="review-btn" class="btn btn-secondary w-full sm:w-auto"><i class="fas fa-eye"></i> Review</button>
-                <button id="finish-btn" class="btn btn-primary w-full sm:w-auto"><i class="fas fa-download"></i> Export TXT</button>
-                <button id="export-json-btn" class="btn btn-success w-full sm:w-auto"><i class="fas fa-file-code"></i> Export JSON</button>
+                <button id="export-btn" class="btn btn-primary w-full sm:w-auto"><i class="fas fa-download"></i> Export</button>
              </div>
              <div id="edit-actions" class="hidden space-x-4">
                 <button id="update-btn" class="btn btn-primary"><i class="fas fa-check"></i> Update</button>
@@ -167,6 +166,44 @@
              </div>
         </div>
     </div>
+    <div id="export-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-6">Export Options</h2>
+            <div class="space-y-4">
+                <div>
+                    <h3 class="anki-label mb-2">Format</h3>
+                    <div class="flex space-x-4">
+                        <label class="flex items-center space-x-2">
+                            <input type="radio" name="export-format" value="txt" class="form-radio" checked>
+                            <span>TXT (for Anki)</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="radio" name="export-format" value="json" class="form-radio">
+                            <span>JSON</span>
+                        </label>
+                    </div>
+                </div>
+                <hr class="border-gray-700 !my-6">
+                <div>
+                    <h3 class="anki-label mb-2">Cards to Export</h3>
+                    <label class="flex items-center space-x-2">
+                        <input type="radio" id="export-all-radio" name="export-range" value="all" class="form-radio" checked>
+                        <span>All cards</span>
+                    </label>
+                    <label class="flex items-center space-x-2 mt-2">
+                        <input type="radio" id="export-date-radio" name="export-range" value="date" class="form-radio">
+                        <span>Cards from selected dates</span>
+                    </label>
+                    <div id="export-date-selection" class="hidden pl-6 pt-2 mt-2 max-h-32 overflow-y-auto border-l-2 border-gray-700">
+                        </div>
+                </div>
+            </div>
+            <div class="flex justify-end items-center space-x-4 mt-8">
+               <button id="cancel-export-btn" class="btn btn-secondary">Cancel</button>
+               <button id="confirm-export-btn" class="btn btn-primary">Export</button>
+            </div>
+       </div>
+   </div>
     <div id="notification" class="fixed top-5 right-5 bg-red-600 text-white py-2 px-4 rounded-lg shadow-lg hidden z-50"><p id="notification-message"></p></div>
 
     <script type="module">
@@ -432,35 +469,79 @@
             } catch (error) { showNotification("Failed to delete card."); }
         }
         
-        async function exportCardsToFile(format = 'txt') {
-            if (!userId) { showNotification("Not connected."); return; }
-            try {
-                const querySnapshot = await getDocs(query(cardsCollectionRef));
-                if (querySnapshot.empty) { showNotification("No cards to export.", "success"); return; }
-                
-                const docs = [];
-                querySnapshot.forEach((doc) => { docs.push(doc.data()); });
-                docs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-                
-                const today = new Date().toISOString().split('T')[0];
+        function triggerExportDownload(cards, format) {
+            if (cards.length === 0) {
+                showNotification("No cards match the selected criteria.", "success");
+                return;
+            }
+            cards.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+            const today = new Date().toISOString().split('T')[0];
+            let content, fileName, mimeType;
 
-                if (format === 'json') {
-                    const jsonData = docs.map(data => ({
-                        back: data.back || '',
-                        beispiel: data.beispiel || ''
-                    }));
-                    const jsonContent = JSON.stringify(jsonData, null, 2);
-                    triggerDownload(jsonContent, `deki_export_${today}.json`, 'application/json');
-                } else {
-                    const outputContent = docs.map(data => {
-                        return [
-                            data.front || '', data.back || '', data.speech || '',
-                            data.beispiel || '', data.beispielSpeech || '', data.translation || ''
-                        ].join(';');
-                    }).join('\n');
-                    triggerDownload(outputContent, `anki_export_${today}.txt`);
+            if (format === 'json') {
+                const jsonData = cards.map(data => ({ back: data.back || '', beispiel: data.beispiel || '' }));
+                content = JSON.stringify(jsonData, null, 2);
+                fileName = `deki_export_${today}.json`;
+                mimeType = 'application/json';
+            } else { // txt format
+                content = cards.map(data => {
+                    return [
+                        data.front || '', data.back || '', data.speech || '',
+                        data.beispiel || '', data.beispielSpeech || '', data.translation || ''
+                    ].join(';');
+                }).join('\n');
+                fileName = `anki_export_${today}.txt`;
+                mimeType = 'text/plain;charset=utf-8';
+            }
+            triggerDownload(content, fileName, mimeType);
+        }
+
+        function handleConfirmExport() {
+            const format = document.querySelector('input[name="export-format"]:checked').value;
+            const range = document.querySelector('input[name="export-range"]:checked').value;
+            let cardsToExport = [];
+
+            if (range === 'all') {
+                cardsToExport = [...allCards];
+            } else { // 'date'
+                const selectedDateNodes = document.querySelectorAll('#export-date-selection input[type="checkbox"]:checked');
+                if (selectedDateNodes.length === 0) {
+                    showNotification("Please select at least one date to export.");
+                    return;
                 }
-            } catch(error) { showNotification("Could not retrieve cards for export."); }
+                const selectedDates = Array.from(selectedDateNodes).map(el => el.value);
+                cardsToExport = allCards.filter(card => selectedDates.includes(card.createdAt.split('T')[0]));
+            }
+
+            triggerExportDownload(cardsToExport, format);
+            document.getElementById('export-modal').classList.add('hidden');
+        }
+
+        function openExportModal() {
+            if (allCards.length === 0) {
+                showNotification("There are no cards to export.", "success");
+                return;
+            }
+            document.getElementById('export-all-radio').checked = true;
+            document.getElementById('export-date-selection').classList.add('hidden');
+            
+            const dates = [...new Set(allCards.map(card => card.createdAt.split('T')[0]))].sort().reverse();
+            const exportDateSelection = document.getElementById('export-date-selection');
+            exportDateSelection.innerHTML = '';
+
+            if (dates.length > 0) {
+                dates.forEach(date => {
+                    const label = document.createElement('label');
+                    label.className = 'flex items-center space-x-2 text-gray-300 py-1';
+                    label.innerHTML = `<input type="checkbox" value="${date}" class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded"> <span>${date}</span>`;
+                    exportDateSelection.appendChild(label);
+                });
+                document.getElementById('export-date-radio').disabled = false;
+            } else {
+                document.getElementById('export-date-radio').disabled = true;
+            }
+            
+            document.getElementById('export-modal').classList.remove('hidden');
         }
 
         async function handleAuthSubmit(e) {
@@ -471,13 +552,9 @@
                 showNotification("Email and password are required.");
                 return;
             }
-
             try {
-                if (isSignUpMode) {
-                    await createUserWithEmailAndPassword(auth, email, password);
-                } else {
-                    await signInWithEmailAndPassword(auth, email, password);
-                }
+                if (isSignUpMode) { await createUserWithEmailAndPassword(auth, email, password); } 
+                else { await signInWithEmailAndPassword(auth, email, password); }
             } catch (error) {
                 console.error("Authentication error:", error.message);
                 showNotification(error.message);
@@ -648,8 +725,7 @@
             const frontInput = document.getElementById('front');
             const translationInput = document.getElementById('translation');
             const generateImgTagBtn = document.getElementById('generate-img-tag-btn');
-            const finishBtn = document.getElementById('finish-btn');
-            const exportJsonBtn = document.getElementById('export-json-btn');
+            const exportBtn = document.getElementById('export-btn');
             const updateBtn = document.getElementById('update-btn');
             const cancelBtn = document.getElementById('cancel-btn');
             const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
@@ -662,6 +738,12 @@
             const endReviewBtn = document.getElementById('end-review-btn');
             const importBtn = document.getElementById('import-btn');
             const importFileInput = document.getElementById('import-file-input');
+            const exportModal = document.getElementById('export-modal');
+            const confirmExportBtn = document.getElementById('confirm-export-btn');
+            const cancelExportBtn = document.getElementById('cancel-export-btn');
+            const exportAllRadio = document.getElementById('export-all-radio');
+            const exportDateRadio = document.getElementById('export-date-radio');
+            const exportDateSelection = document.getElementById('export-date-selection');
 
             authForm.addEventListener('submit', handleAuthSubmit);
             authToggleBtn.addEventListener('click', toggleAuthMode);
@@ -680,8 +762,7 @@
                 if (backValue) { document.getElementById('front').value = `<img src="${backValue}.jpg">`; } 
                 else { showNotification("Please enter a word in the 'Back' field first."); }
             });
-            finishBtn.addEventListener('click', () => exportCardsToFile('txt'));
-            exportJsonBtn.addEventListener('click', () => exportCardsToFile('json'));
+
             updateBtn.addEventListener('click', handleUpdateCard);
             cancelBtn.addEventListener('click', () => setEditMode(false));
             confirmDeleteBtn.addEventListener('click', handleDeleteConfirmed);
@@ -699,6 +780,12 @@
             nextCardBtn.addEventListener('click', () => handleReviewNav(1));
             prevCardBtn.addEventListener('click', () => handleReviewNav(-1));
             endReviewBtn.addEventListener('click', endReviewSession);
+
+            exportBtn.addEventListener('click', openExportModal);
+            confirmExportBtn.addEventListener('click', handleConfirmExport);
+            cancelExportBtn.addEventListener('click', () => exportModal.classList.add('hidden'));
+            exportAllRadio.addEventListener('change', () => { if (exportAllRadio.checked) exportDateSelection.classList.add('hidden'); });
+            exportDateRadio.addEventListener('change', () => { if (exportDateRadio.checked) exportDateSelection.classList.remove('hidden'); });
             
             document.querySelectorAll('.review-copy-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
