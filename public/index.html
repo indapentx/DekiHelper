@@ -412,12 +412,12 @@
             const beispielSpeechBox = document.getElementById('beispiel-speech');
 
             const cardData = {
-                front: front.value.trim(),
-                back: back.value.trim(),
+                front: front.value,
+                back: back.value,
                 speech: speechBox.textContent,
-                beispiel: beispiel.value.trim(),
+                beispiel: beispiel.value,
                 beispielSpeech: beispielSpeechBox.textContent,
-                translation: translation.value.trim(),
+                translation: translation.value,
                 createdAt: new Date().toISOString()
             };
             if (!cardData.front && !cardData.back) return;
@@ -436,12 +436,12 @@
              const speechBox = document.getElementById('speech');
              const beispielSpeechBox = document.getElementById('beispiel-speech');
              const cardData = {
-                front: front.value.trim(),
-                back: back.value.trim(),
+                front: front.value,
+                back: back.value,
                 speech: speechBox.textContent,
-                beispiel: beispiel.value.trim(),
+                beispiel: beispiel.value,
                 beispielSpeech: beispielSpeechBox.textContent,
-                translation: translation.value.trim(),
+                translation: translation.value,
                 createdAt: new Date().toISOString()
             };
             try {
