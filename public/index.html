@@ -38,6 +38,10 @@
         .review-copy-btn:hover { background-color: #444; }
         .progress-bar-container { background-color: #333; border-radius: 9999px; height: 8px; width: 100%; overflow: hidden;}
         .progress-bar { background-color: #007acc; height: 100%; width: 0%; transition: width 0.3s ease; }
+        /* Toggle Switch CSS */
+        #auto-skip-toggle-label .dot { transition: transform 0.2s ease-in-out; }
+        #auto-skip-toggle:checked ~ .dot { transform: translateX(100%); background-color: #27ae60; }
+        #auto-skip-toggle:checked ~ .block { background-color: #2ecc71; }
     </style>
 </head>
 <body class="text-white">
@@ -115,6 +119,14 @@
             <div id="review-session" class="hidden flex-grow flex flex-col">
                 <div class="flex justify-between items-center mb-2 text-gray-400">
                     <p id="review-progress-text" class="font-semibold"></p>
+                    <label id="auto-skip-toggle-label" for="auto-skip-toggle" class="flex items-center cursor-pointer">
+                        <span class="mr-3 text-sm font-medium">Skip Immediately</span>
+                        <div class="relative">
+                            <input type="checkbox" id="auto-skip-toggle" class="sr-only">
+                            <div class="block bg-gray-600 w-10 h-6 rounded-full"></div>
+                            <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full"></div>
+                        </div>
+                    </label>
                 </div>
                 <div class="progress-bar-container mb-6">
                     <div id="review-progress-bar" class="progress-bar"></div>
@@ -195,7 +207,8 @@
                         <span>Cards from selected dates</span>
                     </label>
                     <div id="export-date-selection" class="hidden pl-6 pt-2 mt-2 max-h-32 overflow-y-auto border-l-2 border-gray-700">
-                        </div>
+                        <!-- Date checkboxes will be inserted here by JS -->
+                    </div>
                 </div>
             </div>
             <div class="flex justify-end items-center space-x-4 mt-8">
@@ -744,6 +757,7 @@
             const exportAllRadio = document.getElementById('export-all-radio');
             const exportDateRadio = document.getElementById('export-date-radio');
             const exportDateSelection = document.getElementById('export-date-selection');
+            const autoSkipToggle = document.getElementById('auto-skip-toggle');
 
             authForm.addEventListener('submit', handleAuthSubmit);
             authToggleBtn.addEventListener('click', toggleAuthMode);
@@ -791,16 +805,30 @@
                 btn.addEventListener('click', (e) => {
                     const targetId = e.currentTarget.dataset.target;
                     const textToCopy = document.getElementById(targetId).textContent;
-                    navigator.clipboard.writeText(textToCopy).then(() => { 
+                    
+                    try {
+                        const input = document.createElement('textarea');
+                        document.body.appendChild(input);
+                        input.value = textToCopy;
+                        input.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(input);
                         showNotification("Copied!", "success", 1500);
-                        setTimeout(() => {
+
+                        if (autoSkipToggle.checked) {
                            if (reviewSession.currentIndex < reviewSession.cards.length - 1) {
                                 handleReviewNav(1);
                            }
-                        }, 20000);
-                    }).catch(err => { 
+                        } else {
+                            setTimeout(() => {
+                               if (reviewSession.currentIndex < reviewSession.cards.length - 1) {
+                                    handleReviewNav(1);
+                               }
+                            }, 20000);
+                        }
+                    } catch (err) {
                         showNotification("Failed to copy."); 
-                    });
+                    }
                 });
             });
 
