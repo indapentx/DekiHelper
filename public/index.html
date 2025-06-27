@@ -215,8 +215,11 @@
                     </div>
                 </div>
                 <div id="clipboard-output-container" class="hidden mt-6">
-                    <label for="clipboard-output" class="anki-label mb-2">Copy the text below (Ctrl+C)</label>
-                    <textarea id="clipboard-output" readonly class="text-sm" rows="8"></textarea>
+                    <label for="clipboard-output" class="anki-label mb-2">Formatted Text</label>
+                    <div class="flex items-center gap-2">
+                        <textarea id="clipboard-output" readonly class="text-sm flex-grow" rows="8"></textarea>
+                        <button id="copy-clipboard-btn" class="btn btn-secondary self-start" title="Copy Text"><i class="fas fa-copy"></i></button>
+                    </div>
                 </div>
             </div>
             <div class="flex justify-end items-center space-x-4 mt-8">
@@ -793,6 +796,7 @@
             const autoSkipToggle = document.getElementById('auto-skip-toggle');
             const clipboardOutputContainer = document.getElementById('clipboard-output-container');
             const exportFormatRadios = document.querySelectorAll('input[name="export-format"]');
+            const copyClipboardBtn = document.getElementById('copy-clipboard-btn');
 
 
             authForm.addEventListener('submit', handleAuthSubmit);
@@ -837,6 +841,15 @@
                 exportModal.classList.add('hidden');
                 clipboardOutputContainer.classList.add('hidden');
             });
+            copyClipboardBtn.addEventListener('click', () => {
+                const textToCopy = document.getElementById('clipboard-output').value;
+                 navigator.clipboard.writeText(textToCopy).then(() => {
+                    showNotification("Copied to clipboard!", "success");
+                }).catch(err => {
+                    showNotification("Failed to copy automatically. Please use Ctrl+C.");
+                });
+            });
+
 
             exportFormatRadios.forEach(radio => {
                 radio.addEventListener('change', () => {
@@ -854,29 +867,23 @@
                     const targetId = e.currentTarget.dataset.target;
                     const textToCopy = document.getElementById(targetId).textContent;
                     
-                    try {
-                        const input = document.createElement('textarea');
-                        document.body.appendChild(input);
-                        input.value = textToCopy;
-                        input.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(input);
+                    navigator.clipboard.writeText(textToCopy).then(() => {
                         showNotification("Copied!", "success", 1500);
 
-                        if (autoSkipToggle.checked) {
-                           if (reviewSession.currentIndex < reviewSession.cards.length - 1) {
+                        const advance = () => {
+                            if (reviewSession.currentIndex < reviewSession.cards.length - 1) {
                                 handleReviewNav(1);
-                           }
+                            }
+                        };
+
+                        if (autoSkipToggle.checked) {
+                            advance();
                         } else {
-                            setTimeout(() => {
-                               if (reviewSession.currentIndex < reviewSession.cards.length - 1) {
-                                    handleReviewNav(1);
-                               }
-                            }, 20000);
+                            setTimeout(advance, 20000);
                         }
-                    } catch (err) {
+                    }).catch(err => {
                         showNotification("Failed to copy."); 
-                    }
+                    });
                 });
             });
 
