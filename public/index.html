@@ -13,8 +13,8 @@
     <style>
         html { scroll-behavior: smooth; }
         body { font-family: 'Inter', sans-serif; background-color: #000; }
-        .anki-input, .anki-readonly-box { background-color: #1e1e1e; border: 1px solid #444; color: #ecf0f1; border-radius: 8px; padding: 12px; width: 100%; font-size: 16px; margin-top: 4px; transition: border-color 0.2s; }
-        .anki-input:focus { outline: none; border-color: #007acc; }
+        .anki-input, .anki-readonly-box, #clipboard-output { background-color: #1e1e1e; border: 1px solid #444; color: #ecf0f1; border-radius: 8px; padding: 12px; width: 100%; font-size: 16px; margin-top: 4px; transition: border-color 0.2s; }
+        .anki-input:focus, #clipboard-output:focus { outline: none; border-color: #007acc; }
         .anki-readonly-box { min-height: 48px; display: flex; align-items: center; }
         .anki-label { color: #bdc3c7; font-weight: 600; font-size: 14px; }
         .btn { padding: 5px 12px; font-size: 0.875rem; border-radius: 7px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
@@ -184,7 +184,7 @@
             <div class="space-y-4">
                 <div>
                     <h3 class="anki-label mb-2">Format</h3>
-                    <div class="flex space-x-4">
+                    <div class="flex flex-col space-y-2">
                         <label class="flex items-center space-x-2">
                             <input type="radio" name="export-format" value="txt" class="form-radio" checked>
                             <span>TXT (for Anki)</span>
@@ -192,6 +192,10 @@
                         <label class="flex items-center space-x-2">
                             <input type="radio" name="export-format" value="json" class="form-radio">
                             <span>JSON</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="radio" name="export-format" value="clipboard" class="form-radio">
+                            <span>Copy to Clipboard (Front & Back)</span>
                         </label>
                     </div>
                 </div>
@@ -209,6 +213,10 @@
                     <div id="export-date-selection" class="hidden pl-6 pt-2 mt-2 max-h-32 overflow-y-auto border-l-2 border-gray-700">
                         <!-- Date checkboxes will be inserted here by JS -->
                     </div>
+                </div>
+                <div id="clipboard-output-container" class="hidden mt-6">
+                    <label for="clipboard-output" class="anki-label mb-2">Copy the text below (Ctrl+C)</label>
+                    <textarea id="clipboard-output" readonly class="text-sm" rows="8"></textarea>
                 </div>
             </div>
             <div class="flex justify-end items-center space-x-4 mt-8">
@@ -512,7 +520,11 @@
         function handleConfirmExport() {
             const format = document.querySelector('input[name="export-format"]:checked').value;
             const range = document.querySelector('input[name="export-range"]:checked').value;
+            const clipboardOutputContainer = document.getElementById('clipboard-output-container');
+            const clipboardOutput = document.getElementById('clipboard-output');
             let cardsToExport = [];
+        
+            clipboardOutputContainer.classList.add('hidden');
 
             if (range === 'all') {
                 cardsToExport = [...allCards];
@@ -523,11 +535,25 @@
                     return;
                 }
                 const selectedDates = Array.from(selectedDateNodes).map(el => el.value);
-                cardsToExport = allCards.filter(card => selectedDates.includes(card.createdAt.split('T')[0]));
+                cardsToExport = allCards.filter(card => card.createdAt && card.createdAt.split('T')[0] && selectedDates.includes(card.createdAt.split('T')[0]));
             }
 
-            triggerExportDownload(cardsToExport, format);
-            document.getElementById('export-modal').classList.add('hidden');
+            if (cardsToExport.length === 0) {
+                showNotification("No cards match the selected criteria.", "success");
+                return;
+            }
+            
+            if (format === 'clipboard') {
+                const clipboardText = cardsToExport
+                    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+                    .map(data => `${data.front || ''}\t${data.back || ''}`)
+                    .join('\n');
+                clipboardOutput.value = clipboardText;
+                clipboardOutputContainer.classList.remove('hidden');
+            } else {
+                triggerExportDownload(cardsToExport, format);
+                document.getElementById('export-modal').classList.add('hidden');
+            }
         }
 
         function openExportModal() {
@@ -537,8 +563,10 @@
             }
             document.getElementById('export-all-radio').checked = true;
             document.getElementById('export-date-selection').classList.add('hidden');
+            document.getElementById('clipboard-output-container').classList.add('hidden');
+
             
-            const dates = [...new Set(allCards.map(card => card.createdAt.split('T')[0]))].sort().reverse();
+            const dates = [...new Set(allCards.map(card => card.createdAt && card.createdAt.split('T')[0]).filter(Boolean))].sort().reverse();
             const exportDateSelection = document.getElementById('export-date-selection');
             exportDateSelection.innerHTML = '';
 
@@ -636,9 +664,14 @@
                 if(totalCounter) totalCounter.textContent = allCards.length;
                 
                 if (allCards.length > 0) {
-                    const latestDate = allCards.map(c => c.createdAt.split('T')[0]).sort().reverse()[0];
-                    const cardsFromLatestDate = allCards.filter(c => c.createdAt.startsWith(latestDate)).length;
-                    sessionCounter.textContent = cardsFromLatestDate;
+                    const dates = allCards.map(c => c.createdAt && c.createdAt.split('T')[0]).filter(Boolean);
+                    if (dates.length > 0) {
+                        const latestDate = dates.sort().reverse()[0];
+                        const cardsFromLatestDate = allCards.filter(c => c.createdAt && c.createdAt.startsWith(latestDate)).length;
+                        sessionCounter.textContent = cardsFromLatestDate;
+                    } else {
+                         sessionCounter.textContent = 0;
+                    }
                 } else {
                     sessionCounter.textContent = 0;
                 }
@@ -758,6 +791,9 @@
             const exportDateRadio = document.getElementById('export-date-radio');
             const exportDateSelection = document.getElementById('export-date-selection');
             const autoSkipToggle = document.getElementById('auto-skip-toggle');
+            const clipboardOutputContainer = document.getElementById('clipboard-output-container');
+            const exportFormatRadios = document.querySelectorAll('input[name="export-format"]');
+
 
             authForm.addEventListener('submit', handleAuthSubmit);
             authToggleBtn.addEventListener('click', toggleAuthMode);
@@ -797,7 +833,19 @@
 
             exportBtn.addEventListener('click', openExportModal);
             confirmExportBtn.addEventListener('click', handleConfirmExport);
-            cancelExportBtn.addEventListener('click', () => exportModal.classList.add('hidden'));
+            cancelExportBtn.addEventListener('click', () => {
+                exportModal.classList.add('hidden');
+                clipboardOutputContainer.classList.add('hidden');
+            });
+
+            exportFormatRadios.forEach(radio => {
+                radio.addEventListener('change', () => {
+                    if (radio.value !== 'clipboard') {
+                        clipboardOutputContainer.classList.add('hidden');
+                    }
+                });
+            });
+
             exportAllRadio.addEventListener('change', () => { if (exportAllRadio.checked) exportDateSelection.classList.add('hidden'); });
             exportDateRadio.addEventListener('change', () => { if (exportDateRadio.checked) exportDateSelection.classList.remove('hidden'); });
             
