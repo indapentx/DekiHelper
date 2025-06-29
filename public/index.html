@@ -80,7 +80,7 @@
             <div>
                 <div class="flex justify-between items-center">
                     <label for="front" class="anki-label">Front</label>
-                    <button type="button" id="generate-img-tag-btn" class="text-sm text-blue-400 hover:text-blue-300 cursor-pointer" title="Generate Image Tag from Back field">
+                    <button type="button" id="generate-img-tag-btn" class="text-sm text-blue-400 hover:text-blue-300 cursor-pointer" title="Generate Image Tag from Back field (t)">
                         <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Image Tag
                     </button>
                 </div>
@@ -91,7 +91,7 @@
             <div>
                 <div class="flex justify-between items-center">
                     <label for="beispiel" class="anki-label">Beispiel</label>
-                    <button type="button" id="generate-ai-content-btn" class="text-sm text-blue-400 hover:text-blue-300 cursor-pointer" title="Generate example and translation with AI">
+                    <button type="button" id="generate-ai-content-btn" class="text-sm text-blue-400 hover:text-blue-300 cursor-pointer" title="Generate example and translation with AI (g)">
                         <span id="ai-btn-text"><i class="fa-solid fa-robot"></i> Generate with AI</span>
                         <span id="ai-btn-loader" class="loader hidden"></span>
                     </button>
@@ -614,7 +614,9 @@
 
         async function generateAIContent() {
             const backInput = document.getElementById('back');
+            const beispielInput = document.getElementById('beispiel');
             const germanWord = backInput.value.trim();
+            const existingSentence = beispielInput.value.trim();
 
             if (!germanWord) {
                 showNotification("Please enter a German word in the 'Back' field first.");
@@ -629,8 +631,11 @@
             aiBtnText.classList.add('hidden');
             aiBtnLoader.classList.remove('hidden');
 
-            const prompt = `For the German word "${germanWord}", provide one simple, A1-level example sentence that is a common, popular phrase used in daily life. Also provide the Turkish translation of that full sentence.`;
-            
+            let prompt = `For the German word "${germanWord}", provide one simple, A1-level example sentence that is a common, popular phrase used in daily life. Also provide the Turkish translation of that full sentence.`;
+            if (existingSentence) {
+                prompt += ` The new sentence must be different from "${existingSentence}".`;
+            }
+
             const payload = {
               contents: [{ role: "user", parts: [{ text: prompt }] }],
               generationConfig: {
@@ -664,7 +669,7 @@
 
                 if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
                     const jsonResponse = JSON.parse(result.candidates[0].content.parts[0].text);
-                    document.getElementById('beispiel').value = jsonResponse.beispiel || '';
+                    beispielInput.value = jsonResponse.beispiel || '';
                     document.getElementById('translation').value = jsonResponse.translation || '';
                 } else {
                     throw new Error("Invalid response structure from API.");
@@ -982,6 +987,25 @@
                         showNotification("Failed to copy."); 
                     });
                 });
+            });
+            
+            // Global Keyboard Shortcuts
+            document.addEventListener('keydown', (e) => {
+                // Ignore shortcuts if user is typing in an input or textarea
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                    return;
+                }
+
+                switch (e.key) {
+                    case 'g':
+                        e.preventDefault();
+                        generateAiContentBtn.click();
+                        break;
+                    case 't':
+                        e.preventDefault();
+                        generateImgTagBtn.click();
+                        break;
+                }
             });
 
             onAuthStateChanged(auth, user => {
