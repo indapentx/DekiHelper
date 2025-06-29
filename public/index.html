@@ -42,6 +42,20 @@
         #auto-skip-toggle-label .dot { transition: transform 0.2s ease-in-out; }
         #auto-skip-toggle:checked ~ .dot { transform: translateX(100%); background-color: #27ae60; }
         #auto-skip-toggle:checked ~ .block { background-color: #2ecc71; }
+        .loader {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: inline-block;
+            border-top: 2px solid #FFF;
+            border-right: 2px solid transparent;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="text-white">
@@ -74,7 +88,16 @@
             </div>
             <div><label for="back" class="anki-label">Back</label><input type="text" id="back" class="anki-input" autocomplete="off"></div>
             <div><label class="anki-label">Speech</label><div id="speech" class="anki-readonly-box"></div></div>
-            <div><label for="beispiel" class="anki-label">Beispiel</label><input type="text" id="beispiel" class="anki-input" autocomplete="off"></div>
+            <div>
+                <div class="flex justify-between items-center">
+                    <label for="beispiel" class="anki-label">Beispiel</label>
+                    <button type="button" id="generate-ai-content-btn" class="text-sm text-blue-400 hover:text-blue-300 cursor-pointer" title="Generate example and translation with AI">
+                        <span id="ai-btn-text"><i class="fa-solid fa-robot"></i> Generate with AI</span>
+                        <span id="ai-btn-loader" class="loader hidden"></span>
+                    </button>
+                </div>
+                <input type="text" id="beispiel" class="anki-input" autocomplete="off">
+            </div>
             <div><label class="anki-label">Beispiel (Speech)</label><div id="beispiel-speech" class="anki-readonly-box"></div></div>
             <div><label for="translation" class="anki-label">Translation</label><input type="text" id="translation" class="anki-input" autocomplete="off"></div>
             <button type="submit" style="display: none;"></button>
@@ -589,6 +612,75 @@
             document.getElementById('export-modal').classList.remove('hidden');
         }
 
+        async function generateAIContent() {
+            const backInput = document.getElementById('back');
+            const germanWord = backInput.value.trim();
+
+            if (!germanWord) {
+                showNotification("Please enter a German word in the 'Back' field first.");
+                return;
+            }
+            
+            const aiBtn = document.getElementById('generate-ai-content-btn');
+            const aiBtnText = document.getElementById('ai-btn-text');
+            const aiBtnLoader = document.getElementById('ai-btn-loader');
+            
+            aiBtn.disabled = true;
+            aiBtnText.classList.add('hidden');
+            aiBtnLoader.classList.remove('hidden');
+
+            const prompt = `For the German word "${germanWord}", provide one simple, A1-level example sentence that is a common, popular phrase used in daily life. Also provide the Turkish translation of that full sentence.`;
+            
+            const payload = {
+              contents: [{ role: "user", parts: [{ text: prompt }] }],
+              generationConfig: {
+                  responseMimeType: "application/json",
+                  responseSchema: {
+                      type: "OBJECT",
+                      properties: {
+                          "beispiel": { "type": "STRING" },
+                          "translation": { "type": "STRING" }
+                      },
+                      required: ["beispiel", "translation"]
+                  }
+              }
+            };
+
+            const apiKey = "AIzaSyDLB3NES3wTA50iPatY8lzPAi-uiTI_j20"; // Will be provided by the environment
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API request failed with status ${response.status}`);
+                }
+                
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                    const jsonResponse = JSON.parse(result.candidates[0].content.parts[0].text);
+                    document.getElementById('beispiel').value = jsonResponse.beispiel || '';
+                    document.getElementById('translation').value = jsonResponse.translation || '';
+                } else {
+                    throw new Error("Invalid response structure from API.");
+                }
+
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                showNotification("Failed to generate content. Please try again.");
+            } finally {
+                aiBtn.disabled = false;
+                aiBtnText.classList.remove('hidden');
+                aiBtnLoader.classList.add('hidden');
+            }
+        }
+
+
         async function handleAuthSubmit(e) {
             e.preventDefault();
             const email = document.getElementById('auth-email').value;
@@ -798,6 +890,7 @@
             const clipboardOutputContainer = document.getElementById('clipboard-output-container');
             const exportFormatRadios = document.querySelectorAll('input[name="export-format"]');
             const copyClipboardBtn = document.getElementById('copy-clipboard-btn');
+            const generateAiContentBtn = document.getElementById('generate-ai-content-btn');
 
 
             authForm.addEventListener('submit', handleAuthSubmit);
@@ -817,6 +910,9 @@
                 if (backValue) { document.getElementById('front').value = `<img src="${backValue}.jpg">`; } 
                 else { showNotification("Please enter a word in the 'Back' field first."); }
             });
+            
+            generateAiContentBtn.addEventListener('click', generateAIContent);
+
 
             updateBtn.addEventListener('click', handleUpdateCard);
             cancelBtn.addEventListener('click', () => setEditMode(false));
