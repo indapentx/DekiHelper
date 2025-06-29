@@ -528,16 +528,16 @@
             if (format === 'json') {
                 const jsonData = cards.map(data => ({ back: data.back || '', beispiel: data.beispiel || '' }));
                 content = JSON.stringify(jsonData, null, 2);
-                fileName = `deki_export_${today}.json`;
+                fileName = `${today}.json`;
                 mimeType = 'application/json';
             } else { // txt format
                 content = cards.map(data => {
                     return [
                         data.front || '', data.back || '', data.speech || '',
                         data.beispiel || '', data.beispielSpeech || '', data.translation || ''
-                    ].join(';');
+                    ].join('\t');
                 }).join('\n');
-                fileName = `anki_export_${today}.txt`;
+                fileName = `${today}.txt`;
                 mimeType = 'text/plain;charset=utf-8';
             }
             triggerDownload(content, fileName, mimeType);
@@ -651,7 +651,7 @@
               }
             };
 
-            const apiKey = "AIzaSyDLB3NES3wTA50iPatY8lzPAi-uiTI_j20"; // Will be provided by the environment
+            const apiKey = ""; // Will be provided by the environment
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
             try {
