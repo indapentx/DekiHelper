@@ -118,6 +118,9 @@
         <hr class="border-gray-700 my-8">
         <div>
             <h2 class="text-2xl font-bold mb-4 text-gray-300">Saved Cards</h2>
+            <div class="mb-4">
+                <input type="text" id="search-input" class="anki-input" placeholder="Search in front, back, beispiel, translation...">
+            </div>
             <div id="card-list"></div>
         </div>
 
@@ -336,14 +339,25 @@
             }
         }
         
-        function renderCards(snapshot) {
+        function renderCards(cardsToRender) {
             const cardList = document.getElementById('card-list');
             if (!cardList) return;
 
             cardList.innerHTML = '';
-            if (snapshot.empty) { cardList.innerHTML = '<p class="text-gray-500 text-center">No cards saved yet.</p>'; return; }
-            const docs = [];
-            snapshot.forEach(doc => docs.push({ id: doc.id, ...doc.data() }));
+            
+            const searchInput = document.getElementById('search-input');
+            const searchTerm = searchInput ? searchInput.value.trim() : '';
+
+            if (cardsToRender.length === 0) {
+                if (searchTerm) {
+                    cardList.innerHTML = '<p class="text-gray-500 text-center">No cards match your search.</p>';
+                } else {
+                    cardList.innerHTML = '<p class="text-gray-500 text-center">No cards saved yet.</p>';
+                }
+                return;
+            }
+            
+            const docs = [...cardsToRender];
             docs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             docs.forEach(cardData => {
                 const cardEl = document.createElement('div');
@@ -821,7 +835,7 @@
                     sessionCounter.textContent = 0;
                 }
 
-                renderCards(snapshot);
+                filterAndRenderCards();
                 updateReviewDateSelector();
             });
         }
@@ -896,6 +910,21 @@
             reader.readAsText(file);
         }
         
+        function filterAndRenderCards() {
+            const searchInput = document.getElementById('search-input');
+            const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+            const filteredCards = searchTerm ? allCards.filter(card => {
+                const front = (card.front || '').toLowerCase();
+                const back = (card.back || '').toLowerCase();
+                const beispiel = (card.beispiel || '').toLowerCase();
+                const translation = (card.translation || '').toLowerCase();
+                return front.includes(searchTerm) || back.includes(searchTerm) || beispiel.includes(searchTerm) || translation.includes(searchTerm);
+            }) : allCards;
+            
+            renderCards(filteredCards);
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             try {
                 app = initializeApp(firebaseConfig);
@@ -941,6 +970,7 @@
             const exportFormatRadios = document.querySelectorAll('input[name="export-format"]');
             const copyClipboardBtn = document.getElementById('copy-clipboard-btn');
             const generateAiContentBtn = document.getElementById('generate-ai-content-btn');
+            const searchInput = document.getElementById('search-input');
 
 
             authForm.addEventListener('submit', handleAuthSubmit);
@@ -962,6 +992,7 @@
             });
             
             generateAiContentBtn.addEventListener('click', generateAIContent);
+            searchInput.addEventListener('input', filterAndRenderCards);
 
 
             updateBtn.addEventListener('click', handleUpdateCard);
