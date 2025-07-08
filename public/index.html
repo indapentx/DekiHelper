@@ -413,6 +413,10 @@
             if (reviewDateSelector) {
                 // Add "All Cards" option first
                 reviewDateSelector.innerHTML = '<option value="all">All Cards</option>' + sortedDates.map(date => `<option value="${date}">${date}</option>`).join('');
+                // Set the latest date as default if available
+                if (sortedDates.length > 0) {
+                    reviewDateSelector.value = sortedDates[0];
+                }
             }
             if(reviewBtn) reviewBtn.disabled = allCards.length === 0;
         }
@@ -1095,6 +1099,14 @@
                         case 't':
                             e.preventDefault();
                             generateImgTagBtn.click();
+                            break;
+                        case ' ':
+                            e.preventDefault();
+                            if (document.getElementById('review-modal').classList.contains('hidden')) {
+                                reviewBtn.click();
+                            } else {
+                                startSessionBtn.click();
+                            }
                             break;
                     }
                 }
