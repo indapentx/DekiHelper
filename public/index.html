@@ -227,6 +227,10 @@
                             <input type="radio" name="export-format" value="clipboard" class="form-radio">
                             <span>Copy to Clipboard (Front & Back)</span>
                         </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="radio" name="export-format" value="beispiel-speech" class="form-radio">
+                            <span>Copy to Clipboard (Beispiel Speech)</span>
+                        </label>
                     </div>
                 </div>
                 <hr class="border-gray-700 !my-6">
@@ -653,6 +657,14 @@
                 const clipboardText = cardsToExport
                     .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
                     .map(data => `${data.front || ''}\t${data.back || ''}`)
+                    .join('\n');
+                clipboardOutput.value = clipboardText;
+                clipboardOutputContainer.classList.remove('hidden');
+                clipboardOutput.select(); // Automatically select the text
+            } else if (format === 'beispiel-speech') {
+                const clipboardText = cardsToExport
+                    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+                    .map(data => `${data.beispielSpeech || ''}`.replace('[sound:', '').replace(']', ''))
                     .join('\n');
                 clipboardOutput.value = clipboardText;
                 clipboardOutputContainer.classList.remove('hidden');
@@ -1123,7 +1135,7 @@
 
             exportFormatRadios.forEach(radio => {
                 radio.addEventListener('change', () => {
-                    if (radio.value !== 'clipboard') {
+                    if (radio.value !== 'clipboard' && radio.value !== 'beispiel-speech') {
                         clipboardOutputContainer.classList.add('hidden');
                     }
                 });
