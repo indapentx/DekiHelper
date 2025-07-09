@@ -109,6 +109,7 @@
                 <input type="file" id="import-file-input" class="hidden" accept=".txt, .tsv">
                 <button id="review-btn" class="btn btn-secondary w-full sm:w-auto"><i class="fas fa-eye"></i> Review</button>
                 <button id="export-btn" class="btn btn-primary w-full sm:w-auto"><i class="fas fa-download"></i> Export</button>
+                <button id="delete-cards-btn" class="btn btn-danger w-full sm:w-auto"><i class="fas fa-trash-alt"></i> Delete by Date</button>
              </div>
              <div id="edit-actions" class="hidden space-x-4">
                 <button id="update-btn" class="btn btn-primary"><i class="fas fa-check"></i> Update</button>
@@ -258,6 +259,23 @@
        </div>
    </div>
     <div id="notification" class="fixed top-5 right-5 bg-red-600 text-white py-2 px-4 rounded-lg shadow-lg hidden z-50"><p id="notification-message"></p></div>
+    <div id="delete-cards-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-6">Delete Cards by Date</h2>
+            <div class="space-y-4">
+                <div>
+                    <h3 class="anki-label mb-2">Select Dates to Delete Cards From</h3>
+                    <div id="delete-date-selection" class="pl-6 pt-2 mt-2 max-h-32 overflow-y-auto border-l-2 border-gray-700">
+                        <!-- Date checkboxes will be inserted here by JS -->
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end items-center space-x-4 mt-8">
+                <button id="cancel-delete-cards-btn" class="btn btn-secondary">Cancel</button>
+                <button id="confirm-delete-cards-btn" class="btn btn-danger">Delete Selected</button>
+            </div>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -929,6 +947,65 @@
             renderCards(filteredCards);
         }
 
+        function openDeleteCardsModal() {
+            if (allCards.length === 0) {
+                showNotification("There are no cards to delete.", "success");
+                return;
+            }
+            const dates = [...new Set(allCards.map(card => card.createdAt && card.createdAt.split('T')[0]).filter(Boolean))].sort().reverse();
+            const deleteDateSelection = document.getElementById('delete-date-selection');
+            deleteDateSelection.innerHTML = '';
+
+            if (dates.length > 0) {
+                dates.forEach(date => {
+                    const label = document.createElement('label');
+                    label.className = 'flex items-center space-x-2 text-gray-300 py-1';
+                    label.innerHTML = `<input type="checkbox" value="${date}" class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded"> <span>${date}</span>`;
+                    deleteDateSelection.appendChild(label);
+                });
+            } else {
+                showNotification("No dates available for deletion.", "success");
+                return;
+            }
+            
+            document.getElementById('delete-cards-modal').classList.remove('hidden');
+        }
+
+        async function handleConfirmDeleteCards() {
+            const selectedDateNodes = document.querySelectorAll('#delete-date-selection input[type="checkbox"]:checked');
+            if (selectedDateNodes.length === 0) {
+                showNotification("Please select at least one date to delete cards from.");
+                return;
+            }
+
+            const selectedDates = Array.from(selectedDateNodes).map(el => el.value);
+            const cardsToDelete = allCards.filter(card => card.createdAt && card.createdAt.split('T')[0] && selectedDates.includes(card.createdAt.split('T')[0]));
+
+            if (cardsToDelete.length === 0) {
+                showNotification("No cards found for the selected dates.", "success");
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete ${cardsToDelete.length} card(s) from the selected dates? This action cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                const batch = writeBatch(db);
+                cardsToDelete.forEach(card => {
+                    const docRef = doc(db, `artifacts/${appId}/users/${userId}/cards`, card.id);
+                    batch.delete(docRef);
+                });
+
+                await batch.commit();
+                showNotification(`Successfully deleted ${cardsToDelete.length} cards!`, 'success');
+                document.getElementById('delete-cards-modal').classList.add('hidden');
+            } catch (error) {
+                console.error("Delete error: ", error);
+                showNotification("An error occurred during deletion.");
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             try {
                 app = initializeApp(firebaseConfig);
@@ -975,6 +1052,9 @@
             const copyClipboardBtn = document.getElementById('copy-clipboard-btn');
             const generateAiContentBtn = document.getElementById('generate-ai-content-btn');
             const searchInput = document.getElementById('search-input');
+            const deleteCardsBtn = document.getElementById('delete-cards-btn');
+            const confirmDeleteCardsBtn = document.getElementById('confirm-delete-cards-btn');
+            const cancelDeleteCardsBtn = document.getElementById('cancel-delete-cards-btn');
 
 
             authForm.addEventListener('submit', handleAuthSubmit);
@@ -1114,6 +1194,12 @@
 
             onAuthStateChanged(auth, user => {
                 if (user) { showAppUI(user); } else { showLoginUI(); }
+            });
+
+            deleteCardsBtn.addEventListener('click', openDeleteCardsModal);
+            confirmDeleteCardsBtn.addEventListener('click', handleConfirmDeleteCards);
+            cancelDeleteCardsBtn.addEventListener('click', () => {
+                document.getElementById('delete-cards-modal').classList.add('hidden');
             });
         });
     </script>
