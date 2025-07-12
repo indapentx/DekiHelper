@@ -80,9 +80,14 @@
             <div>
                 <div class="flex justify-between items-center">
                     <label for="front" class="anki-label">Front</label>
-                    <button type="button" id="generate-img-tag-btn" class="text-sm text-blue-400 hover:text-blue-300 cursor-pointer" title="Generate Image Tag from Back field (t)">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Image Tag
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button type="button" id="generate-img-tag-btn" class="text-sm text-blue-400 hover:text-blue-300 cursor-pointer" title="Generate Image Tag from Back field (t)">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Image Tag
+                        </button>
+                        <button type="button" id="cycle-img-format-btn" class="text-sm text-blue-400 hover:text-blue-300 cursor-pointer" title="Cycle Image Format (jpg -> webp -> png) (c)">
+                            <i class="fa-solid fa-arrows-rotate"></i> Cycle Format
+                        </button>
+                    </div>
                 </div>
                 <input type="text" id="front" class="anki-input" autocomplete="off">
             </div>
@@ -147,6 +152,9 @@
                 <div class="flex justify-between items-center mb-2 text-gray-400">
                     <p id="review-progress-text" class="font-semibold"></p>
                     <div class="flex items-center gap-4">
+                        <button id="edit-review-card-btn" class="btn btn-secondary btn-sm"><i class="fas fa-pencil-alt"></i> Edit</button>
+                        <button id="save-review-edit-btn" class="btn btn-success btn-sm hidden"><i class="fas fa-check"></i> Save</button>
+                        <button id="cancel-review-edit-btn" class="btn btn-secondary btn-sm hidden"><i class="fas fa-times"></i> Cancel</button>
                         <button id="delete-review-card-btn" class="btn btn-danger btn-sm"><i class="fas fa-trash-alt"></i> Delete Card</button>
                         <label id="auto-skip-toggle-label" for="auto-skip-toggle" class="flex items-center cursor-pointer">
                             <span class="mr-3 text-sm font-medium">Skip Immediately</span>
@@ -173,6 +181,7 @@
                         <label class="anki-label ml-2 flex justify-between"><span>Beispiel</span> <span class="text-gray-500">Shortcut: E</span></label>
                         <div class="review-card">
                             <span id="review-beispiel" class="review-content"></span>
+                            <input id="edit-beispiel" class="anki-input hidden" type="text">
                             <button class="review-copy-btn" data-target="review-beispiel" title="Copy Beispiel (E)"><i class="fas fa-copy fa-lg"></i></button>
                         </div>
                     </div>
@@ -187,6 +196,7 @@
                         <label class="anki-label ml-2 flex justify-between"><span>Translation</span></label>
                         <div class="review-card">
                             <span id="review-translation" class="review-content"></span>
+                            <input id="edit-translation" class="anki-input hidden" type="text">
                         </div>
                     </div>
                 </div>
@@ -284,7 +294,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, getDocs, query, doc, deleteDoc, setDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, getDocs, query, doc, deleteDoc, setDoc, writeBatch, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyD6zpZUM_ABNngOX-RKFxwNoTqePDivrGE", authDomain: "deki-helper.firebaseapp.com", projectId: "deki-helper", storageBucket: "deki-helper.appspot.com", messagingSenderId: "612229919023", appId: "1:612229919023:web:c6507af0e5a2ddd84731da" };
         const appId = 'anki-card-generator-default';
@@ -293,6 +303,7 @@
         let currentEditId = null, cardToDeleteId = null, allCards = [];
         let reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null };
         let isSignUpMode = false;
+        let isReviewEditing = false;
         
         function showNotification(message, level = 'error', duration = 3000) {
             const notification = document.getElementById('notification');
@@ -504,6 +515,7 @@
             document.getElementById('review-session').classList.remove('hidden');
             document.addEventListener('keydown', handleReviewKeyboard);
             renderReviewCard();
+            exitReviewEditMode(); // Ensure view mode on start
         }
         
         function endReviewSession() {
@@ -777,6 +789,28 @@
             }
         }
 
+        function cycleImageFormat() {
+            const front = document.getElementById('front');
+            let value = front.value.trim();
+            if (!value.startsWith('<img src="') || !value.endsWith('">')) {
+                showNotification("Front is not a valid image tag.");
+                return;
+            }
+            const src = value.substring(10, value.length - 2);
+            const lastDot = src.lastIndexOf('.');
+            if (lastDot === -1) {
+                showNotification("No extension found.");
+                return;
+            }
+            const base = src.substring(0, lastDot);
+            const ext = src.substring(lastDot + 1).toLowerCase();
+            let newExt = 'jpg';
+            if (ext === 'jpg') newExt = 'webp';
+            else if (ext === 'webp') newExt = 'png';
+            else if (ext === 'png') newExt = 'jpg';
+            front.value = `<img src="${base}.${newExt}">`;
+        }
+
 
         async function handleAuthSubmit(e) {
             e.preventDefault();
@@ -1018,6 +1052,74 @@
             }
         }
 
+        function enterReviewEditMode() {
+            if (reviewSession.currentIndex === -1) return;
+            const card = reviewSession.cards[reviewSession.currentIndex];
+            
+            document.getElementById('review-beispiel').classList.add('hidden');
+            document.getElementById('edit-beispiel').classList.remove('hidden');
+            document.getElementById('edit-beispiel').value = card.beispiel || '';
+            
+            document.getElementById('review-translation').classList.add('hidden');
+            document.getElementById('edit-translation').classList.remove('hidden');
+            document.getElementById('edit-translation').value = card.translation || '';
+            
+            document.querySelectorAll('.review-copy-btn').forEach(btn => btn.classList.add('hidden'));
+            
+            document.getElementById('edit-review-card-btn').classList.add('hidden');
+            document.getElementById('save-review-edit-btn').classList.remove('hidden');
+            document.getElementById('cancel-review-edit-btn').classList.remove('hidden');
+            
+            isReviewEditing = true;
+        }
+
+        function exitReviewEditMode() {
+            document.getElementById('review-beispiel').classList.remove('hidden');
+            document.getElementById('edit-beispiel').classList.add('hidden');
+            
+            document.getElementById('review-translation').classList.remove('hidden');
+            document.getElementById('edit-translation').classList.add('hidden');
+            
+            document.querySelectorAll('.review-copy-btn').forEach(btn => btn.classList.remove('hidden'));
+            
+            document.getElementById('edit-review-card-btn').classList.remove('hidden');
+            document.getElementById('save-review-edit-btn').classList.add('hidden');
+            document.getElementById('cancel-review-edit-btn').classList.add('hidden');
+            
+            isReviewEditing = false;
+        }
+
+        async function saveReviewEdit() {
+            if (!isReviewEditing || reviewSession.currentIndex === -1) return;
+            
+            const newBeispiel = document.getElementById('edit-beispiel').value.trim();
+            const newTranslation = document.getElementById('edit-translation').value.trim();
+            
+            const card = reviewSession.cards[reviewSession.currentIndex];
+            if (newBeispiel === card.beispiel && newTranslation === card.translation) {
+                exitReviewEditMode();
+                return;
+            }
+            
+            try {
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/cards`, card.id);
+                await updateDoc(docRef, {
+                    beispiel: newBeispiel,
+                    translation: newTranslation
+                });
+                
+                // Update local data
+                card.beispiel = newBeispiel;
+                card.translation = newTranslation;
+                
+                renderReviewCard();
+                exitReviewEditMode();
+                showNotification('Card updated successfully.', 'success');
+            } catch (error) {
+                showNotification('Failed to update card.');
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             try {
                 app = initializeApp(firebaseConfig);
@@ -1038,6 +1140,7 @@
             const frontInput = document.getElementById('front');
             const translationInput = document.getElementById('translation');
             const generateImgTagBtn = document.getElementById('generate-img-tag-btn');
+            const cycleImgFormatBtn = document.getElementById('cycle-img-format-btn');
             const exportBtn = document.getElementById('export-btn');
             const updateBtn = document.getElementById('update-btn');
             const cancelBtn = document.getElementById('cancel-btn');
@@ -1086,6 +1189,7 @@
                 if (backValue) { document.getElementById('front').value = `<img src="${backValue}.jpg">`; } 
                 else { showNotification("Please enter a word in the 'Back' field first."); }
             });
+            cycleImgFormatBtn.addEventListener('click', cycleImageFormat);
             
             generateAiContentBtn.addEventListener('click', generateAIContent);
             searchInput.addEventListener('input', filterAndRenderCards);
@@ -1200,6 +1304,10 @@
                                 startSessionBtn.click();
                             }
                             break;
+                        case 'c':
+                            e.preventDefault();
+                            cycleImgFormatBtn.click();
+                            break;
                     }
                 }
             });
@@ -1213,6 +1321,11 @@
             cancelDeleteCardsBtn.addEventListener('click', () => {
                 document.getElementById('delete-cards-modal').classList.add('hidden');
             });
+
+            // Add event listeners for edit buttons
+            document.getElementById('edit-review-card-btn').addEventListener('click', enterReviewEditMode);
+            document.getElementById('save-review-edit-btn').addEventListener('click', saveReviewEdit);
+            document.getElementById('cancel-review-edit-btn').addEventListener('click', exitReviewEditMode);
         });
     </script>
 </body>
