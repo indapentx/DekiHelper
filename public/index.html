@@ -481,10 +481,19 @@
 
         function handleReviewNav(direction) {
             clearAutoSkipTimer();
+            
+            const wasEditing = isReviewEditing;
+            if (isReviewEditing) {
+                saveReviewEdit();
+            }
+            
             const newIndex = reviewSession.currentIndex + direction;
             if (newIndex >= 0 && newIndex < reviewSession.cards.length) {
                 reviewSession.currentIndex = newIndex;
                 renderReviewCard();
+                if (wasEditing) {
+                    enterReviewEditMode();
+                }
             }
         }
         
@@ -496,6 +505,8 @@
             if (e.key === 'b' || e.key === 'B') document.querySelector('[data-target="review-back"]').click();
             if (e.key === 'e' || e.key === 'E') document.querySelector('[data-target="review-beispiel"]').click();
             if (e.key === 's' || e.key === 'S') document.querySelector('[data-target="review-beispiel-filename"]').click();
+            if (e.key === 'Enter' && !isReviewEditing) enterReviewEditMode();
+            if (e.key === 'Delete') document.getElementById('delete-review-card-btn').click();
         }
 
         function startReviewSession() {
@@ -1075,6 +1086,14 @@
             document.getElementById('cancel-review-edit-btn').classList.remove('hidden');
             
             isReviewEditing = true;
+            
+            // Focus logic
+            const beispielInput = document.getElementById('edit-beispiel');
+            if (beispielInput.value.trim() === '') {
+                beispielInput.focus();
+            } else {
+                document.getElementById('edit-translation').focus();
+            }
         }
 
         function exitReviewEditMode() {
@@ -1314,6 +1333,13 @@
                             e.preventDefault();
                             cycleImgFormatBtn.click();
                             break;
+                        case 'Enter':
+                            if (!document.getElementById('review-modal').classList.contains('hidden') &&
+                                !document.getElementById('review-setup').classList.contains('hidden')) {
+                                e.preventDefault();
+                                startSessionBtn.click();
+                            }
+                            break;
                     }
                 }
             });
@@ -1337,6 +1363,9 @@
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     saveReviewEdit();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    exitReviewEditMode();
                 }
             });
 
@@ -1344,6 +1373,9 @@
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     saveReviewEdit();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    exitReviewEditMode();
                 }
             });
         });
