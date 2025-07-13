@@ -489,6 +489,8 @@
         }
         
         function handleReviewKeyboard(e) {
+            if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+            
             if (e.key === 'ArrowRight') handleReviewNav(1);
             if (e.key === 'ArrowLeft') handleReviewNav(-1);
             if (e.key === 'b' || e.key === 'B') document.querySelector('[data-target="review-back"]').click();
@@ -1055,6 +1057,8 @@
         function enterReviewEditMode() {
             if (reviewSession.currentIndex === -1) return;
             const card = reviewSession.cards[reviewSession.currentIndex];
+            
+            clearAutoSkipTimer();
             
             document.getElementById('review-beispiel').classList.add('hidden');
             document.getElementById('edit-beispiel').classList.remove('hidden');
