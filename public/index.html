@@ -1263,10 +1263,12 @@
                             }
                         };
 
-                        if (autoSkipToggle.checked) {
-                            advance();
-                        } else {
-                            reviewSession.autoSkipTimer = setTimeout(advance, 70000);
+                        if (!isReviewEditing) {
+                            if (autoSkipToggle.checked) {
+                                advance();
+                            } else {
+                                reviewSession.autoSkipTimer = setTimeout(advance, 70000);
+                            }
                         }
                     }).catch(err => {
                         showNotification("Failed to copy."); 
@@ -1326,6 +1328,20 @@
             document.getElementById('edit-review-card-btn').addEventListener('click', enterReviewEditMode);
             document.getElementById('save-review-edit-btn').addEventListener('click', saveReviewEdit);
             document.getElementById('cancel-review-edit-btn').addEventListener('click', exitReviewEditMode);
+
+            document.getElementById('edit-beispiel').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveReviewEdit();
+                }
+            });
+
+            document.getElementById('edit-translation').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveReviewEdit();
+                }
+            });
         });
     </script>
 </body>
