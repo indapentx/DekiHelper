@@ -38,6 +38,7 @@
         .review-copy-btn:hover { background-color: #444; }
         .progress-bar-container { background-color: #333; border-radius: 9999px; height: 8px; width: 100%; overflow: hidden;}
         .progress-bar { background-color: #007acc; height: 100%; width: 0%; transition: width 0.3s ease; }
+        .copy-highlight { background-color: rgba(0, 122, 204, 0.3); transition: background-color 0.1s ease-in-out; border-radius: 6px;}
         /* Toggle Switch CSS */
         #auto-skip-toggle-label .dot { transition: transform 0.2s ease-in-out; }
         #auto-skip-toggle:checked ~ .dot { transform: translateX(100%); background-color: #27ae60; }
@@ -180,9 +181,8 @@
                     <div>
                         <label class="anki-label ml-2 flex justify-between"><span>Beispiel</span> <span class="text-gray-500">Shortcut: E</span></label>
                         <div class="review-card">
-                            <span id="review-beispiel" class="review-content"></span>
+                            <div id="review-beispiel" class="review-content flex flex-col w-full"></div>
                             <input id="edit-beispiel" class="anki-input hidden" type="text">
-                            <button class="review-copy-btn" data-target="review-beispiel" title="Copy Beispiel (E)"><i class="fas fa-copy fa-lg"></i></button>
                         </div>
                     </div>
                     <div>
@@ -301,7 +301,7 @@
         
         let app, auth, db, userId, cardsCollectionRef, unsubscribe;
         let currentEditId = null, cardToDeleteId = null, allCards = [];
-        let reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null };
+        let reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, beispielCopyIndex: 0 };
         let isSignUpMode = false;
         let isReviewEditing = false;
         
@@ -468,9 +468,49 @@
                 return;
             }
 
+            // Reset the copy index for the new card
+            reviewSession.beispielCopyIndex = 0;
+
             const card = reviewSession.cards[reviewSession.currentIndex];
             document.getElementById('review-back').textContent = card.back || '—';
-            document.getElementById('review-beispiel').textContent = card.beispiel || '—';
+            
+            const beispielContainer = document.getElementById('review-beispiel');
+            const beispielText = card.beispiel || '';
+            beispielContainer.innerHTML = ''; // Clear previous content
+
+            if (beispielText) {
+                const sentences = beispielText.split(/<br\s*\/?>/i); // Split by <br>, <br/>, etc.
+                sentences.forEach(sentence => {
+                    const trimmedSentence = sentence.trim();
+                    if (trimmedSentence) {
+                        const sentenceWrapper = document.createElement('div');
+                        sentenceWrapper.className = 'flex justify-between items-center w-full p-1'; // Added padding for highlight visibility
+
+                        const sentenceEl = document.createElement('span');
+                        sentenceEl.className = 'flex-grow';
+                        sentenceEl.textContent = trimmedSentence;
+
+                        const copyBtn = document.createElement('button');
+                        copyBtn.className = 'btn-icon text-gray-400 hover:text-white ml-4 flex-shrink-0';
+                        copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+                        copyBtn.title = `Copy: "${trimmedSentence}"`;
+                        copyBtn.onclick = () => {
+                            navigator.clipboard.writeText(trimmedSentence).then(() => {
+                                showNotification("Copied!", "success", 1500);
+                            }).catch(err => {
+                                showNotification("Failed to copy.");
+                            });
+                        };
+
+                        sentenceWrapper.appendChild(sentenceEl);
+                        sentenceWrapper.appendChild(copyBtn);
+                        beispielContainer.appendChild(sentenceWrapper);
+                    }
+                });
+            } else {
+                beispielContainer.textContent = '—';
+            }
+
             document.getElementById('review-beispiel-filename').textContent = `s_${card.back || ''}`;
             document.getElementById('review-translation').textContent = card.translation || '—';
             document.getElementById('review-progress-text').textContent = `Card ${reviewSession.currentIndex + 1} of ${reviewSession.cards.length}`;
@@ -503,7 +543,39 @@
             if (e.key === 'ArrowRight') handleReviewNav(1);
             if (e.key === 'ArrowLeft') handleReviewNav(-1);
             if (e.key === 'b' || e.key === 'B') document.querySelector('[data-target="review-back"]').click();
-            if (e.key === 'e' || e.key === 'E') document.querySelector('[data-target="review-beispiel"]').click();
+            
+            if (e.key === 'e' || e.key === 'E') {
+                e.preventDefault(); // Prevent any default browser action
+                const card = reviewSession.cards[reviewSession.currentIndex];
+                const beispielText = card.beispiel || '';
+                if (!beispielText) return;
+
+                const sentences = beispielText.split(/<br\s*\/?>/i).map(s => s.trim()).filter(Boolean);
+                if (sentences.length === 0) return;
+
+                // Use the current index to get the sentence
+                const sentenceToCopy = sentences[reviewSession.beispielCopyIndex];
+
+                navigator.clipboard.writeText(sentenceToCopy).then(() => {
+                    // Visual Feedback
+                    const sentenceElements = document.querySelectorAll('#review-beispiel > div');
+                    if (sentenceElements.length > reviewSession.beispielCopyIndex) {
+                        const el = sentenceElements[reviewSession.beispielCopyIndex];
+                        el.classList.add('copy-highlight');
+                        setTimeout(() => {
+                            el.classList.remove('copy-highlight');
+                        }, 400);
+                    }
+                    showNotification(`Copied: "${sentenceToCopy}"`, "success", 1500);
+
+                    // Update index for next press (cycling)
+                    reviewSession.beispielCopyIndex = (reviewSession.beispielCopyIndex + 1) % sentences.length;
+
+                }).catch(err => {
+                    showNotification("Failed to copy.");
+                });
+            }
+
             if (e.key === 's' || e.key === 'S') document.querySelector('[data-target="review-beispiel-filename"]').click();
             if (e.key === 'Enter' && !isReviewEditing) enterReviewEditMode();
             if (e.key === 'Delete') document.getElementById('delete-review-card-btn').click();
@@ -523,7 +595,7 @@
 
             if (cardsForReview.length === 0) { showNotification(`No cards found.`); return; }
 
-            reviewSession = { cards: cardsForReview, currentIndex: 0, autoSkipTimer: null };
+            reviewSession = { cards: cardsForReview, currentIndex: 0, autoSkipTimer: null, beispielCopyIndex: 0 };
             document.getElementById('review-setup').classList.add('hidden');
             document.getElementById('review-session').classList.remove('hidden');
             document.addEventListener('keydown', handleReviewKeyboard);
@@ -533,7 +605,7 @@
         
         function endReviewSession() {
             clearAutoSkipTimer();
-            reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null };
+            reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, beispielCopyIndex: 0 };
             document.getElementById('main-app').classList.remove('hidden');
             document.getElementById('review-modal').classList.add('hidden');
             document.getElementById('review-setup').classList.remove('hidden');
