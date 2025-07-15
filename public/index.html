@@ -964,8 +964,15 @@
 
                 try {
                     const batch = writeBatch(db);
-                    lines.forEach(line => {
+                    // Get a single timestamp for the entire import operation
+                    const importTimestamp = new Date();
+
+                    lines.forEach((line, index) => {
                         const fields = line.split('\t');
+                        
+                        // Create a unique, sequential timestamp for each card by adding its index (in milliseconds)
+                        const cardTimestamp = new Date(importTimestamp.getTime() + index);
+
                         const cardData = {
                             front: fields[0] || '',
                             back: fields[1] || '',
@@ -973,7 +980,8 @@
                             beispiel: fields[3] || '',
                             beispielSpeech: fields[4] || '',
                             translation: fields[5] || '',
-                            createdAt: new Date().toISOString()
+                            // Assign the unique timestamp
+                            createdAt: cardTimestamp.toISOString()
                         };
                         const newCardRef = doc(collection(db, `artifacts/${appId}/users/${userId}/cards`));
                         batch.set(newCardRef, cardData);
