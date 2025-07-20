@@ -13,9 +13,9 @@
     <style>
         html { scroll-behavior: smooth; }
         body { font-family: 'Inter', sans-serif; background-color: #000; }
-        .anki-input, .anki-readonly-box, #clipboard-output { background-color: #1e1e1e; border: 1px solid #444; color: #ecf0f1; border-radius: 8px; padding: 12px; width: 100%; font-size: 16px; margin-top: 4px; transition: border-color 0.2s; }
-        .anki-input:focus, #clipboard-output:focus { outline: none; border-color: #007acc; }
-        .anki-readonly-box { min-height: 48px; display: flex; align-items: center; }
+        .anki-input, .anki-readonly-box, #clipboard-output, textarea.anki-input { background-color: #1e1e1e; border: 1px solid #444; color: #ecf0f1; border-radius: 8px; padding: 12px; width: 100%; font-size: 16px; margin-top: 4px; transition: border-color 0.2s; }
+        .anki-input:focus, #clipboard-output:focus, textarea.anki-input:focus { outline: none; border-color: #007acc; }
+        .anki-readonly-box { min-height: 48px; display: flex; align-items: center; word-break: break-all; }
         .anki-label { color: #bdc3c7; font-weight: 600; font-size: 14px; }
         .btn { padding: 5px 12px; font-size: 0.875rem; border-radius: 7px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
         .btn-lg { padding: 10px 20px; font-size: 1.125rem; }
@@ -39,7 +39,6 @@
         .progress-bar-container { background-color: #333; border-radius: 9999px; height: 8px; width: 100%; overflow: hidden;}
         .progress-bar { background-color: #007acc; height: 100%; width: 0%; transition: width 0.3s ease; }
         .copy-highlight { background-color: rgba(0, 122, 204, 0.3); transition: background-color 0.1s ease-in-out; border-radius: 6px;}
-        /* Toggle Switch CSS */
         #auto-skip-toggle-label .dot { transition: transform 0.2s ease-in-out; }
         #auto-skip-toggle:checked ~ .dot { transform: translateX(100%); background-color: #27ae60; }
         #auto-skip-toggle:checked ~ .block { background-color: #2ecc71; }
@@ -85,7 +84,7 @@
                         <button type="button" id="generate-img-tag-btn" class="text-sm text-blue-400 hover:text-blue-300 cursor-pointer" title="Generate Image Tag from Back field (t)">
                             <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Image Tag
                         </button>
-                        <button type="button" id="cycle-img-format-btn" class="text-sm text-blue-400 hover:text-blue-300 cursor-pointer" title="Cycle Image Format (jpg -> webp -> png) (c)">
+                        <button type="button" id="cycle-img-format-btn" class="text-sm text-blue-400 hover:text-blue-300 cursor-pointer" title="Cycle Image Format (jpg -> webp -> png -> svg) (c)">
                             <i class="fa-solid fa-arrows-rotate"></i> Cycle Format
                         </button>
                     </div>
@@ -102,10 +101,10 @@
                         <span id="ai-btn-loader" class="loader hidden"></span>
                     </button>
                 </div>
-                <input type="text" id="beispiel" class="anki-input" autocomplete="off">
+                <textarea id="beispiel" class="anki-input" autocomplete="off" rows="3"></textarea>
             </div>
             <div><label class="anki-label">Beispiel (Speech)</label><div id="beispiel-speech" class="anki-readonly-box"></div></div>
-            <div><label for="translation" class="anki-label">Translation</label><input type="text" id="translation" class="anki-input" autocomplete="off"></div>
+            <div><label for="translation" class="anki-label">Translation</label><textarea id="translation" class="anki-input" autocomplete="off" rows="3"></textarea></div>
             <button type="submit" style="display: none;"></button>
         </form>
         <div id="action-bar" class="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -182,7 +181,7 @@
                         <label class="anki-label ml-2 flex justify-between"><span>Beispiel</span> <span class="text-gray-500">Shortcut: E</span></label>
                         <div class="review-card">
                             <div id="review-beispiel" class="review-content flex flex-col w-full"></div>
-                            <input id="edit-beispiel" class="anki-input hidden" type="text">
+                            <textarea id="edit-beispiel" class="anki-input hidden" rows="4"></textarea>
                         </div>
                     </div>
                     <div>
@@ -195,8 +194,8 @@
                     <div>
                         <label class="anki-label ml-2 flex justify-between"><span>Translation</span></label>
                         <div class="review-card">
-                            <span id="review-translation" class="review-content"></span>
-                            <input id="edit-translation" class="anki-input hidden" type="text">
+                            <div id="review-translation" class="review-content flex flex-col w-full"></div>
+                            <textarea id="edit-translation" class="anki-input hidden" rows="4"></textarea>
                         </div>
                     </div>
                 </div>
@@ -325,17 +324,42 @@
             if (!text) return ''; 
             return text.trim(); 
         }
+        
+        function formatMultiLine(text) {
+            return text.replace(/\r?\n/g, ' <br> ');
+        }
+
+        function unformatMultiLine(text) {
+            return text.replace(/\s*<br\s*\/?>\s*/gi, '\n');
+        }
 
         function updateSpeechFields() { 
-            const back = document.getElementById('back');
+            const backInput = document.getElementById('back');
+            const beispielInput = document.getElementById('beispiel');
             const speechBox = document.getElementById('speech');
             const beispielSpeechBox = document.getElementById('beispiel-speech');
-            if(!back || !speechBox || !beispielSpeechBox) return;
+            if(!backInput || !beispielInput || !speechBox || !beispielSpeechBox) return;
 
-            const backValue = back.value; 
+            const backValue = backInput.value; 
+            const beispielValue = beispielInput.value;
             const soundTagText = prepareForSoundTag(backValue); 
+
             speechBox.textContent = soundTagText ? `[sound:${soundTagText}.mp3]` : ''; 
-            beispielSpeechBox.textContent = soundTagText ? `[sound:s_${soundTagText}.mp3]` : ''; 
+            
+            if (!soundTagText) {
+                beispielSpeechBox.textContent = '';
+                return;
+            }
+
+            const sentences = beispielValue.split(/\r?\n|<br\s*\/?>/i).filter(s => s.trim() !== '');
+            if (sentences.length <= 1) {
+                beispielSpeechBox.textContent = `[sound:s_${soundTagText}.mp3]`;
+            } else {
+                beispielSpeechBox.textContent = sentences.map((_, index) => {
+                    const suffix = index === 0 ? '' : index + 1;
+                    return `[sound:s_${soundTagText}${suffix}.mp3]`;
+                }).join('');
+            }
         }
         
         function clearForm() {
@@ -359,8 +383,8 @@
                 currentEditId = cardData.id;
                 front.value = cardData.front || '';
                 back.value = cardData.back || '';
-                beispiel.value = cardData.beispiel || '';
-                translation.value = cardData.translation || '';
+                beispiel.value = unformatMultiLine(cardData.beispiel || '');
+                translation.value = unformatMultiLine(cardData.translation || '');
                 updateSpeechFields();
                 defaultActions.classList.add('hidden');
                 editActions.classList.remove('hidden');
@@ -444,9 +468,7 @@
             
             const sortedDates = Array.from(dates).sort().reverse();
             if (reviewDateSelector) {
-                // Add "All Cards" option first
                 reviewDateSelector.innerHTML = '<option value="all">All Cards</option>' + sortedDates.map(date => `<option value="${date}">${date}</option>`).join('');
-                // Set the latest date as default if available
                 if (sortedDates.length > 0) {
                     reviewDateSelector.value = sortedDates[0];
                 }
@@ -460,6 +482,38 @@
             const progress = (reviewSession.currentIndex + 1) / reviewSession.cards.length * 100;
             bar.style.width = `${progress}%`;
         }
+
+        function renderMultiLineContent(container, textContent) {
+            container.innerHTML = '';
+            if (textContent) {
+                const lines = textContent.split(/<br\s*\/?>/i);
+                lines.forEach(line => {
+                    const trimmedLine = line.trim();
+                    if (trimmedLine) {
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'flex justify-between items-center w-full p-1';
+
+                        const span = document.createElement('span');
+                        span.className = 'flex-grow';
+                        span.textContent = trimmedLine;
+
+                        const copyBtn = document.createElement('button');
+                        copyBtn.className = 'btn-icon text-gray-400 hover:text-white ml-4 flex-shrink-0';
+                        copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+                        copyBtn.title = `Copy: "${trimmedLine}"`;
+                        copyBtn.onclick = () => {
+                            navigator.clipboard.writeText(trimmedLine).then(() => showNotification("Copied!", "success", 1500))
+                                .catch(() => showNotification("Failed to copy."));
+                        };
+                        wrapper.appendChild(span);
+                        wrapper.appendChild(copyBtn);
+                        container.appendChild(wrapper);
+                    }
+                });
+            } else {
+                container.textContent = '—';
+            }
+        }
         
         function renderReviewCard() {
             if (!reviewSession.cards || reviewSession.cards.length === 0 || reviewSession.currentIndex === -1) {
@@ -468,51 +522,18 @@
                 return;
             }
 
-            // Reset the copy index for the new card
             reviewSession.beispielCopyIndex = 0;
 
             const card = reviewSession.cards[reviewSession.currentIndex];
             document.getElementById('review-back').textContent = card.back || '—';
             
             const beispielContainer = document.getElementById('review-beispiel');
-            const beispielText = card.beispiel || '';
-            beispielContainer.innerHTML = ''; // Clear previous content
-
-            if (beispielText) {
-                const sentences = beispielText.split(/<br\s*\/?>/i); // Split by <br>, <br/>, etc.
-                sentences.forEach(sentence => {
-                    const trimmedSentence = sentence.trim();
-                    if (trimmedSentence) {
-                        const sentenceWrapper = document.createElement('div');
-                        sentenceWrapper.className = 'flex justify-between items-center w-full p-1'; // Added padding for highlight visibility
-
-                        const sentenceEl = document.createElement('span');
-                        sentenceEl.className = 'flex-grow';
-                        sentenceEl.textContent = trimmedSentence;
-
-                        const copyBtn = document.createElement('button');
-                        copyBtn.className = 'btn-icon text-gray-400 hover:text-white ml-4 flex-shrink-0';
-                        copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
-                        copyBtn.title = `Copy: "${trimmedSentence}"`;
-                        copyBtn.onclick = () => {
-                            navigator.clipboard.writeText(trimmedSentence).then(() => {
-                                showNotification("Copied!", "success", 1500);
-                            }).catch(err => {
-                                showNotification("Failed to copy.");
-                            });
-                        };
-
-                        sentenceWrapper.appendChild(sentenceEl);
-                        sentenceWrapper.appendChild(copyBtn);
-                        beispielContainer.appendChild(sentenceWrapper);
-                    }
-                });
-            } else {
-                beispielContainer.textContent = '—';
-            }
+            const translationContainer = document.getElementById('review-translation');
+            
+            renderMultiLineContent(beispielContainer, card.beispiel);
+            renderMultiLineContent(translationContainer, card.translation);
 
             document.getElementById('review-beispiel-filename').textContent = `s_${card.back || ''}`;
-            document.getElementById('review-translation').textContent = card.translation || '—';
             document.getElementById('review-progress-text').textContent = `Card ${reviewSession.currentIndex + 1} of ${reviewSession.cards.length}`;
             document.getElementById('prev-card-btn').disabled = reviewSession.currentIndex === 0;
             document.getElementById('next-card-btn').disabled = reviewSession.currentIndex === reviewSession.cards.length - 1;
@@ -545,7 +566,7 @@
             if (e.key === 'b' || e.key === 'B') document.querySelector('[data-target="review-back"]').click();
             
             if (e.key === 'e' || e.key === 'E') {
-                e.preventDefault(); // Prevent any default browser action
+                e.preventDefault();
                 const card = reviewSession.cards[reviewSession.currentIndex];
                 const beispielText = card.beispiel || '';
                 if (!beispielText) return;
@@ -553,27 +574,17 @@
                 const sentences = beispielText.split(/<br\s*\/?>/i).map(s => s.trim()).filter(Boolean);
                 if (sentences.length === 0) return;
 
-                // Use the current index to get the sentence
                 const sentenceToCopy = sentences[reviewSession.beispielCopyIndex];
-
                 navigator.clipboard.writeText(sentenceToCopy).then(() => {
-                    // Visual Feedback
                     const sentenceElements = document.querySelectorAll('#review-beispiel > div');
                     if (sentenceElements.length > reviewSession.beispielCopyIndex) {
                         const el = sentenceElements[reviewSession.beispielCopyIndex];
                         el.classList.add('copy-highlight');
-                        setTimeout(() => {
-                            el.classList.remove('copy-highlight');
-                        }, 400);
+                        setTimeout(() => el.classList.remove('copy-highlight'), 400);
                     }
                     showNotification(`Copied: "${sentenceToCopy}"`, "success", 1500);
-
-                    // Update index for next press (cycling)
                     reviewSession.beispielCopyIndex = (reviewSession.beispielCopyIndex + 1) % sentences.length;
-
-                }).catch(err => {
-                    showNotification("Failed to copy.");
-                });
+                }).catch(() => showNotification("Failed to copy."));
             }
 
             if (e.key === 's' || e.key === 'S') document.querySelector('[data-target="review-beispiel-filename"]').click();
@@ -600,7 +611,7 @@
             document.getElementById('review-session').classList.remove('hidden');
             document.addEventListener('keydown', handleReviewKeyboard);
             renderReviewCard();
-            exitReviewEditMode(); // Ensure view mode on start
+            exitReviewEditMode();
         }
         
         function endReviewSession() {
@@ -628,9 +639,9 @@
                 front: front.value.trim(),
                 back: back.value.trim(),
                 speech: speechBox.textContent,
-                beispiel: beispiel.value.trim(),
+                beispiel: formatMultiLine(beispiel.value.trim()),
                 beispielSpeech: beispielSpeechBox.textContent,
-                translation: translation.value.trim(),
+                translation: formatMultiLine(translation.value.trim()),
                 createdAt: new Date().toISOString()
             };
             if (!cardData.front && !cardData.back) return;
@@ -652,10 +663,10 @@
                 front: front.value.trim(),
                 back: back.value.trim(),
                 speech: speechBox.textContent,
-                beispiel: beispiel.value.trim(),
+                beispiel: formatMultiLine(beispiel.value.trim()),
                 beispielSpeech: beispielSpeechBox.textContent,
-                translation: translation.value.trim(),
-                createdAt: new Date().toISOString()
+                translation: formatMultiLine(translation.value.trim()),
+                createdAt: allCards.find(c => c.id === currentEditId)?.createdAt || new Date().toISOString()
             };
             try {
                 const docRef = doc(db, `artifacts/${appId}/users/${userId}/cards`, currentEditId);
@@ -674,12 +685,10 @@
                 await deleteDoc(docRef);
                 
                 if (isReviewDelete) {
-                    // If deleting from review, remove from the session and re-render
                     const deletedIndex = reviewSession.cards.findIndex(c => c.id === cardToDeleteId);
                     if (deletedIndex > -1) {
                          reviewSession.cards.splice(deletedIndex, 1);
                          if (reviewSession.currentIndex >= deletedIndex) {
-                             // Adjust current index if we deleted the current card or one before it
                              reviewSession.currentIndex = Math.max(0, reviewSession.currentIndex - 1);
                          }
                          if (reviewSession.cards.length === 0) {
@@ -713,11 +722,18 @@
                 mimeType = 'application/json';
             } else { // txt format
                 content = cards.map(data => {
-                    return [
-                        data.front || '', data.back || '', data.speech || '',
-                        data.beispiel || '', data.beispielSpeech || '', data.translation || ''
+                    const line = [
+                        data.front || '',
+                        data.back || '',
+                        data.speech || '',
+                        data.beispiel || '',
+                        data.beispielSpeech || '',
+                        data.translation || ''
                     ].join('\t');
+                    
+                    return line;
                 }).join('\n');
+                
                 fileName = `${today}.txt`;
                 mimeType = 'text/plain;charset=utf-8';
             }
@@ -735,7 +751,7 @@
 
             if (range === 'all') {
                 cardsToExport = [...allCards];
-            } else { // 'date'
+            } else { 
                 const selectedDateNodes = document.querySelectorAll('#export-date-selection input[type="checkbox"]:checked');
                 if (selectedDateNodes.length === 0) {
                     showNotification("Please select at least one date to export.");
@@ -757,15 +773,15 @@
                     .join('\n');
                 clipboardOutput.value = clipboardText;
                 clipboardOutputContainer.classList.remove('hidden');
-                clipboardOutput.select(); // Automatically select the text
+                clipboardOutput.select();
             } else if (format === 'beispiel-speech') {
                 const clipboardText = cardsToExport
                     .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-                    .map(data => `${data.beispielSpeech || ''}`.replace('[sound:', '').replace(']', ''))
+                    .map(data => data.beispielSpeech || '')
                     .join('\n');
                 clipboardOutput.value = clipboardText;
                 clipboardOutputContainer.classList.remove('hidden');
-                clipboardOutput.select(); // Automatically select the text
+                clipboardOutput.select();
             } else {
                 triggerExportDownload(cardsToExport, format);
                 document.getElementById('export-modal').classList.add('hidden');
@@ -780,7 +796,6 @@
             document.getElementById('export-all-radio').checked = true;
             document.getElementById('export-date-selection').classList.add('hidden');
             document.getElementById('clipboard-output-container').classList.add('hidden');
-
             
             const dates = [...new Set(allCards.map(card => card.createdAt && card.createdAt.split('T')[0]).filter(Boolean))].sort().reverse();
             const exportDateSelection = document.getElementById('export-date-selection');
@@ -840,7 +855,7 @@
               }
             };
 
-            const apiKey = "AIzaSyDLB3NES3wTA50iPatY8lzPAi-uiTI_j20"; // Will be provided by the environment
+            const apiKey = "AIzaSyDLB3NES3wTA50iPatY8lzPAi-uiTI_j20";
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
             try {
@@ -856,10 +871,11 @@
                 
                 const result = await response.json();
 
-                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts.length > 0) {
                     const jsonResponse = JSON.parse(result.candidates[0].content.parts[0].text);
-                    beispielInput.value = jsonResponse.beispiel || '';
+                    document.getElementById('beispiel').value = jsonResponse.beispiel || '';
                     document.getElementById('translation').value = jsonResponse.translation || '';
+                    updateSpeechFields();
                 } else {
                     throw new Error("Invalid response structure from API.");
                 }
@@ -892,10 +908,10 @@
             let newExt = 'jpg';
             if (ext === 'jpg') newExt = 'webp';
             else if (ext === 'webp') newExt = 'png';
-            else if (ext === 'png') newExt = 'jpg';
+            else if (ext === 'png') newExt = 'svg';
+            else if (ext === 'svg') newExt = 'jpg';
             front.value = `<img src="${base}.${newExt}">`;
         }
-
 
         async function handleAuthSubmit(e) {
             e.preventDefault();
@@ -939,10 +955,8 @@
         }
         
         function showLoginUI() {
-            const loginView = document.getElementById('login-view');
-            const mainApp = document.getElementById('main-app');
-            loginView.classList.remove('hidden');
-            mainApp.classList.add('hidden');
+            document.getElementById('login-view').classList.remove('hidden');
+            document.getElementById('main-app').classList.add('hidden');
             if (unsubscribe) unsubscribe();
             allCards = [];
             const cardListEl = document.getElementById('card-list');
@@ -954,15 +968,10 @@
         }
 
         function showAppUI(user) {
-            const loginView = document.getElementById('login-view');
-            const mainApp = document.getElementById('main-app');
-            const userEmail = document.getElementById('user-email');
-
+            document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+            document.getElementById('user-email').textContent = user.email;
             document.getElementById('session-counter').textContent = '0';
-
-            loginView.classList.add('hidden');
-            mainApp.classList.remove('hidden');
-            if(userEmail) userEmail.textContent = user.email;
             
             userId = user.uid;
             const collectionPath = `artifacts/${appId}/users/${userId}/cards`;
@@ -971,48 +980,24 @@
             unsubscribe = onSnapshot(cardsCollectionRef, (snapshot) => {
                 allCards = [];
                 snapshot.forEach(doc => allCards.push({ id: doc.id, ...doc.data() }));
-                const totalCounter = document.getElementById('total-counter');
-                const sessionCounter = document.getElementById('session-counter');
-                if(totalCounter) totalCounter.textContent = allCards.length;
+                document.getElementById('total-counter').textContent = allCards.length;
                 
                 if (allCards.length > 0) {
                     const dates = allCards.map(c => c.createdAt && c.createdAt.split('T')[0]).filter(Boolean);
                     if (dates.length > 0) {
                         const latestDate = dates.sort().reverse()[0];
                         const cardsFromLatestDate = allCards.filter(c => c.createdAt && c.createdAt.startsWith(latestDate)).length;
-                        sessionCounter.textContent = cardsFromLatestDate;
+                        document.getElementById('session-counter').textContent = cardsFromLatestDate;
                     } else {
-                         sessionCounter.textContent = 0;
+                         document.getElementById('session-counter').textContent = 0;
                     }
                 } else {
-                    sessionCounter.textContent = 0;
+                    document.getElementById('session-counter').textContent = 0;
                 }
 
                 filterAndRenderCards();
                 updateReviewDateSelector();
             });
-        }
-
-        function handleSmartPaste(event) {
-            const beispielInput = document.getElementById('beispiel');
-            const translationInput = document.getElementById('translation');
-            const backInput = document.getElementById('back');
-
-            let paste = (event.clipboardData || window.clipboardData).getData('text');
-            
-            if (paste.includes(';') && paste.includes('"')) {
-                event.preventDefault(); 
-                const parts = paste.split(';').map(part => part.replace(/"/g, '').trim());
-                if (parts.length >= 3) {
-                    beispielInput.value = parts[0];
-                    translationInput.value = parts[1];
-                    backInput.value = parts[2];
-                    updateSpeechFields();
-                } else if (parts.length >= 2) {
-                    beispielInput.value = parts[0];
-                    translationInput.value = parts[1];
-                }
-            }
         }
 
         async function importCardsFromFile(event) {
@@ -1023,28 +1008,20 @@
             reader.onload = async (e) => {
                 const content = e.target.result;
                 const lines = content.split('\n').filter(line => line.trim() !== '' && !line.trim().startsWith('#'));
-
                 if (lines.length === 0) {
                     showNotification("The selected file is empty or contains no valid data.");
                     return;
                 }
-                
                 if (!userId) {
                     showNotification("You must be logged in to import cards.");
                     return;
                 }
-
                 try {
                     const batch = writeBatch(db);
-                    // Get a single timestamp for the entire import operation
                     const importTimestamp = new Date();
-
                     lines.forEach((line, index) => {
                         const fields = line.split('\t');
-                        
-                        // Create a unique, sequential timestamp for each card by adding its index (in milliseconds)
                         const cardTimestamp = new Date(importTimestamp.getTime() + index);
-
                         const cardData = {
                             front: fields[0] || '',
                             back: fields[1] || '',
@@ -1052,13 +1029,11 @@
                             beispiel: fields[3] || '',
                             beispielSpeech: fields[4] || '',
                             translation: fields[5] || '',
-                            // Assign the unique timestamp
                             createdAt: cardTimestamp.toISOString()
                         };
                         const newCardRef = doc(collection(db, `artifacts/${appId}/users/${userId}/cards`));
                         batch.set(newCardRef, cardData);
                     });
-
                     await batch.commit();
                     showNotification(`Successfully imported ${lines.length} cards!`, 'success');
                 } catch (error) {
@@ -1072,17 +1047,13 @@
         }
         
         function filterAndRenderCards() {
-            const searchInput = document.getElementById('search-input');
-            const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
-
+            const searchTerm = document.getElementById('search-input').value.toLowerCase().trim();
             const filteredCards = searchTerm ? allCards.filter(card => {
-                const front = (card.front || '').toLowerCase();
-                const back = (card.back || '').toLowerCase();
-                const beispiel = (card.beispiel || '').toLowerCase();
-                const translation = (card.translation || '').toLowerCase();
-                return front.includes(searchTerm) || back.includes(searchTerm) || beispiel.includes(searchTerm) || translation.includes(searchTerm);
+                return (card.front || '').toLowerCase().includes(searchTerm) ||
+                       (card.back || '').toLowerCase().includes(searchTerm) ||
+                       (card.beispiel || '').toLowerCase().includes(searchTerm) ||
+                       (card.translation || '').toLowerCase().includes(searchTerm);
             }) : allCards;
-            
             renderCards(filteredCards);
         }
 
@@ -1094,7 +1065,6 @@
             const dates = [...new Set(allCards.map(card => card.createdAt && card.createdAt.split('T')[0]).filter(Boolean))].sort().reverse();
             const deleteDateSelection = document.getElementById('delete-date-selection');
             deleteDateSelection.innerHTML = '';
-
             if (dates.length > 0) {
                 dates.forEach(date => {
                     const label = document.createElement('label');
@@ -1106,7 +1076,6 @@
                 showNotification("No dates available for deletion.", "success");
                 return;
             }
-            
             document.getElementById('delete-cards-modal').classList.remove('hidden');
         }
 
@@ -1116,26 +1085,16 @@
                 showNotification("Please select at least one date to delete cards from.");
                 return;
             }
-
             const selectedDates = Array.from(selectedDateNodes).map(el => el.value);
-            const cardsToDelete = allCards.filter(card => card.createdAt && card.createdAt.split('T')[0] && selectedDates.includes(card.createdAt.split('T')[0]));
-
+            const cardsToDelete = allCards.filter(card => card.createdAt && selectedDates.includes(card.createdAt.split('T')[0]));
             if (cardsToDelete.length === 0) {
                 showNotification("No cards found for the selected dates.", "success");
                 return;
             }
-
-            if (!confirm(`Are you sure you want to delete ${cardsToDelete.length} card(s) from the selected dates? This action cannot be undone.`)) {
-                return;
-            }
-
+            if (!confirm(`Are you sure you want to delete ${cardsToDelete.length} card(s)? This action cannot be undone.`)) return;
             try {
                 const batch = writeBatch(db);
-                cardsToDelete.forEach(card => {
-                    const docRef = doc(db, `artifacts/${appId}/users/${userId}/cards`, card.id);
-                    batch.delete(docRef);
-                });
-
+                cardsToDelete.forEach(card => batch.delete(doc(db, `artifacts/${appId}/users/${userId}/cards`, card.id)));
                 await batch.commit();
                 showNotification(`Successfully deleted ${cardsToDelete.length} cards!`, 'success');
                 document.getElementById('delete-cards-modal').classList.add('hidden');
@@ -1148,57 +1107,59 @@
         function enterReviewEditMode() {
             if (reviewSession.currentIndex === -1) return;
             const card = reviewSession.cards[reviewSession.currentIndex];
-            
             clearAutoSkipTimer();
             
             document.getElementById('review-beispiel').classList.add('hidden');
-            document.getElementById('edit-beispiel').classList.remove('hidden');
-            document.getElementById('edit-beispiel').value = card.beispiel || '';
+            const editBeispiel = document.getElementById('edit-beispiel');
+            editBeispiel.classList.remove('hidden');
+            editBeispiel.value = unformatMultiLine(card.beispiel || '');
             
             document.getElementById('review-translation').classList.add('hidden');
-            document.getElementById('edit-translation').classList.remove('hidden');
-            document.getElementById('edit-translation').value = card.translation || '';
+            const editTranslation = document.getElementById('edit-translation');
+            editTranslation.classList.remove('hidden');
+            editTranslation.value = unformatMultiLine(card.translation || '');
             
-            document.querySelectorAll('.review-copy-btn').forEach(btn => btn.classList.add('hidden'));
-            
+            document.querySelectorAll('.review-copy-btn, .review-content .btn-icon').forEach(btn => btn.classList.add('hidden'));
             document.getElementById('edit-review-card-btn').classList.add('hidden');
             document.getElementById('save-review-edit-btn').classList.remove('hidden');
             document.getElementById('cancel-review-edit-btn').classList.remove('hidden');
-            
             isReviewEditing = true;
-            
-            // Focus logic
-            const beispielInput = document.getElementById('edit-beispiel');
-            if (beispielInput.value.trim() === '') {
-                beispielInput.focus();
-            } else {
-                document.getElementById('edit-translation').focus();
-            }
+            editBeispiel.focus();
         }
 
         function exitReviewEditMode() {
+            renderReviewCard(); 
             document.getElementById('review-beispiel').classList.remove('hidden');
             document.getElementById('edit-beispiel').classList.add('hidden');
-            
             document.getElementById('review-translation').classList.remove('hidden');
             document.getElementById('edit-translation').classList.add('hidden');
-            
-            document.querySelectorAll('.review-copy-btn').forEach(btn => btn.classList.remove('hidden'));
-            
             document.getElementById('edit-review-card-btn').classList.remove('hidden');
             document.getElementById('save-review-edit-btn').classList.add('hidden');
             document.getElementById('cancel-review-edit-btn').classList.add('hidden');
-            
             isReviewEditing = false;
         }
 
         async function saveReviewEdit() {
             if (!isReviewEditing || reviewSession.currentIndex === -1) return;
             
-            const newBeispiel = document.getElementById('edit-beispiel').value.trim();
-            const newTranslation = document.getElementById('edit-translation').value.trim();
-            
+            const newBeispiel = formatMultiLine(document.getElementById('edit-beispiel').value.trim());
+            const newTranslation = formatMultiLine(document.getElementById('edit-translation').value.trim());
             const card = reviewSession.cards[reviewSession.currentIndex];
+            
+            const backValue = card.back;
+            let newBeispielSpeech = '';
+            if (backValue) {
+                const sentences = newBeispiel.split(/<br\s*\/?>/i).filter(s => s.trim() !== '');
+                 if (sentences.length <= 1) {
+                    newBeispielSpeech = `[sound:s_${backValue}.mp3]`;
+                } else {
+                    newBeispielSpeech = sentences.map((_, index) => {
+                        const suffix = index === 0 ? '' : index + 1;
+                        return `[sound:s_${backValue}${suffix}.mp3]`;
+                    }).join('');
+                }
+            }
+
             if (newBeispiel === card.beispiel && newTranslation === card.translation) {
                 exitReviewEditMode();
                 return;
@@ -1208,19 +1169,16 @@
                 const docRef = doc(db, `artifacts/${appId}/users/${userId}/cards`, card.id);
                 await updateDoc(docRef, {
                     beispiel: newBeispiel,
-                    translation: newTranslation
+                    translation: newTranslation,
+                    beispielSpeech: newBeispielSpeech
                 });
-                
-                // Update local data
                 card.beispiel = newBeispiel;
                 card.translation = newTranslation;
+                card.beispielSpeech = newBeispielSpeech;
                 
-                renderReviewCard();
                 exitReviewEditMode();
                 showNotification('Card updated successfully.', 'success');
-            } catch (error) {
-                showNotification('Failed to update card.');
-            }
+            } catch (error) { showNotification('Failed to update card.'); }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -1234,229 +1192,103 @@
                  return;
             }
             
-            const logoutBtn = document.getElementById('logout-btn');
-            const authForm = document.getElementById('auth-form');
-            const authToggleBtn = document.getElementById('auth-toggle-btn');
-            const ankiFormEl = document.getElementById('anki-form');
             const backInput = document.getElementById('back');
             const beispielInput = document.getElementById('beispiel');
-            const frontInput = document.getElementById('front');
             const translationInput = document.getElementById('translation');
-            const generateImgTagBtn = document.getElementById('generate-img-tag-btn');
-            const cycleImgFormatBtn = document.getElementById('cycle-img-format-btn');
-            const exportBtn = document.getElementById('export-btn');
-            const updateBtn = document.getElementById('update-btn');
-            const cancelBtn = document.getElementById('cancel-btn');
-            const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
-            const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
-            const reviewBtn = document.getElementById('review-btn');
-            const closeReviewSetupBtn = document.getElementById('close-review-setup-btn');
-            const startSessionBtn = document.getElementById('start-session-btn');
-            const nextCardBtn = document.getElementById('next-card-btn');
-            const prevCardBtn = document.getElementById('prev-card-btn');
-            const endReviewBtn = document.getElementById('end-review-btn');
-            const deleteReviewCardBtn = document.getElementById('delete-review-card-btn');
-            const importBtn = document.getElementById('import-btn');
-            const importFileInput = document.getElementById('import-file-input');
-            const exportModal = document.getElementById('export-modal');
-            const confirmExportBtn = document.getElementById('confirm-export-btn');
-            const cancelExportBtn = document.getElementById('cancel-export-btn');
-            const exportAllRadio = document.getElementById('export-all-radio');
-            const exportDateRadio = document.getElementById('export-date-radio');
-            const exportDateSelection = document.getElementById('export-date-selection');
-            const autoSkipToggle = document.getElementById('auto-skip-toggle');
-            const clipboardOutputContainer = document.getElementById('clipboard-output-container');
-            const exportFormatRadios = document.querySelectorAll('input[name="export-format"]');
-            const copyClipboardBtn = document.getElementById('copy-clipboard-btn');
-            const generateAiContentBtn = document.getElementById('generate-ai-content-btn');
-            const searchInput = document.getElementById('search-input');
-            const deleteCardsBtn = document.getElementById('delete-cards-btn');
-            const confirmDeleteCardsBtn = document.getElementById('confirm-delete-cards-btn');
-            const cancelDeleteCardsBtn = document.getElementById('cancel-delete-cards-btn');
-
-
-            authForm.addEventListener('submit', handleAuthSubmit);
-            authToggleBtn.addEventListener('click', toggleAuthMode);
-            logoutBtn.addEventListener('click', userSignOut);
             
-            ankiFormEl.addEventListener('submit', handleFormSubmit);
-            
-            [frontInput, backInput, beispielInput, translationInput].forEach(input => {
-                input.addEventListener('blur', (e) => { e.target.value = e.target.value.trim(); });
+            document.getElementById('auth-form').addEventListener('submit', handleAuthSubmit);
+            document.getElementById('auth-toggle-btn').addEventListener('click', toggleAuthMode);
+            document.getElementById('logout-btn').addEventListener('click', userSignOut);
+            document.getElementById('anki-form').addEventListener('submit', handleFormSubmit);
+            [backInput, beispielInput, translationInput].forEach(input => {
+                input.addEventListener('input', updateSpeechFields);
             });
-
-            backInput.addEventListener('input', updateSpeechFields);
-            beispielInput.addEventListener('paste', handleSmartPaste);
-            generateImgTagBtn.addEventListener('click', () => {
+            document.getElementById('generate-img-tag-btn').addEventListener('click', () => {
                 const backValue = document.getElementById('back').value.trim();
                 if (backValue) { document.getElementById('front').value = `<img src="${backValue}.jpg">`; } 
                 else { showNotification("Please enter a word in the 'Back' field first."); }
             });
-            cycleImgFormatBtn.addEventListener('click', cycleImageFormat);
-            
-            generateAiContentBtn.addEventListener('click', generateAIContent);
-            searchInput.addEventListener('input', filterAndRenderCards);
-
-
-            updateBtn.addEventListener('click', handleUpdateCard);
-            cancelBtn.addEventListener('click', () => setEditMode(false));
-            confirmDeleteBtn.addEventListener('click', handleDeleteConfirmed);
-            cancelDeleteBtn.addEventListener('click', () => document.getElementById('delete-modal').classList.add('hidden'));
-            
-            importBtn.addEventListener('click', () => importFileInput.click());
-            importFileInput.addEventListener('change', importCardsFromFile);
-            
-            reviewBtn.addEventListener('click', () => {
+            document.getElementById('cycle-img-format-btn').addEventListener('click', cycleImageFormat);
+            document.getElementById('generate-ai-content-btn').addEventListener('click', generateAIContent);
+            document.getElementById('search-input').addEventListener('input', filterAndRenderCards);
+            document.getElementById('update-btn').addEventListener('click', handleUpdateCard);
+            document.getElementById('cancel-btn').addEventListener('click', () => setEditMode(false));
+            document.getElementById('confirm-delete-btn').addEventListener('click', handleDeleteConfirmed);
+            document.getElementById('cancel-delete-btn').addEventListener('click', () => document.getElementById('delete-modal').classList.add('hidden'));
+            document.getElementById('import-btn').addEventListener('click', () => document.getElementById('import-file-input').click());
+            document.getElementById('import-file-input').addEventListener('change', importCardsFromFile);
+            document.getElementById('review-btn').addEventListener('click', () => {
                 document.getElementById('main-app').classList.add('hidden');
                 document.getElementById('review-modal').classList.remove('hidden');
             });
-            closeReviewSetupBtn.addEventListener('click', endReviewSession);
-            startSessionBtn.addEventListener('click', startReviewSession);
-            nextCardBtn.addEventListener('click', () => handleReviewNav(1));
-            prevCardBtn.addEventListener('click', () => handleReviewNav(-1));
-            endReviewBtn.addEventListener('click', endReviewSession);
-            deleteReviewCardBtn.addEventListener('click', () => {
+            document.getElementById('close-review-setup-btn').addEventListener('click', endReviewSession);
+            document.getElementById('start-session-btn').addEventListener('click', startReviewSession);
+            document.getElementById('next-card-btn').addEventListener('click', () => handleReviewNav(1));
+            document.getElementById('prev-card-btn').addEventListener('click', () => handleReviewNav(-1));
+            document.getElementById('end-review-btn').addEventListener('click', endReviewSession);
+            document.getElementById('delete-review-card-btn').addEventListener('click', () => {
                 if (reviewSession.cards[reviewSession.currentIndex]) {
                     cardToDeleteId = reviewSession.cards[reviewSession.currentIndex].id;
-                    const deleteModal = document.getElementById('delete-modal');
-                    if (deleteModal) deleteModal.classList.remove('hidden'); 
+                    document.getElementById('delete-modal').classList.remove('hidden'); 
                 }
             });
-
-
-            exportBtn.addEventListener('click', openExportModal);
-            confirmExportBtn.addEventListener('click', handleConfirmExport);
-            cancelExportBtn.addEventListener('click', () => {
-                exportModal.classList.add('hidden');
-                clipboardOutputContainer.classList.add('hidden');
+            document.getElementById('export-btn').addEventListener('click', openExportModal);
+            document.getElementById('confirm-export-btn').addEventListener('click', handleConfirmExport);
+            document.getElementById('cancel-export-btn').addEventListener('click', () => {
+                document.getElementById('export-modal').classList.add('hidden');
+                document.getElementById('clipboard-output-container').classList.add('hidden');
             });
-            copyClipboardBtn.addEventListener('click', () => {
-                const textToCopy = document.getElementById('clipboard-output').value;
-                 navigator.clipboard.writeText(textToCopy).then(() => {
+            document.getElementById('copy-clipboard-btn').addEventListener('click', () => {
+                 navigator.clipboard.writeText(document.getElementById('clipboard-output').value).then(() => {
                     showNotification("Copied to clipboard!", "success");
-                }).catch(err => {
-                    showNotification("Failed to copy automatically. Please use Ctrl+C.");
-                });
+                }).catch(() => showNotification("Failed to copy automatically. Please use Ctrl+C."));
             });
-
-
-            exportFormatRadios.forEach(radio => {
+            document.querySelectorAll('input[name="export-format"]').forEach(radio => {
                 radio.addEventListener('change', () => {
                     if (radio.value !== 'clipboard' && radio.value !== 'beispiel-speech') {
-                        clipboardOutputContainer.classList.add('hidden');
+                        document.getElementById('clipboard-output-container').classList.add('hidden');
                     }
                 });
             });
-
-            exportAllRadio.addEventListener('change', () => { if (exportAllRadio.checked) exportDateSelection.classList.add('hidden'); });
-            exportDateRadio.addEventListener('change', () => { if (exportDateRadio.checked) exportDateSelection.classList.remove('hidden'); });
-            
+            document.getElementById('export-all-radio').addEventListener('change', (e) => { if(e.target.checked) document.getElementById('export-date-selection').classList.add('hidden'); });
+            document.getElementById('export-date-radio').addEventListener('change', (e) => { if(e.target.checked) document.getElementById('export-date-selection').classList.remove('hidden'); });
             document.querySelectorAll('.review-copy-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     clearAutoSkipTimer();
                     const targetId = e.currentTarget.dataset.target;
                     const textToCopy = document.getElementById(targetId).textContent;
-                    
                     navigator.clipboard.writeText(textToCopy).then(() => {
                         showNotification("Copied!", "success", 1500);
-
-                        const advance = () => {
-                            if (reviewSession.currentIndex < reviewSession.cards.length - 1) {
-                                handleReviewNav(1);
-                            }
-                        };
-
+                        const advance = () => { if (reviewSession.currentIndex < reviewSession.cards.length - 1) handleReviewNav(1); };
                         if (!isReviewEditing) {
-                            if (autoSkipToggle.checked) {
-                                advance();
-                            } else {
-                                reviewSession.autoSkipTimer = setTimeout(advance, 55000);
-                            }
+                            if (document.getElementById('auto-skip-toggle').checked) advance();
+                            else reviewSession.autoSkipTimer = setTimeout(advance, 55000);
                         }
-                    }).catch(err => {
-                        showNotification("Failed to copy."); 
-                    });
+                    }).catch(() => showNotification("Failed to copy.")); 
                 });
             });
-            
-            // Global Keyboard Shortcuts
             document.addEventListener('keydown', (e) => {
-                // Ignore shortcuts if user is typing in an input or textarea
-                if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
-                    return;
-                }
-
-                // Also ignore if a modal is open, except for the review modal
-                if (document.querySelector('.modal-backdrop:not(#review-modal):not(.hidden)')) {
-                    return;
-                }
-
+                if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.querySelector('.modal-backdrop:not(#review-modal):not(.hidden)')) return;
                 if (document.getElementById('review-session').classList.contains('hidden')) {
-                    switch (e.key) {
-                        case 'g':
-                            e.preventDefault();
-                            generateAiContentBtn.click();
-                            break;
-                        case 't':
-                            e.preventDefault();
-                            generateImgTagBtn.click();
-                            break;
-                        case ' ':
-                            e.preventDefault();
-                            if (document.getElementById('review-modal').classList.contains('hidden')) {
-                                reviewBtn.click();
-                            } else {
-                                startSessionBtn.click();
-                            }
-                            break;
-                        case 'c':
-                            e.preventDefault();
-                            cycleImgFormatBtn.click();
-                            break;
-                        case 'Enter':
-                            if (!document.getElementById('review-modal').classList.contains('hidden') &&
-                                !document.getElementById('review-setup').classList.contains('hidden')) {
-                                e.preventDefault();
-                                startSessionBtn.click();
-                            }
-                            break;
-                    }
+                    if (e.key === 'g') { e.preventDefault(); document.getElementById('generate-ai-content-btn').click(); }
+                    else if (e.key === 't') { e.preventDefault(); document.getElementById('generate-img-tag-btn').click(); }
+                    else if (e.key === ' ') { e.preventDefault(); document.getElementById('review-modal').classList.contains('hidden') ? document.getElementById('review-btn').click() : document.getElementById('start-session-btn').click(); }
+                    else if (e.key === 'c') { e.preventDefault(); document.getElementById('cycle-img-format-btn').click(); }
+                    else if (e.key === 'Enter' && !document.getElementById('review-modal').classList.contains('hidden') && !document.getElementById('review-setup').classList.contains('hidden')) { e.preventDefault(); document.getElementById('start-session-btn').click(); }
                 }
             });
-
-            onAuthStateChanged(auth, user => {
-                if (user) { showAppUI(user); } else { showLoginUI(); }
-            });
-
-            deleteCardsBtn.addEventListener('click', openDeleteCardsModal);
-            confirmDeleteCardsBtn.addEventListener('click', handleConfirmDeleteCards);
-            cancelDeleteCardsBtn.addEventListener('click', () => {
-                document.getElementById('delete-cards-modal').classList.add('hidden');
-            });
-
-            // Add event listeners for edit buttons
+            onAuthStateChanged(auth, user => { if (user) showAppUI(user); else showLoginUI(); });
+            document.getElementById('delete-cards-btn').addEventListener('click', openDeleteCardsModal);
+            document.getElementById('confirm-delete-cards-btn').addEventListener('click', handleConfirmDeleteCards);
+            document.getElementById('cancel-delete-cards-btn').addEventListener('click', () => document.getElementById('delete-cards-modal').classList.add('hidden'));
             document.getElementById('edit-review-card-btn').addEventListener('click', enterReviewEditMode);
             document.getElementById('save-review-edit-btn').addEventListener('click', saveReviewEdit);
             document.getElementById('cancel-review-edit-btn').addEventListener('click', exitReviewEditMode);
-
-            document.getElementById('edit-beispiel').addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    saveReviewEdit();
-                } else if (e.key === 'Escape') {
-                    e.preventDefault();
-                    exitReviewEditMode();
-                }
-            });
-
-            document.getElementById('edit-translation').addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    saveReviewEdit();
-                } else if (e.key === 'Escape') {
-                    e.preventDefault();
-                    exitReviewEditMode();
-                }
+            [document.getElementById('edit-beispiel'), document.getElementById('edit-translation')].forEach(input => {
+                input.addEventListener('keydown', e => {
+                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveReviewEdit(); }
+                    if (e.key === 'Escape') { e.preventDefault(); exitReviewEditMode(); }
+                });
             });
         });
     </script>
