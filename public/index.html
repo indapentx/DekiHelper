@@ -134,7 +134,7 @@
                         <button id="cancel-review-edit-btn" class="btn btn-secondary btn-sm hidden"><i class="fas fa-times"></i> Cancel</button>
                         <button id="delete-review-card-btn" class="btn btn-danger btn-sm"><i class="fas fa-trash-alt"></i> Delete Card</button>
                         <label class="toggle-label flex items-center cursor-pointer">
-                            <span class="mr-3 text-sm font-medium">Skip Immediately</span>
+                            <span class="mr-3 text-sm font-medium">Skip with Delay</span>
                             <div class="relative">
                                 <input type="checkbox" id="auto-skip-toggle" class="sr-only">
                                 <div class="block bg-gray-600 w-10 h-6 rounded-full"></div>
@@ -806,7 +806,6 @@
             let value = front.value.trim();
 
             if (value.startsWith('<img src="') && value.endsWith('">')) {
-                // It's already an image tag, so cycle it
                 const src = value.substring(10, value.length - 2);
                 const lastDot = src.lastIndexOf('.');
                 if (lastDot === -1) {
@@ -819,10 +818,9 @@
                 if (ext === 'jpg') newExt = 'webp';
                 else if (ext === 'webp') newExt = 'png';
                 else if (ext === 'png') newExt = 'svg';
-                else if (ext === 'svg') newExt = 'jpg'; // Cycle back to jpg
+                else if (ext === 'svg') newExt = 'jpg';
                 front.value = `<img src="${base}.${newExt}">`;
             } else {
-                // It's not an image tag, so generate one
                 const backValue = document.getElementById('back').value.trim();
                 if (backValue) {
                     front.value = `<img src="${backValue}.jpg">`;
@@ -1180,17 +1178,17 @@
                         showNotification("Copied!", "success", 1500);
                         const advance = () => { if (reviewSession.currentIndex < reviewSession.cards.length - 1) handleReviewNav(1); };
                         if (!isReviewEditing) {
-                            const isAutoSkip = document.getElementById('auto-skip-toggle').checked;
+                            const isDelayedSkip = document.getElementById('auto-skip-toggle').checked;
                             const isTimerPaused = document.getElementById('pause-timer-toggle').checked;
 
                             if (isTimerPaused) {
-                                return; // Master override, do nothing
+                                return; 
                             }
 
-                            if (isAutoSkip) {
-                                advance();
+                            if (isDelayedSkip) {
+                                reviewSession.autoSkipTimer = setTimeout(advance, 5000);
                             } else {
-                                reviewSession.autoSkipTimer = setTimeout(advance, 55000);
+                                advance();
                             }
                         }
                     }).catch(() => showNotification("Failed to copy.")); 
