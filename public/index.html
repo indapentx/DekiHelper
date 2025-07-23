@@ -44,21 +44,6 @@
         #auto-skip-toggle:checked ~ .block { background-color: #2ecc71; }
         #pause-timer-toggle:checked ~ .dot { transform: translateX(100%); background-color: #c0392b; }
         #pause-timer-toggle:checked ~ .block { background-color: #e74c3c; }
-
-        .loader {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            display: inline-block;
-            border-top: 2px solid #FFF;
-            border-right: 2px solid transparent;
-            box-sizing: border-box;
-            animation: rotation 1s linear infinite;
-        }
-        @keyframes rotation {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
     </style>
 </head>
 <body class="text-white">
@@ -83,27 +68,16 @@
             <div>
                 <div class="flex justify-between items-center">
                     <label for="front" class="anki-label">Front</label>
-                    <div class="flex items-center gap-2">
-                        <button type="button" id="generate-img-tag-btn" class="text-sm text-blue-400 hover:text-blue-300 cursor-pointer" title="Generate Image Tag from Back field (t)">
-                            <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Image Tag
-                        </button>
-                        <button type="button" id="cycle-img-format-btn" class="text-sm text-blue-400 hover:text-blue-300 cursor-pointer" title="Cycle Image Format (jpg -> webp -> png -> svg) (c)">
-                            <i class="fa-solid fa-arrows-rotate"></i> Cycle Format
-                        </button>
-                    </div>
+                    <button type="button" id="generate-img-tag-btn" class="text-sm text-blue-400 hover:text-blue-300 cursor-pointer" title="Generate or Cycle Image Tag (t)">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Generate/Cycle Image
+                    </button>
                 </div>
                 <input type="text" id="front" class="anki-input" autocomplete="off">
             </div>
             <div><label for="back" class="anki-label">Back</label><input type="text" id="back" class="anki-input" autocomplete="off"></div>
             <div><label class="anki-label">Speech</label><div id="speech" class="anki-readonly-box"></div></div>
             <div>
-                <div class="flex justify-between items-center">
-                    <label for="beispiel" class="anki-label">Beispiel</label>
-                    <button type="button" id="generate-ai-content-btn" class="text-sm text-blue-400 hover:text-blue-300 cursor-pointer" title="Generate example and translation with AI (g)">
-                        <span id="ai-btn-text"><i class="fa-solid fa-robot"></i> Generate with AI</span>
-                        <span id="ai-btn-loader" class="loader hidden"></span>
-                    </button>
-                </div>
+                <label for="beispiel" class="anki-label">Beispiel</label>
                 <textarea id="beispiel" class="anki-input" autocomplete="off" rows="3"></textarea>
             </div>
             <div><label class="anki-label">Beispiel (Speech)</label><div id="beispiel-speech" class="anki-readonly-box"></div></div>
@@ -827,101 +801,35 @@
             document.getElementById('export-modal').classList.remove('hidden');
         }
 
-        async function generateAIContent() {
-            const backInput = document.getElementById('back');
-            const beispielInput = document.getElementById('beispiel');
-            const germanWord = backInput.value.trim();
-            const existingSentence = beispielInput.value.trim();
-
-            if (!germanWord) {
-                showNotification("Please enter a German word in the 'Back' field first.");
-                return;
-            }
-            
-            const aiBtn = document.getElementById('generate-ai-content-btn');
-            const aiBtnText = document.getElementById('ai-btn-text');
-            const aiBtnLoader = document.getElementById('ai-btn-loader');
-            
-            aiBtn.disabled = true;
-            aiBtnText.classList.add('hidden');
-            aiBtnLoader.classList.remove('hidden');
-
-            let prompt = `For the German word "${germanWord}", provide one simple, A1-level example sentence that is a common, popular phrase used in daily life. Also provide the Turkish translation of that full sentence.`;
-            if (existingSentence) {
-                prompt += ` The new sentence must be different from "${existingSentence}".`;
-            }
-
-            const payload = {
-              contents: [{ role: "user", parts: [{ text: prompt }] }],
-              generationConfig: {
-                  responseMimeType: "application/json",
-                  responseSchema: {
-                      type: "OBJECT",
-                      properties: {
-                          "beispiel": { "type": "STRING" },
-                          "translation": { "type": "STRING" }
-                      },
-                      required: ["beispiel", "translation"]
-                  }
-              }
-            };
-
-            const apiKey = "AIzaSyDLB3NES3wTA50iPatY8lzPAi-uiTI_j20";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-            try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`API request failed with status ${response.status}`);
-                }
-                
-                const result = await response.json();
-
-                if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts.length > 0) {
-                    const jsonResponse = JSON.parse(result.candidates[0].content.parts[0].text);
-                    document.getElementById('beispiel').value = jsonResponse.beispiel || '';
-                    document.getElementById('translation').value = jsonResponse.translation || '';
-                    updateSpeechFields();
-                } else {
-                    throw new Error("Invalid response structure from API.");
-                }
-
-            } catch (error) {
-                console.error("Gemini API Error:", error);
-                showNotification("Failed to generate content. Please try again.");
-            } finally {
-                aiBtn.disabled = false;
-                aiBtnText.classList.remove('hidden');
-                aiBtnLoader.classList.add('hidden');
-            }
-        }
-
-        function cycleImageFormat() {
+        function handleGenerateOrCycleImage() {
             const front = document.getElementById('front');
             let value = front.value.trim();
-            if (!value.startsWith('<img src="') || !value.endsWith('">')) {
-                showNotification("Front is not a valid image tag.");
-                return;
+
+            if (value.startsWith('<img src="') && value.endsWith('">')) {
+                // It's already an image tag, so cycle it
+                const src = value.substring(10, value.length - 2);
+                const lastDot = src.lastIndexOf('.');
+                if (lastDot === -1) {
+                    showNotification("No extension found in image tag.");
+                    return;
+                }
+                const base = src.substring(0, lastDot);
+                const ext = src.substring(lastDot + 1).toLowerCase();
+                let newExt = 'jpg';
+                if (ext === 'jpg') newExt = 'webp';
+                else if (ext === 'webp') newExt = 'png';
+                else if (ext === 'png') newExt = 'svg';
+                else if (ext === 'svg') newExt = 'jpg'; // Cycle back to jpg
+                front.value = `<img src="${base}.${newExt}">`;
+            } else {
+                // It's not an image tag, so generate one
+                const backValue = document.getElementById('back').value.trim();
+                if (backValue) {
+                    front.value = `<img src="${backValue}.jpg">`;
+                } else {
+                    showNotification("Please enter a word in the 'Back' field first.");
+                }
             }
-            const src = value.substring(10, value.length - 2);
-            const lastDot = src.lastIndexOf('.');
-            if (lastDot === -1) {
-                showNotification("No extension found.");
-                return;
-            }
-            const base = src.substring(0, lastDot);
-            const ext = src.substring(lastDot + 1).toLowerCase();
-            let newExt = 'jpg';
-            if (ext === 'jpg') newExt = 'webp';
-            else if (ext === 'webp') newExt = 'png';
-            else if (ext === 'png') newExt = 'svg';
-            else if (ext === 'svg') newExt = 'jpg';
-            front.value = `<img src="${base}.${newExt}">`;
         }
 
         async function handleAuthSubmit(e) {
@@ -1220,13 +1128,7 @@
                 });
             });
 
-            document.getElementById('generate-img-tag-btn').addEventListener('click', () => {
-                const backValue = document.getElementById('back').value.trim();
-                if (backValue) { document.getElementById('front').value = `<img src="${backValue}.jpg">`; } 
-                else { showNotification("Please enter a word in the 'Back' field first."); }
-            });
-            document.getElementById('cycle-img-format-btn').addEventListener('click', cycleImageFormat);
-            document.getElementById('generate-ai-content-btn').addEventListener('click', generateAIContent);
+            document.getElementById('generate-img-tag-btn').addEventListener('click', handleGenerateOrCycleImage);
             document.getElementById('search-input').addEventListener('input', filterAndRenderCards);
             document.getElementById('update-btn').addEventListener('click', handleUpdateCard);
             document.getElementById('cancel-btn').addEventListener('click', () => setEditMode(false));
@@ -1288,7 +1190,7 @@
                             if (isAutoSkip) {
                                 advance();
                             } else {
-                                reviewSession.autoSkipTimer = setTimeout(advance, 5000);
+                                reviewSession.autoSkipTimer = setTimeout(advance, 55000);
                             }
                         }
                     }).catch(() => showNotification("Failed to copy.")); 
@@ -1297,10 +1199,8 @@
             document.addEventListener('keydown', (e) => {
                 if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.querySelector('.modal-backdrop:not(#review-modal):not(.hidden)')) return;
                 if (document.getElementById('review-session').classList.contains('hidden')) {
-                    if (e.key === 'g') { e.preventDefault(); document.getElementById('generate-ai-content-btn').click(); }
-                    else if (e.key === 't') { e.preventDefault(); document.getElementById('generate-img-tag-btn').click(); }
+                    if (e.key === 't') { e.preventDefault(); document.getElementById('generate-img-tag-btn').click(); }
                     else if (e.key === ' ') { e.preventDefault(); document.getElementById('review-modal').classList.contains('hidden') ? document.getElementById('review-btn').click() : document.getElementById('start-session-btn').click(); }
-                    else if (e.key === 'c') { e.preventDefault(); document.getElementById('cycle-img-format-btn').click(); }
                     else if (e.key === 'Enter' && !document.getElementById('review-modal').classList.contains('hidden') && !document.getElementById('review-setup').classList.contains('hidden')) { e.preventDefault(); document.getElementById('start-session-btn').click(); }
                 }
             });
