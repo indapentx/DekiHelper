@@ -39,9 +39,12 @@
         .progress-bar-container { background-color: #333; border-radius: 9999px; height: 8px; width: 100%; overflow: hidden;}
         .progress-bar { background-color: #007acc; height: 100%; width: 0%; transition: width 0.3s ease; }
         .copy-highlight { background-color: rgba(0, 122, 204, 0.3); transition: background-color 0.1s ease-in-out; border-radius: 6px;}
-        #auto-skip-toggle-label .dot { transition: transform 0.2s ease-in-out; }
+        .toggle-label .dot { transition: transform 0.2s ease-in-out; }
         #auto-skip-toggle:checked ~ .dot { transform: translateX(100%); background-color: #27ae60; }
         #auto-skip-toggle:checked ~ .block { background-color: #2ecc71; }
+        #pause-timer-toggle:checked ~ .dot { transform: translateX(100%); background-color: #c0392b; }
+        #pause-timer-toggle:checked ~ .block { background-color: #e74c3c; }
+
         .loader {
             width: 16px;
             height: 16px;
@@ -156,10 +159,18 @@
                         <button id="save-review-edit-btn" class="btn btn-success btn-sm hidden"><i class="fas fa-check"></i> Save</button>
                         <button id="cancel-review-edit-btn" class="btn btn-secondary btn-sm hidden"><i class="fas fa-times"></i> Cancel</button>
                         <button id="delete-review-card-btn" class="btn btn-danger btn-sm"><i class="fas fa-trash-alt"></i> Delete Card</button>
-                        <label id="auto-skip-toggle-label" for="auto-skip-toggle" class="flex items-center cursor-pointer">
+                        <label class="toggle-label flex items-center cursor-pointer">
                             <span class="mr-3 text-sm font-medium">Skip Immediately</span>
                             <div class="relative">
                                 <input type="checkbox" id="auto-skip-toggle" class="sr-only">
+                                <div class="block bg-gray-600 w-10 h-6 rounded-full"></div>
+                                <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full"></div>
+                            </div>
+                        </label>
+                         <label class="toggle-label flex items-center cursor-pointer">
+                            <span class="mr-3 text-sm font-medium">Pause Timer</span>
+                            <div class="relative">
+                                <input type="checkbox" id="pause-timer-toggle" class="sr-only">
                                 <div class="block bg-gray-600 w-10 h-6 rounded-full"></div>
                                 <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full"></div>
                             </div>
@@ -1195,14 +1206,20 @@
             const backInput = document.getElementById('back');
             const beispielInput = document.getElementById('beispiel');
             const translationInput = document.getElementById('translation');
+            const frontInput = document.getElementById('front');
             
             document.getElementById('auth-form').addEventListener('submit', handleAuthSubmit);
             document.getElementById('auth-toggle-btn').addEventListener('click', toggleAuthMode);
             document.getElementById('logout-btn').addEventListener('click', userSignOut);
             document.getElementById('anki-form').addEventListener('submit', handleFormSubmit);
-            [backInput, beispielInput, translationInput].forEach(input => {
+            
+            [frontInput, backInput, beispielInput, translationInput].forEach(input => {
                 input.addEventListener('input', updateSpeechFields);
+                input.addEventListener('blur', (e) => {
+                    e.target.value = e.target.value.trim();
+                });
             });
+
             document.getElementById('generate-img-tag-btn').addEventListener('click', () => {
                 const backValue = document.getElementById('back').value.trim();
                 if (backValue) { document.getElementById('front').value = `<img src="${backValue}.jpg">`; } 
@@ -1261,8 +1278,18 @@
                         showNotification("Copied!", "success", 1500);
                         const advance = () => { if (reviewSession.currentIndex < reviewSession.cards.length - 1) handleReviewNav(1); };
                         if (!isReviewEditing) {
-                            if (document.getElementById('auto-skip-toggle').checked) advance();
-                            else reviewSession.autoSkipTimer = setTimeout(advance, 55000);
+                            const isAutoSkip = document.getElementById('auto-skip-toggle').checked;
+                            const isTimerPaused = document.getElementById('pause-timer-toggle').checked;
+
+                            if (isTimerPaused) {
+                                return; // Master override, do nothing
+                            }
+
+                            if (isAutoSkip) {
+                                advance();
+                            } else {
+                                reviewSession.autoSkipTimer = setTimeout(advance, 5000);
+                            }
                         }
                     }).catch(() => showNotification("Failed to copy.")); 
                 });
