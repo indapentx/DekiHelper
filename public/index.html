@@ -340,10 +340,11 @@
             if (sentences.length <= 1) {
                 beispielSpeechBox.textContent = `[sound:s_${soundTagText}.mp3]`;
             } else {
-                beispielSpeechBox.textContent = sentences.map((_, index) => {
+                const soundTags = sentences.map((_, index) => {
                     const suffix = index === 0 ? '' : index + 1;
                     return `[sound:s_${soundTagText}${suffix}.mp3]`;
                 }).join('');
+                beispielSpeechBox.textContent = `<br>${soundTags}`;
             }
         }
         
@@ -1070,10 +1071,11 @@
                  if (sentences.length <= 1) {
                     newBeispielSpeech = `[sound:s_${backValue}.mp3]`;
                 } else {
-                    newBeispielSpeech = sentences.map((_, index) => {
+                    const soundTags = sentences.map((_, index) => {
                         const suffix = index === 0 ? '' : index + 1;
                         return `[sound:s_${backValue}${suffix}.mp3]`;
                     }).join('');
+                    newBeispielSpeech = `<br>${soundTags}`;
                 }
             }
 
@@ -1186,7 +1188,7 @@
                             }
 
                             if (isDelayedSkip) {
-                                reviewSession.autoSkipTimer = setTimeout(advance, 5000);
+                                reviewSession.autoSkipTimer = setTimeout(advance, 55000);
                             } else {
                                 advance();
                             }
