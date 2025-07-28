@@ -222,6 +222,10 @@
                             <span>Copy to Clipboard (Back & Front)</span>
                         </label>
                         <label class="flex items-center space-x-2">
+                            <input type="radio" name="export-format" value="clipboard-back-only" class="form-radio">
+                            <span>Copy to Clipboard (Back only)</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
                             <input type="radio" name="export-format" value="beispiel-speech" class="form-radio">
                             <span>Copy to Clipboard (Beispiel Speech)</span>
                         </label>
@@ -752,26 +756,39 @@
                 return;
             }
             
+            let clipboardText = '';
             if (format === 'clipboard') {
-                const clipboardText = cardsToExport
+                clipboardText = cardsToExport
                     .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
                     .map(data => `${data.back || ''}\t${data.front || ''}`)
                     .join('\n');
-                clipboardOutput.value = clipboardText;
-                clipboardOutputContainer.classList.remove('hidden');
-                document.getElementById('copy-clipboard-btn').click();
             } else if (format === 'beispiel-speech') {
-                const clipboardText = cardsToExport
+                clipboardText = cardsToExport
                     .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
                     .map(data => data.beispielSpeech || '')
                     .join('\n');
-                clipboardOutput.value = clipboardText;
-                clipboardOutputContainer.classList.remove('hidden');
-                document.getElementById('copy-clipboard-btn').click();
+            } else if (format === 'clipboard-back-only') {
+                clipboardText = cardsToExport
+                    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+                    .map(data => data.back || '')
+                    .filter(Boolean)
+                    .join(', ');
             } else {
                 triggerExportDownload(cardsToExport, format);
                 document.getElementById('export-modal').classList.add('hidden');
+                return;
             }
+
+            // For all clipboard actions
+            navigator.clipboard.writeText(clipboardText).then(() => {
+                showNotification("Copied to clipboard!", "success");
+                document.getElementById('export-modal').classList.add('hidden');
+            }).catch(() => {
+                // Fallback for browsers that fail to copy
+                clipboardOutput.value = clipboardText;
+                clipboardOutputContainer.classList.remove('hidden');
+                showNotification("Could not copy automatically. Please copy manually.");
+            });
         }
 
         function openExportModal() {
