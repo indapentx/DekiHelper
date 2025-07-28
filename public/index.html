@@ -219,7 +219,7 @@
                         </label>
                         <label class="flex items-center space-x-2">
                             <input type="radio" name="export-format" value="clipboard" class="form-radio">
-                            <span>Copy to Clipboard (Front & Back)</span>
+                            <span>Copy to Clipboard (Back & Front)</span>
                         </label>
                         <label class="flex items-center space-x-2">
                             <input type="radio" name="export-format" value="beispiel-speech" class="form-radio">
@@ -755,11 +755,11 @@
             if (format === 'clipboard') {
                 const clipboardText = cardsToExport
                     .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-                    .map(data => `${data.front || ''}\t${data.back || ''}`)
+                    .map(data => `${data.back || ''}\t${data.front || ''}`)
                     .join('\n');
                 clipboardOutput.value = clipboardText;
                 clipboardOutputContainer.classList.remove('hidden');
-                clipboardOutput.select();
+                document.getElementById('copy-clipboard-btn').click();
             } else if (format === 'beispiel-speech') {
                 const clipboardText = cardsToExport
                     .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
@@ -767,7 +767,7 @@
                     .join('\n');
                 clipboardOutput.value = clipboardText;
                 clipboardOutputContainer.classList.remove('hidden');
-                clipboardOutput.select();
+                document.getElementById('copy-clipboard-btn').click();
             } else {
                 triggerExportDownload(cardsToExport, format);
                 document.getElementById('export-modal').classList.add('hidden');
