@@ -127,7 +127,11 @@
             </div>
             <div id="review-session" class="hidden flex-grow flex flex-col">
                 <div class="flex justify-between items-center mb-2 text-gray-400">
-                    <p id="review-progress-text" class="font-semibold"></p>
+                    <div class="flex items-center gap-4">
+                        <p id="review-progress-text" class="font-semibold"></p>
+                        <p id="review-edited-text" class="font-semibold"></p>
+                        <button id="toggle-edited-mark-btn" class="text-green-400 hidden" title="Toggle Edited Mark"><i class="fas fa-check-circle fa-lg"></i></button>
+                    </div>
                     <div class="flex items-center gap-4">
                         <button id="edit-review-card-btn" class="btn btn-secondary btn-sm"><i class="fas fa-pencil-alt"></i> Edit</button>
                         <button id="save-review-edit-btn" class="btn btn-success btn-sm hidden"><i class="fas fa-check"></i> Save</button>
@@ -289,7 +293,7 @@
         
         let app, auth, db, userId, cardsCollectionRef, unsubscribe;
         let currentEditId = null, cardToDeleteId = null, allCards = [];
-        let reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, beispielCopyIndex: 0 };
+        let reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, beispielCopyIndex: 0, editedCardIds: new Set() };
         let isSignUpMode = false;
         let isReviewEditing = false;
         
@@ -315,11 +319,11 @@
         }
         
         function formatMultiLine(text) {
-            return text.replace(/\r?\n/g, ' <br> ');
+            return text.replace(/\r?\n/g, ' <br> ').trim();
         }
 
         function unformatMultiLine(text) {
-            return text.replace(/\s*<br\s*\/?>\s*/gi, '\n');
+            return text.replace(/\s*<br\s*\/?>\s*/gi, '\n').trim();
         }
 
         function updateSpeechFields() { 
@@ -524,7 +528,20 @@
             renderMultiLineContent(translationContainer, card.translation);
 
             document.getElementById('review-beispiel-filename').textContent = `s_${card.back || ''}`;
-            document.getElementById('review-progress-text').textContent = `Card ${reviewSession.currentIndex + 1} of ${reviewSession.cards.length}`;
+            
+            // Update counters and marker
+            const editedCount = reviewSession.editedCardIds.size;
+            const totalCount = reviewSession.cards.length;
+            document.getElementById('review-progress-text').textContent = `Card ${reviewSession.currentIndex + 1} of ${totalCount}`;
+            document.getElementById('review-edited-text').textContent = `Edited: ${editedCount} / ${totalCount - editedCount} Remaining`;
+            
+            const toggleMarkBtn = document.getElementById('toggle-edited-mark-btn');
+            if (reviewSession.editedCardIds.has(card.id)) {
+                toggleMarkBtn.classList.remove('hidden');
+            } else {
+                toggleMarkBtn.classList.add('hidden');
+            }
+
             document.getElementById('prev-card-btn').disabled = reviewSession.currentIndex === 0;
             document.getElementById('next-card-btn').disabled = reviewSession.currentIndex === reviewSession.cards.length - 1;
             updateProgressBar();
@@ -596,7 +613,7 @@
 
             if (cardsForReview.length === 0) { showNotification(`No cards found.`); return; }
 
-            reviewSession = { cards: cardsForReview, currentIndex: 0, autoSkipTimer: null, beispielCopyIndex: 0 };
+            reviewSession = { cards: cardsForReview, currentIndex: 0, autoSkipTimer: null, beispielCopyIndex: 0, editedCardIds: new Set() };
             document.getElementById('review-setup').classList.add('hidden');
             document.getElementById('review-session').classList.remove('hidden');
             document.addEventListener('keydown', handleReviewKeyboard);
@@ -606,7 +623,7 @@
         
         function endReviewSession() {
             clearAutoSkipTimer();
-            reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, beispielCopyIndex: 0 };
+            reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, beispielCopyIndex: 0, editedCardIds: new Set() };
             document.getElementById('main-app').classList.remove('hidden');
             document.getElementById('review-modal').classList.add('hidden');
             document.getElementById('review-setup').classList.remove('hidden');
@@ -779,12 +796,10 @@
                 return;
             }
 
-            // For all clipboard actions
             navigator.clipboard.writeText(clipboardText).then(() => {
                 showNotification("Copied to clipboard!", "success");
                 document.getElementById('export-modal').classList.add('hidden');
             }).catch(() => {
-                // Fallback for browsers that fail to copy
                 clipboardOutput.value = clipboardText;
                 clipboardOutputContainer.classList.remove('hidden');
                 showNotification("Could not copy automatically. Please copy manually.");
@@ -1060,6 +1075,9 @@
             document.getElementById('cancel-review-edit-btn').classList.remove('hidden');
             isReviewEditing = true;
             editBeispiel.focus();
+            setTimeout(() => {
+                editBeispiel.setSelectionRange(0, 0);
+            }, 0);
         }
 
         function exitReviewEditMode() {
@@ -1112,6 +1130,7 @@
                 card.translation = newTranslation;
                 card.beispielSpeech = newBeispielSpeech;
                 
+                reviewSession.editedCardIds.add(card.id);
                 exitReviewEditMode();
                 showNotification('Card updated successfully.', 'success');
             } catch (error) { showNotification('Failed to update card.'); }
@@ -1181,7 +1200,7 @@
             });
             document.querySelectorAll('input[name="export-format"]').forEach(radio => {
                 radio.addEventListener('change', () => {
-                    if (radio.value !== 'clipboard' && radio.value !== 'beispiel-speech') {
+                    if (!radio.value.startsWith('clipboard')) {
                         document.getElementById('clipboard-output-container').classList.add('hidden');
                     }
                 });
@@ -1214,7 +1233,26 @@
                 });
             });
             document.addEventListener('keydown', (e) => {
+                const formInputs = ['front', 'back', 'beispiel', 'translation'];
+                const reviewInputs = ['edit-beispiel', 'edit-translation'];
+                const activeId = document.activeElement.id;
+
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    let currentList = [];
+                    if (formInputs.includes(activeId)) currentList = formInputs;
+                    if (reviewInputs.includes(activeId)) currentList = reviewInputs;
+
+                    if (currentList.length > 0) {
+                        e.preventDefault();
+                        const currentIndex = currentList.indexOf(activeId);
+                        const direction = e.key === 'ArrowDown' ? 1 : -1;
+                        const nextIndex = (currentIndex + direction + currentList.length) % currentList.length;
+                        document.getElementById(currentList[nextIndex]).focus();
+                    }
+                }
+
                 if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.querySelector('.modal-backdrop:not(#review-modal):not(.hidden)')) return;
+                
                 if (document.getElementById('review-session').classList.contains('hidden')) {
                     if (e.key === 't') { e.preventDefault(); document.getElementById('generate-img-tag-btn').click(); }
                     else if (e.key === ' ') { e.preventDefault(); document.getElementById('review-modal').classList.contains('hidden') ? document.getElementById('review-btn').click() : document.getElementById('start-session-btn').click(); }
@@ -1233,6 +1271,17 @@
                     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveReviewEdit(); }
                     if (e.key === 'Escape') { e.preventDefault(); exitReviewEditMode(); }
                 });
+            });
+            document.getElementById('toggle-edited-mark-btn').addEventListener('click', () => {
+                if (reviewSession.currentIndex > -1) {
+                    const cardId = reviewSession.cards[reviewSession.currentIndex].id;
+                    if (reviewSession.editedCardIds.has(cardId)) {
+                        reviewSession.editedCardIds.delete(cardId);
+                    } else {
+                        reviewSession.editedCardIds.add(cardId);
+                    }
+                    renderReviewCard();
+                }
             });
         });
     </script>
