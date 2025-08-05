@@ -18,6 +18,7 @@
         .anki-readonly-box { min-height: 48px; display: flex; align-items: center; word-break: break-all; }
         .anki-label { color: #bdc3c7; font-weight: 600; font-size: 14px; }
         .btn { padding: 5px 12px; font-size: 0.875rem; border-radius: 7px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn-sm { padding: 4px 10px; font-size: 0.8rem; }
         .btn-lg { padding: 10px 20px; font-size: 1.125rem; }
         .btn-primary { background-color: #007acc; color: white; } .btn-primary:hover:not(:disabled) { background-color: #005f9e; }
         .btn-secondary { background-color: #555; color: white; } .btn-secondary:hover:not(:disabled) { background-color: #444; }
@@ -32,8 +33,8 @@
         .card-item-front { font-weight: 600; color: #eee; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .card-item-back { color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         #review-modal { background-color: #000; }
-        .review-card { background-color: #1e1e1e; border-radius: 12px; padding: 20px; min-height: 90px; display: flex; justify-content: space-between; align-items: flex-start; text-align: left; }
-        .review-content { font-size: 1.25rem; word-break: break-word; flex-grow: 1; padding-top: 4px; }
+        .review-card { background-color: #1e1e1e; border-radius: 12px; padding: 20px; min-height: 90px; display: flex; justify-content: space-between; align-items: center; text-align: left; }
+        .review-content { font-size: 1.25rem; word-break: break-word; flex-grow: 1; }
         .review-copy-btn { background-color: #333; color: #fff; border: none; border-radius: 8px; padding: 12px 16px; cursor: pointer; align-self: center; margin-left: 16px; }
         .review-copy-btn:hover { background-color: #444; }
         .progress-bar-container { background-color: #333; border-radius: 9999px; height: 8px; width: 100%; overflow: hidden;}
@@ -130,14 +131,14 @@
                     <div class="flex items-center gap-4">
                         <p id="review-progress-text" class="font-semibold"></p>
                         <p id="review-edited-text" class="font-semibold"></p>
-                        <button id="toggle-edited-mark-btn" class="text-green-400 hidden" title="Toggle Edited Mark"><i class="fas fa-check-circle fa-lg"></i></button>
                     </div>
-                    <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2">
                         <button id="edit-review-card-btn" class="btn btn-secondary btn-sm"><i class="fas fa-pencil-alt"></i> Edit</button>
                         <button id="save-review-edit-btn" class="btn btn-success btn-sm hidden"><i class="fas fa-check"></i> Save</button>
                         <button id="cancel-review-edit-btn" class="btn btn-secondary btn-sm hidden"><i class="fas fa-times"></i> Cancel</button>
-                        <button id="delete-review-card-btn" class="btn btn-danger btn-sm"><i class="fas fa-trash-alt"></i> Delete Card</button>
-                        <label class="toggle-label flex items-center cursor-pointer">
+                        <button id="mark-edited-btn" class="btn btn-secondary btn-sm" title="Mark as Edited (M)"><i class="fas fa-check"></i></button>
+                        <button id="delete-review-card-btn" class="btn btn-danger btn-sm"><i class="fas fa-trash-alt"></i></button>
+                        <label class="toggle-label flex items-center cursor-pointer ml-4">
                             <span class="mr-3 text-sm font-medium">Skip with Delay</span>
                             <div class="relative">
                                 <input type="checkbox" id="auto-skip-toggle" class="sr-only">
@@ -169,7 +170,7 @@
                     <div>
                         <label class="anki-label ml-2 flex justify-between"><span>Beispiel</span> <span class="text-gray-500">Shortcut: E</span></label>
                         <div class="review-card">
-                            <div id="review-beispiel" class="review-content flex flex-col w-full"></div>
+                            <div id="review-beispiel" class="review-content flex-grow flex flex-col justify-center py-2 space-y-2"></div>
                             <textarea id="edit-beispiel" class="anki-input hidden" rows="4"></textarea>
                         </div>
                     </div>
@@ -183,7 +184,7 @@
                     <div>
                         <label class="anki-label ml-2 flex justify-between"><span>Translation</span></label>
                         <div class="review-card">
-                            <div id="review-translation" class="review-content flex flex-col w-full"></div>
+                            <div id="review-translation" class="review-content flex-grow flex flex-col justify-center py-2 space-y-2"></div>
                             <textarea id="edit-translation" class="anki-input hidden" rows="4"></textarea>
                         </div>
                     </div>
@@ -286,7 +287,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, getDocs, query, doc, deleteDoc, setDoc, writeBatch, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, getDocs, query, doc, deleteDoc, setDoc, writeBatch, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyD6zpZUM_ABNngOX-RKFxwNoTqePDivrGE", authDomain: "deki-helper.firebaseapp.com", projectId: "deki-helper", storageBucket: "deki-helper.appspot.com", messagingSenderId: "612229919023", appId: "1:612229919023:web:c6507af0e5a2ddd84731da" };
         const appId = 'anki-card-generator-default';
@@ -296,6 +297,7 @@
         let reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, beispielCopyIndex: 0, editedCardIds: new Set() };
         let isSignUpMode = false;
         let isReviewEditing = false;
+        let currentReviewDate = null;
         
         function showNotification(message, level = 'error', duration = 3000) {
             const notification = document.getElementById('notification');
@@ -476,8 +478,8 @@
             const progress = (reviewSession.currentIndex + 1) / reviewSession.cards.length * 100;
             bar.style.width = `${progress}%`;
         }
-
-        function renderMultiLineContent(container, textContent) {
+        
+        function renderMultiLineForReview(container, textContent) {
             container.innerHTML = '';
             if (textContent) {
                 const lines = textContent.split(/<br\s*\/?>/i);
@@ -485,20 +487,18 @@
                     const trimmedLine = line.trim();
                     if (trimmedLine) {
                         const wrapper = document.createElement('div');
-                        wrapper.className = 'flex justify-between items-center w-full p-1';
+                        wrapper.className = 'flex justify-between items-center w-full';
 
                         const span = document.createElement('span');
-                        span.className = 'flex-grow';
+                        span.className = 'flex-grow p-1';
                         span.textContent = trimmedLine;
 
                         const copyBtn = document.createElement('button');
-                        copyBtn.className = 'btn-icon text-gray-400 hover:text-white ml-4 flex-shrink-0';
+                        copyBtn.className = 'btn-icon text-gray-400 hover:text-white ml-4 flex-shrink-0 copy-line-btn';
                         copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
                         copyBtn.title = `Copy: "${trimmedLine}"`;
-                        copyBtn.onclick = () => {
-                            navigator.clipboard.writeText(trimmedLine).then(() => showNotification("Copied!", "success", 1500))
-                                .catch(() => showNotification("Failed to copy."));
-                        };
+                        copyBtn.dataset.text = trimmedLine;
+
                         wrapper.appendChild(span);
                         wrapper.appendChild(copyBtn);
                         container.appendChild(wrapper);
@@ -521,11 +521,8 @@
             const card = reviewSession.cards[reviewSession.currentIndex];
             document.getElementById('review-back').textContent = card.back || '—';
             
-            const beispielContainer = document.getElementById('review-beispiel');
-            const translationContainer = document.getElementById('review-translation');
-            
-            renderMultiLineContent(beispielContainer, card.beispiel);
-            renderMultiLineContent(translationContainer, card.translation);
+            renderMultiLineForReview(document.getElementById('review-beispiel'), card.beispiel);
+            renderMultiLineForReview(document.getElementById('review-translation'), card.translation);
 
             document.getElementById('review-beispiel-filename').textContent = `s_${card.back || ''}`;
             
@@ -535,11 +532,13 @@
             document.getElementById('review-progress-text').textContent = `Card ${reviewSession.currentIndex + 1} of ${totalCount}`;
             document.getElementById('review-edited-text').textContent = `Edited: ${editedCount} / ${totalCount - editedCount} Remaining`;
             
-            const toggleMarkBtn = document.getElementById('toggle-edited-mark-btn');
+            const markEditedBtn = document.getElementById('mark-edited-btn');
             if (reviewSession.editedCardIds.has(card.id)) {
-                toggleMarkBtn.classList.remove('hidden');
+                markEditedBtn.classList.add('btn-success');
+                markEditedBtn.classList.remove('btn-secondary');
             } else {
-                toggleMarkBtn.classList.add('hidden');
+                markEditedBtn.classList.add('btn-secondary');
+                markEditedBtn.classList.remove('btn-success');
             }
 
             document.getElementById('prev-card-btn').disabled = reviewSession.currentIndex === 0;
@@ -547,21 +546,19 @@
             updateProgressBar();
         }
 
-        function handleReviewNav(direction) {
+        async function handleReviewNav(direction) {
             clearAutoSkipTimer();
             
-            const wasEditing = isReviewEditing;
             if (isReviewEditing) {
-                saveReviewEdit();
+                const success = await saveReviewEdit();
+                if (!success) return; 
+                exitReviewEditMode();
             }
             
             const newIndex = reviewSession.currentIndex + direction;
             if (newIndex >= 0 && newIndex < reviewSession.cards.length) {
                 reviewSession.currentIndex = newIndex;
                 renderReviewCard();
-                if (wasEditing) {
-                    enterReviewEditMode();
-                }
             }
         }
         
@@ -597,10 +594,24 @@
             if (e.key === 's' || e.key === 'S') document.querySelector('[data-target="review-beispiel-filename"]').click();
             if (e.key === 'Enter' && !isReviewEditing) enterReviewEditMode();
             if (e.key === 'Delete') document.getElementById('delete-review-card-btn').click();
+            if (e.key === 'm' || e.key === 'M') document.getElementById('mark-edited-btn').click();
         }
 
-        function startReviewSession() {
+        async function updateEditedCardsInFirestore() {
+            if (!userId || !currentReviewDate) return;
+            try {
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/review_sessions`, currentReviewDate);
+                const idsArray = Array.from(reviewSession.editedCardIds);
+                await setDoc(docRef, { editedCardIds: idsArray });
+            } catch (error) {
+                console.error("Failed to save review progress:", error);
+                showNotification("Could not save review progress.");
+            }
+        }
+
+        async function startReviewSession() {
             const selectedDate = document.getElementById('review-date-selector').value;
+            currentReviewDate = selectedDate;
             let cardsForReview = [];
 
             if (selectedDate === 'all') {
@@ -614,6 +625,21 @@
             if (cardsForReview.length === 0) { showNotification(`No cards found.`); return; }
 
             reviewSession = { cards: cardsForReview, currentIndex: 0, autoSkipTimer: null, beispielCopyIndex: 0, editedCardIds: new Set() };
+            
+            // Fetch persisted edited IDs
+            if (userId && currentReviewDate) {
+                try {
+                    const docRef = doc(db, `artifacts/${appId}/users/${userId}/review_sessions`, currentReviewDate);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists() && docSnap.data().editedCardIds) {
+                        const editedIds = docSnap.data().editedCardIds;
+                        reviewSession.editedCardIds = new Set(editedIds);
+                    }
+                } catch (error) {
+                    console.error("Error fetching review session:", error);
+                }
+            }
+
             document.getElementById('review-setup').classList.add('hidden');
             document.getElementById('review-session').classList.remove('hidden');
             document.addEventListener('keydown', handleReviewKeyboard);
@@ -624,6 +650,7 @@
         function endReviewSession() {
             clearAutoSkipTimer();
             reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, beispielCopyIndex: 0, editedCardIds: new Set() };
+            currentReviewDate = null;
             document.getElementById('main-app').classList.remove('hidden');
             document.getElementById('review-modal').classList.add('hidden');
             document.getElementById('review-setup').classList.remove('hidden');
@@ -1069,14 +1096,15 @@
             editTranslation.classList.remove('hidden');
             editTranslation.value = unformatMultiLine(card.translation || '');
             
-            document.querySelectorAll('.review-copy-btn, .review-content .btn-icon').forEach(btn => btn.classList.add('hidden'));
+            document.querySelectorAll('.review-card .review-copy-btn, .review-card .copy-line-btn').forEach(btn => btn.classList.add('hidden'));
             document.getElementById('edit-review-card-btn').classList.add('hidden');
             document.getElementById('save-review-edit-btn').classList.remove('hidden');
             document.getElementById('cancel-review-edit-btn').classList.remove('hidden');
             isReviewEditing = true;
             editBeispiel.focus();
             setTimeout(() => {
-                editBeispiel.setSelectionRange(0, 0);
+                 const len = editBeispiel.value.length;
+                 editBeispiel.setSelectionRange(len, len);
             }, 0);
         }
 
@@ -1084,8 +1112,11 @@
             renderReviewCard(); 
             document.getElementById('review-beispiel').classList.remove('hidden');
             document.getElementById('edit-beispiel').classList.add('hidden');
+
             document.getElementById('review-translation').classList.remove('hidden');
             document.getElementById('edit-translation').classList.add('hidden');
+            
+            document.querySelectorAll('.review-card .review-copy-btn, .review-card .copy-line-btn').forEach(btn => btn.classList.remove('hidden'));
             document.getElementById('edit-review-card-btn').classList.remove('hidden');
             document.getElementById('save-review-edit-btn').classList.add('hidden');
             document.getElementById('cancel-review-edit-btn').classList.add('hidden');
@@ -1093,7 +1124,7 @@
         }
 
         async function saveReviewEdit() {
-            if (!isReviewEditing || reviewSession.currentIndex === -1) return;
+            if (!isReviewEditing || reviewSession.currentIndex === -1) return false;
             
             const newBeispiel = formatMultiLine(document.getElementById('edit-beispiel').value.trim());
             const newTranslation = formatMultiLine(document.getElementById('edit-translation').value.trim());
@@ -1115,8 +1146,7 @@
             }
 
             if (newBeispiel === card.beispiel && newTranslation === card.translation) {
-                exitReviewEditMode();
-                return;
+                return true;
             }
             
             try {
@@ -1131,9 +1161,25 @@
                 card.beispielSpeech = newBeispielSpeech;
                 
                 reviewSession.editedCardIds.add(card.id);
-                exitReviewEditMode();
+                await updateEditedCardsInFirestore();
                 showNotification('Card updated successfully.', 'success');
-            } catch (error) { showNotification('Failed to update card.'); }
+                return true;
+            } catch (error) { 
+                showNotification('Failed to update card.');
+                return false;
+            }
+        }
+
+        function afterSaveAction() {
+            const isPauseTimerEnabled = document.getElementById('pause-timer-toggle').checked;
+            
+            exitReviewEditMode();
+
+            if (isPauseTimerEnabled) {
+                if (reviewSession.currentIndex < reviewSession.cards.length - 1) {
+                    handleReviewNav(1);
+                }
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -1207,31 +1253,52 @@
             });
             document.getElementById('export-all-radio').addEventListener('change', (e) => { if(e.target.checked) document.getElementById('export-date-selection').classList.add('hidden'); });
             document.getElementById('export-date-radio').addEventListener('change', (e) => { if(e.target.checked) document.getElementById('export-date-selection').classList.remove('hidden'); });
-            document.querySelectorAll('.review-copy-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
+            
+            document.getElementById('review-session').addEventListener('click', (e) => {
+                const lineCopyBtn = e.target.closest('.copy-line-btn');
+                if(lineCopyBtn) {
+                    navigator.clipboard.writeText(lineCopyBtn.dataset.text).then(() => {
+                        showNotification("Copied sentence!", "success", 1500);
+                        lineCopyBtn.parentElement.classList.add('copy-highlight');
+                        setTimeout(() => lineCopyBtn.parentElement.classList.remove('copy-highlight'), 400);
+                    }).catch(() => showNotification("Failed to copy."));
+                    return;
+                }
+
+                const mainCopyBtn = e.target.closest('.review-copy-btn');
+                if (mainCopyBtn) {
                     clearAutoSkipTimer();
-                    const targetId = e.currentTarget.dataset.target;
-                    const textToCopy = document.getElementById(targetId).textContent;
+                    const targetId = mainCopyBtn.dataset.target;
+                    const contentEl = document.getElementById(targetId);
+                    if (!contentEl) return;
+
+                    const textToCopy = unformatMultiLine(contentEl.innerHTML);
+
                     navigator.clipboard.writeText(textToCopy).then(() => {
                         showNotification("Copied!", "success", 1500);
+
+                        const isPauseTimerEnabled = document.getElementById('pause-timer-toggle').checked;
+                        const isBackButton = mainCopyBtn.dataset.target === 'review-back';
+
+                        if (isPauseTimerEnabled && isBackButton) {
+                            if (!isReviewEditing) enterReviewEditMode();
+                            return;
+                        }
+                        
                         const advance = () => { if (reviewSession.currentIndex < reviewSession.cards.length - 1) handleReviewNav(1); };
                         if (!isReviewEditing) {
                             const isDelayedSkip = document.getElementById('auto-skip-toggle').checked;
-                            const isTimerPaused = document.getElementById('pause-timer-toggle').checked;
-
-                            if (isTimerPaused) {
-                                return; 
-                            }
-
-                            if (isDelayedSkip) {
+                            if (isDelayedSkip && !isPauseTimerEnabled) {
                                 reviewSession.autoSkipTimer = setTimeout(advance, 55000);
-                            } else {
+                            } else if (!isDelayedSkip) {
                                 advance();
                             }
                         }
                     }).catch(() => showNotification("Failed to copy.")); 
-                });
+                }
             });
+
+
             document.addEventListener('keydown', (e) => {
                 const formInputs = ['front', 'back', 'beispiel', 'translation'];
                 const reviewInputs = ['edit-beispiel', 'edit-translation'];
@@ -1264,15 +1331,29 @@
             document.getElementById('confirm-delete-cards-btn').addEventListener('click', handleConfirmDeleteCards);
             document.getElementById('cancel-delete-cards-btn').addEventListener('click', () => document.getElementById('delete-cards-modal').classList.add('hidden'));
             document.getElementById('edit-review-card-btn').addEventListener('click', enterReviewEditMode);
-            document.getElementById('save-review-edit-btn').addEventListener('click', saveReviewEdit);
+            
+            document.getElementById('save-review-edit-btn').addEventListener('click', async () => {
+                const success = await saveReviewEdit();
+                if (success) {
+                    afterSaveAction();
+                }
+            });
+
             document.getElementById('cancel-review-edit-btn').addEventListener('click', exitReviewEditMode);
+
             [document.getElementById('edit-beispiel'), document.getElementById('edit-translation')].forEach(input => {
-                input.addEventListener('keydown', e => {
-                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveReviewEdit(); }
+                input.addEventListener('keydown', async e => {
+                    if (e.key === 'Enter' && !e.shiftKey) { 
+                        e.preventDefault(); 
+                        const success = await saveReviewEdit();
+                        if (success) {
+                           afterSaveAction();
+                        }
+                    }
                     if (e.key === 'Escape') { e.preventDefault(); exitReviewEditMode(); }
                 });
             });
-            document.getElementById('toggle-edited-mark-btn').addEventListener('click', () => {
+            document.getElementById('mark-edited-btn').addEventListener('click', async () => {
                 if (reviewSession.currentIndex > -1) {
                     const cardId = reviewSession.cards[reviewSession.currentIndex].id;
                     if (reviewSession.editedCardIds.has(cardId)) {
@@ -1280,6 +1361,7 @@
                     } else {
                         reviewSession.editedCardIds.add(cardId);
                     }
+                    await updateEditedCardsInFirestore();
                     renderReviewCard();
                 }
             });
