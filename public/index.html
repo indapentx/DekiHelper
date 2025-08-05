@@ -321,7 +321,9 @@
         }
         
         function formatMultiLine(text) {
-            return text.replace(/\r?\n/g, ' <br> ').trim();
+            // Replace multiple newlines with a single one, then format for <br>
+            const cleanedText = text.replace(/(\r\n|\r|\n){2,}/g, '$1');
+            return cleanedText.replace(/\r?\n/g, ' <br> ').trim();
         }
 
         function unformatMultiLine(text) {
@@ -546,7 +548,7 @@
             updateProgressBar();
         }
 
-        async function handleReviewNav(direction) {
+        async function handleReviewNav(direction, autoEditNext = false) {
             clearAutoSkipTimer();
             
             if (isReviewEditing) {
@@ -559,6 +561,22 @@
             if (newIndex >= 0 && newIndex < reviewSession.cards.length) {
                 reviewSession.currentIndex = newIndex;
                 renderReviewCard();
+
+                if (autoEditNext) {
+                    const nextCard = reviewSession.cards[newIndex];
+                    if (nextCard && nextCard.back) {
+                        try {
+                            await navigator.clipboard.writeText(nextCard.back);
+                            showNotification("Copied next card's back!", "success", 1500);
+                        } catch (err) {
+                            showNotification("Failed to copy automatically.");
+                        } finally {
+                            enterReviewEditMode();
+                        }
+                    } else {
+                        enterReviewEditMode();
+                    }
+                }
             }
         }
         
@@ -673,9 +691,9 @@
                 front: front.value.trim(),
                 back: back.value.trim(),
                 speech: speechBox.textContent,
-                beispiel: formatMultiLine(beispiel.value.trim()),
+                beispiel: formatMultiLine(beispiel.value),
                 beispielSpeech: beispielSpeechBox.textContent,
-                translation: formatMultiLine(translation.value.trim()),
+                translation: formatMultiLine(translation.value),
                 createdAt: new Date().toISOString()
             };
             if (!cardData.front && !cardData.back) return;
@@ -697,9 +715,9 @@
                 front: front.value.trim(),
                 back: back.value.trim(),
                 speech: speechBox.textContent,
-                beispiel: formatMultiLine(beispiel.value.trim()),
+                beispiel: formatMultiLine(beispiel.value),
                 beispielSpeech: beispielSpeechBox.textContent,
-                translation: formatMultiLine(translation.value.trim()),
+                translation: formatMultiLine(translation.value),
                 createdAt: allCards.find(c => c.id === currentEditId)?.createdAt || new Date().toISOString()
             };
             try {
@@ -1126,8 +1144,8 @@
         async function saveReviewEdit() {
             if (!isReviewEditing || reviewSession.currentIndex === -1) return false;
             
-            const newBeispiel = formatMultiLine(document.getElementById('edit-beispiel').value.trim());
-            const newTranslation = formatMultiLine(document.getElementById('edit-translation').value.trim());
+            const newBeispiel = formatMultiLine(document.getElementById('edit-beispiel').value);
+            const newTranslation = formatMultiLine(document.getElementById('edit-translation').value);
             const card = reviewSession.cards[reviewSession.currentIndex];
             
             const backValue = card.back;
@@ -1170,14 +1188,14 @@
             }
         }
 
-        function afterSaveAction() {
+        async function afterSaveAction() {
             const isPauseTimerEnabled = document.getElementById('pause-timer-toggle').checked;
             
             exitReviewEditMode();
 
             if (isPauseTimerEnabled) {
                 if (reviewSession.currentIndex < reviewSession.cards.length - 1) {
-                    handleReviewNav(1);
+                    await handleReviewNav(1, true); // Pass true to auto-edit the next card
                 }
             }
         }
@@ -1321,9 +1339,19 @@
                 if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.querySelector('.modal-backdrop:not(#review-modal):not(.hidden)')) return;
                 
                 if (document.getElementById('review-session').classList.contains('hidden')) {
-                    if (e.key === 't') { e.preventDefault(); document.getElementById('generate-img-tag-btn').click(); }
-                    else if (e.key === ' ') { e.preventDefault(); document.getElementById('review-modal').classList.contains('hidden') ? document.getElementById('review-btn').click() : document.getElementById('start-session-btn').click(); }
-                    else if (e.key === 'Enter' && !document.getElementById('review-modal').classList.contains('hidden') && !document.getElementById('review-setup').classList.contains('hidden')) { e.preventDefault(); document.getElementById('start-session-btn').click(); }
+                    if (e.key === 't') { 
+                        e.preventDefault(); 
+                        document.getElementById('generate-img-tag-btn').click(); 
+                    } else if (e.key === 'r' || e.key === 'R') {
+                        e.preventDefault();
+                        document.getElementById('review-btn').click();
+                    } else if (e.key === ' ') { 
+                        e.preventDefault(); 
+                        document.getElementById('review-modal').classList.contains('hidden') ? document.getElementById('review-btn').click() : document.getElementById('start-session-btn').click(); 
+                    } else if (e.key === 'Enter' && !document.getElementById('review-modal').classList.contains('hidden') && !document.getElementById('review-setup').classList.contains('hidden')) { 
+                        e.preventDefault(); 
+                        document.getElementById('start-session-btn').click(); 
+                    }
                 }
             });
             onAuthStateChanged(auth, user => { if (user) showAppUI(user); else showLoginUI(); });
@@ -1351,6 +1379,16 @@
                         }
                     }
                     if (e.key === 'Escape') { e.preventDefault(); exitReviewEditMode(); }
+                });
+                input.addEventListener('paste', (e) => {
+                    setTimeout(() => {
+                        const textarea = e.target;
+                        if (textarea.value.slice(-1) !== '\n') {
+                            textarea.value += '\n';
+                        }
+                        textarea.scrollTop = textarea.scrollHeight;
+                        textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+                    }, 1);
                 });
             });
             document.getElementById('mark-edited-btn').addEventListener('click', async () => {
