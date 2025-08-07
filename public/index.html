@@ -556,6 +556,15 @@
                 if (!success) return; 
                 exitReviewEditMode();
             }
+
+            // Mark the card we are leaving as edited
+            if (direction > 0 && reviewSession.currentIndex > -1) {
+                const cardId = reviewSession.cards[reviewSession.currentIndex].id;
+                if (!reviewSession.editedCardIds.has(cardId)) {
+                    reviewSession.editedCardIds.add(cardId);
+                    await updateEditedCardsInFirestore();
+                }
+            }
             
             const newIndex = reviewSession.currentIndex + direction;
             if (newIndex >= 0 && newIndex < reviewSession.cards.length) {
