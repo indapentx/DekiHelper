@@ -17,7 +17,7 @@
         .anki-input:focus, #clipboard-output:focus, textarea.anki-input:focus { outline: none; border-color: #007acc; }
         .anki-readonly-box { min-height: 48px; display: flex; align-items: center; word-break: break-all; }
         .anki-label { color: #bdc3c7; font-weight: 600; font-size: 14px; }
-        .btn { padding: 5px 12px; font-size: 0.875rem; border-radius: 7px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn { padding: 8px 16px; font-size: 0.875rem; border-radius: 7px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
         .btn-sm { padding: 4px 10px; font-size: 0.8rem; }
         .btn-lg { padding: 10px 20px; font-size: 1.125rem; }
         .btn-primary { background-color: #007acc; color: white; } .btn-primary:hover:not(:disabled) { background-color: #005f9e; }
@@ -135,11 +135,11 @@
                         <p id="review-edited-text" class="font-semibold"></p>
                     </div>
                     <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-                        <button id="edit-review-card-btn" class="btn btn-secondary btn-sm"><i class="fas fa-pencil-alt"></i> Edit</button>
-                        <button id="save-review-edit-btn" class="btn btn-success btn-sm hidden"><i class="fas fa-check"></i> Save</button>
-                        <button id="cancel-review-edit-btn" class="btn btn-secondary btn-sm hidden"><i class="fas fa-times"></i> Cancel</button>
-                        <button id="mark-edited-btn" class="btn btn-secondary btn-sm" title="Mark as Edited (M)"><i class="fas fa-check"></i></button>
-                        <button id="delete-review-card-btn" class="btn btn-danger btn-sm"><i class="fas fa-trash-alt"></i></button>
+                        <button id="edit-review-card-btn" class="btn btn-secondary"><i class="fas fa-pencil-alt"></i> Edit</button>
+                        <button id="save-review-edit-btn" class="btn btn-success hidden"><i class="fas fa-check"></i> Save</button>
+                        <button id="cancel-review-edit-btn" class="btn btn-secondary hidden"><i class="fas fa-times"></i> Cancel</button>
+                        <button id="mark-edited-btn" class="btn btn-secondary" title="Mark as Edited (M)"><i class="fas fa-check"></i></button>
+                        <button id="delete-review-card-btn" class="btn btn-danger"><i class="fas fa-trash-alt"></i></button>
                         <label class="toggle-label flex items-center cursor-pointer">
                             <span class="mr-2 text-sm font-medium">Skip Delay</span>
                             <div class="relative">
@@ -326,9 +326,12 @@
         }
         
         function formatMultiLine(text) {
-            // Replace multiple newlines with a single one, then format for <br>
-            const cleanedText = text.replace(/(\r\n|\r|\n){2,}/g, '$1');
-            return cleanedText.replace(/\r?\n/g, ' <br> ').trim();
+            if (!text) return '';
+            return text
+                .split(/\r?\n/)
+                .map(line => line.trim())
+                .filter(line => line.length > 0)
+                .join(' <br> ');
         }
 
         function unformatMultiLine(text) {
@@ -361,7 +364,7 @@
                     const suffix = index === 0 ? '' : index + 1;
                     return `[sound:s_${soundTagText}${suffix}.mp3]`;
                 }).join('');
-                beispielSpeechBox.textContent = `<br>${soundTags}`;
+                beispielSpeechBox.textContent = `<br> ${soundTags}`;
             }
         }
         
@@ -1176,7 +1179,7 @@
                         const suffix = index === 0 ? '' : index + 1;
                         return `[sound:s_${backValue}${suffix}.mp3]`;
                     }).join('');
-                    newBeispielSpeech = `<br>${soundTags}`;
+                    newBeispielSpeech = `<br> ${soundTags}`;
                 }
             }
 
