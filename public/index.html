@@ -1037,13 +1037,17 @@
                     lines.forEach((line, index) => {
                         const fields = line.split('\t');
                         const cardTimestamp = new Date(importTimestamp.getTime() + index);
+
+                        const beispielText = (fields[3] || '').split(/\s{2,}/).join('\n');
+                        const translationText = (fields[5] || '').split(/\s{2,}/).join('\n');
+
                         const cardData = {
                             front: fields[0] || '',
                             back: fields[1] || '',
                             speech: fields[2] || '',
-                            beispiel: fields[3] || '',
+                            beispiel: formatMultiLine(beispielText),
                             beispielSpeech: fields[4] || '',
-                            translation: fields[5] || '',
+                            translation: formatMultiLine(translationText),
                             createdAt: cardTimestamp.toISOString()
                         };
                         const newCardRef = doc(collection(db, `artifacts/${appId}/users/${userId}/cards`));
