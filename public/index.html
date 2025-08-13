@@ -435,7 +435,7 @@
                         <p class="card-item-back">${cardData.back || '<em>No Back</em>'}</p>
                     </div>
                     <div class="flex items-center space-x-2">
-                        <button class="btn-icon copy-btn" title="Copy Back"><i class="fas fa-copy"></i></button>
+                        <button class="btn-icon copy-btn" title="Copy Back (C)"><i class="fas fa-copy"></i></button>
                         <button class="btn-icon edit-btn" title="Edit"><i class="fas fa-pencil-alt"></i></button>
                         <button class="btn-icon delete-btn" title="Delete"><i class="fas fa-trash-alt"></i></button>
                     </div>
@@ -807,7 +807,7 @@
                 showNotification("No cards match the selected criteria.", "success");
                 return;
             }
-            cards.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+            cards.sort((a, b) => new Date(a.createdAt) - new Date(a.createdAt));
             const today = new Date().toISOString().split('T')[0];
             let content, fileName, mimeType;
 
@@ -1414,6 +1414,12 @@
                     } else if (e.key === 'Enter' && !document.getElementById('review-modal').classList.contains('hidden') && !document.getElementById('review-setup').classList.contains('hidden')) { 
                         e.preventDefault(); 
                         document.getElementById('start-session-btn').click(); 
+                    } else if (e.key === 'c' || e.key === 'C') {
+                        e.preventDefault();
+                        const firstCard = document.querySelector('#card-list .card-item .copy-btn');
+                        if (firstCard) {
+                            firstCard.click();
+                        }
                     }
                 }
             });
