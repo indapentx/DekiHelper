@@ -338,6 +338,32 @@
             return text.replace(/\s*<br\s*\/?>\s*/gi, '\n').trim();
         }
 
+        function isBlank(value) {
+            if (value == null) return true;
+            if (typeof value === 'string') return value.trim() === '';
+            return String(value).trim() === '';
+        }
+
+        function sanitizeForExport(value, fallback = '') {
+            let text = isBlank(value) ? (fallback != null ? fallback : '') : value;
+            if (text == null) text = '';
+            return String(text)
+                .replace(/[\r\n]+/g, ' <br> ')
+                .replace(/\t/g, ' ')
+                .trim();
+        }
+
+        function getCreatedAtTime(value) {
+            if (!value) return 0;
+            if (typeof value === 'object' && typeof value.seconds === 'number') {
+                const millis = value.seconds * 1000;
+                const extra = value.nanoseconds ? Math.floor(value.nanoseconds / 1e6) : 0;
+                return millis + extra;
+            }
+            const time = new Date(value).getTime();
+            return Number.isFinite(time) ? time : 0;
+        }
+
         function updateSpeechFields() { 
             const backInput = document.getElementById('back');
             const beispielInput = document.getElementById('beispiel');
@@ -421,7 +447,7 @@
             }
             
             const docs = [...cardsToRender];
-            docs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            docs.sort((a, b) => getCreatedAtTime(b.createdAt) - getCreatedAtTime(a.createdAt));
             docs.forEach(cardData => {
                 const cardEl = document.createElement('div');
                 cardEl.className = 'card-item';
@@ -674,11 +700,11 @@
             let cardsForReview = [];
 
             if (selectedDate === 'all') {
-                cardsForReview = [...allCards].sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt));
+                cardsForReview = [...allCards].sort((a,b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt));
             } else {
                 cardsForReview = allCards
                     .filter(card => card.createdAt && card.createdAt.startsWith(selectedDate))
-                    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+                    .sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt));
             }
 
             if (cardsForReview.length === 0) { showNotification(`No cards found.`); return; }
@@ -807,11 +833,7 @@
                 showNotification("No cards match the selected criteria.", "success");
                 return;
             }
-            const toTime = (value) => {
-                const time = value ? new Date(value).getTime() : 0;
-                return Number.isFinite(time) ? time : 0;
-            };
-            cards.sort((a, b) => toTime(a.createdAt) - toTime(b.createdAt));
+            cards.sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt));
             const today = new Date().toISOString().split('T')[0];
             let content, fileName, mimeType;
 
@@ -822,16 +844,16 @@
                 mimeType = 'application/json';
             } else { // txt format
                 content = cards.map(data => {
-                    const line = [
-                        data.front || '',
-                        data.back || '',
-                        data.speech || '',
-                        data.beispiel || '',
-                        data.beispielSpeech || '',
-                        data.translation || ''
-                    ].join('\t');
-                    
-                    return line;
+                    const sanitizedBack = sanitizeForExport(data.back);
+                    const fields = [
+                        sanitizeForExport(data.front, sanitizedBack),
+                        sanitizedBack,
+                        sanitizeForExport(data.speech),
+                        sanitizeForExport(data.beispiel),
+                        sanitizeForExport(data.beispielSpeech),
+                        sanitizeForExport(data.translation)
+                    ];
+                    return fields.join('\t');
                 }).join('\n');
                 
                 fileName = `${today}.txt`;
@@ -869,19 +891,24 @@
             let clipboardText = '';
             if (format === 'clipboard') {
                 clipboardText = cardsToExport
-                    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-                    .map(data => `${data.back || ''}\t${data.front || ''}`)
+                    .sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt))
+                    .map(data => {
+                        const sanitizedBack = sanitizeForExport(data.back);
+                        const sanitizedFront = sanitizeForExport(data.front, sanitizedBack);
+                        return `${sanitizedBack}\t${sanitizedFront}`;
+                    })
                     .join('\n');
             } else if (format === 'beispiel-speech') {
                 clipboardText = cardsToExport
-                    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-                    .map(data => data.beispielSpeech || '')
+                    .sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt))
+                    .map(data => sanitizeForExport(data.beispielSpeech))
+                    .filter(text => !isBlank(text))
                     .join('\n');
             } else if (format === 'clipboard-back-only') {
                 clipboardText = cardsToExport
-                    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-                    .map(data => data.back || '')
-                    .filter(Boolean)
+                    .sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt))
+                    .map(data => sanitizeForExport(data.back))
+                    .filter(text => !isBlank(text))
                     .join(', ');
             } else {
                 triggerExportDownload(cardsToExport, format);

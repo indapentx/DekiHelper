@@ -1,0 +1,88 @@
+resimler	die Bilder	[sound:die Bilder.mp3]			
+sizin	Ihr	[sound:Ihr.mp3]		[sound:s_Ihr.mp3]	
+perdeler	die Gardinen	[sound:die Gardinen.mp3]			
+kol saatleri	die Armbanduhren	[sound:die Armbanduhren.mp3]			
+çalışma masası sandalyeleri	die Schreibtischstühle	[sound:die Schreibtischstühle.mp3]			
+komşu (erkek)	der Nachbar	[sound:der Nachbar.mp3]	Meine neue Nachbarin ist sehr nett.	[sound:s_der Nachbar.mp3]	Yeni komşum çok nazik.
+"<img src=""die Gardine.jpg"">"	die Gardine	[sound:die Gardine.mp3]		[sound:s_die Gardine.mp3]	
+rahat değil	unbequem	[sound:unbequem.mp3]		[sound:s_unbequem.mp3]	
+bulmak	finden	[sound:finden.mp3]	Meine Tante hat eine gute Arbeit gefunden. <br> Ich kann meinen Schlüssel nicht finden. <br> Luigi finde ich sehr nett.	<br> [sound:s_finden.mp3][sound:s_finden2.mp3][sound:s_finden3.mp3]	Teyzem iyi bir iş buldu.<br>Anahtarımı bulamıyorum.<br>Luigi'yi çok sempatik buluyorum.
+"<img src=""der Teppich.jpg"">"	der Teppich	[sound:der Teppich.mp3]	Ich habe mir einen neuen Teppich gekauft. <br> Habt ihr in eurer neuen Wohnung Teppich oder einen Holzfußboden?	<br> [sound:s_der Teppich.mp3][sound:s_der Teppich2.mp3]	Kendime yeni bir halı aldım.<br>Yeni evinizde halı mı var yoksa ahşap zemin mi?
+tekli koltuklar	die Sessel	[sound:die Sessel.mp3]			
+"<img src=""das Bücherregal.jpg"">"	das Bücherregal	[sound:das Bücherregal.mp3]		[sound:s_das Bücherregal.mp3]	
+"<img src=""der Sessel.jpg"">"	der Sessel	[sound:der Sessel.mp3]		[sound:s_der Sessel.mp3]	
+"<img src=""die Unterhose.jpg"">"	die Unterhose	[sound:die Unterhose.mp3]		[sound:s_die Unterhose.mp3]	
+dolaplar	die Schränke	[sound:die Schränke.mp3]			
+komodinler	die Nachttische	[sound:die Nachttische.mp3]			
+"<img src=""der Kleiderschrank.jpg"">"	der Kleiderschrank	[sound:der Kleiderschrank.mp3]		[sound:s_der Kleiderschrank.mp3]	
+lavabolar	die Spülen	[sound:die Spülen.mp3]			
+kitaplıklar	die Bücherregale	[sound:die Bücherregale.mp3]			
+sandalyeler	die Stühle	[sound:die Stühle.mp3]			
+temizlemek	putzen	[sound:putzen.mp3]	Ich muss heute noch die Wohnung putzen. <br> Hast du dir schon die Zähne geputzt?	<br> [sound:s_putzen.mp3][sound:s_putzen2.mp3]	Bugün evi temizlemem gerekiyor.<br>Dişlerini fırçaladın mı?
+"<img src=""die Stehlampe.jpg"">"	die Stehlampe	[sound:die Stehlampe.mp3]		[sound:s_die Stehlampe.mp3]	
+çalışma masaları	die Schreibtische	[sound:die Schreibtische.mp3]			
+kirli	dreckig	[sound:dreckig.mp3]		[sound:s_dreckig.mp3]	
+"<img src=""das Bild.jpg"">"	das Bild	[sound:das Bild.mp3]	Ein Bild von meinen Kindern hängt über meinem Schreibtisch.	[sound:s_das Bild.mp3]	Çocuklarımın bir resmi çalışma masamın üzerinde asılı.
+kanepeler	die Couches	[sound:die Couches.mp3]			
+yataklar	die Betten	[sound:die Betten.mp3]			
+benim	mein	[sound:mein.mp3]	Mein Vater ist Arzt.	[sound:s_mein.mp3]	Babam doktor.
+çalışmak	arbeiten	[sound:arbeiten.mp3]	Er arbeitet heute bis 16 Uhr. <br> Arzu arbeitet als Krankenschwester im Krankenhaus.	<br> [sound:s_arbeiten.mp3][sound:s_arbeiten2.mp3]	Bugün saat 16'ya kadar çalışıyor.<br>Arzu hastanede hemşire olarak çalışıyor.
+"<img src=""die Uhr.jpg"">"	die Uhr	[sound:die Uhr.mp3]	Wie viel Uhr ist es? <br> Es ist vier Uhr. <br> Um wie viel Uhr müssen wir gehen? <br> Meine Uhr ist stehen geblieben.	<br> [sound:s_die Uhr.mp3][sound:s_die Uhr2.mp3][sound:s_die Uhr3.mp3][sound:s_die Uhr4.mp3]	Saat kaç?<br>Saat dört.<br>Saat kaçta gitmemiz gerekiyor?<br>Saatim durmuş.
+"<img src=""die Spüle.jpg"">"	die Spüle	[sound:die Spüle.mp3]		[sound:s_die Spüle.mp3]	
+senin	dein	[sound:dein.mp3]	Ist das dein Auto? <br> Ist das deins?	<br> [sound:s_dein.mp3][sound:s_dein2.mp3]	Bu senin araban mı?<br>Bu seninki mi?
+onun (eril)	sein	[sound:sein.mp3]	Herr Müller ist in seinem Zimmer.	[sound:s_sein.mp3]	Bay Müller odasında.
+"<img src=""der Fernseher.jpg"">"	der Fernseher	[sound:der Fernseher.mp3]	Der Fernseher ist schon wieder kaputt.	[sound:s_der Fernseher.mp3]	Televizyon yine bozuldu.
+"<img src=""duschen.jpg"">"	duschen	[sound:duschen.mp3]	Wenn Sie sich duschen wollen: Das Badezimmer ist dort hinten links. <br> Ich bade nicht so gern, ich dusche lieber.	<br> [sound:s_duschen.mp3][sound:s_duschen2.mp3]	Duş almak isterseniz: Banyo hemen arkada solda.<br>Banyo yapmayı pek sevmem, duş almayı tercih ederim.
+"<img src=""die Waschmaschine.jpg"">"	die Waschmaschine	[sound:die Waschmaschine.mp3]		[sound:s_die Waschmaschine.mp3]	
+mobilyalar	die Möbel	[sound:die Möbel.mp3]			
+bunun yanında; onun yanında	daneben	[sound:daneben.mp3]	Du weißt doch, wo die Post ist. Gleich daneben ist die Bank.	[sound:s_daneben.mp3]	Postanenin nerede olduğunu biliyorsun ya. Hemen yanında banka var.
+"<img src=""der Schreibtischstuhl.jpg"">"	der Schreibtischstuhl	[sound:der Schreibtischstuhl.mp3]		[sound:s_der Schreibtischstuhl.mp3]	
+komşular (erkek)	die Nachbarn	[sound:die Nachbarn.mp3]			
+temiz	sauber	[sound:sauber.mp3]	Bringen Sie mir bitte ein sauberes Glas! <br> Ich muss noch das Bad sauber machen.	<br> [sound:s_sauber.mp3][sound:s_sauber2.mp3]	Lütfen bana temiz bir bardak getiriniz!<br>Banyoyu henüz temizlemem lazım.
+komşu (kadın)	die Nachbarin	[sound:die Nachbarin.mp3]		[sound:s_die Nachbarin.mp3]	
+büro sandalyeleri	die Bürostühle	[sound:die Bürostühle.mp3]			
+"<img src=""der Föhn.jpg"">"	der Föhn	[sound:der Föhn.mp3]		[sound:s_der Föhn.mp3]	
+"<img src=""die Armbanduhr.jpg"">"	die Armbanduhr	[sound:die Armbanduhr.mp3]		[sound:s_die Armbanduhr.mp3]	
+onun (dişil); onların	ihr	[sound:ihr.mp3]	Gib ihr/ihm bitte das Buch.	[sound:s_ihr.mp3]	Lütfen kitabı ona ver.
+"<img src=""das Regal.jpg"">"	das Regal	[sound:das Regal.mp3]	Das Buch steht im Regal oben rechts.	[sound:s_das Regal.mp3]	Kitap rafta sağ üstte duruyor.
+yakında	bald	[sound:bald.mp3]	Besuchen Sie uns doch bald mal. <br> Geben Sie mir bitte so bald wie möglich Bescheid. <br> Auf Wiedersehen, bis bald!	<br> [sound:s_bald.mp3][sound:s_bald2.mp3][sound:s_bald3.mp3]	Bizi yakında bir ara ziyaret edin lütfen.<br>Lütfen mümkün olan en kısa zamanda haber verin.<br>Hoşça kalın, yakında görüşürüz!
+"<img src=""das Sofa.jpg"">"	das Sofa	[sound:das Sofa.mp3]	Wir hätten gern ein modernes Sofa.	[sound:s_das Sofa.mp3]	Modern bir kanepe istiyoruz.
+saatler	die Uhren	[sound:die Uhren.mp3]			
+"<img src=""das Möbel.jpg"">"	das Möbel	[sound:das Möbel.mp3]	Wir haben uns neue Möbel gekauft.	[sound:s_das Möbel.mp3]	Kendimize yeni mobilyalar aldık.
+masalar	die Tische	[sound:die Tische.mp3]			
+kanapeler	die Sofas	[sound:die Sofas.mp3]			
+sizin (2. çoğul şahıs)	euer	[sound:euer.mp3]	Euer Kurs beginnt heute.	[sound:s_euer.mp3]	Kursunuz bugün başlıyor.
+komşular (kadın)	die Nachbarinnen	[sound:die Nachbarinnen.mp3]			
+çocuk odası	das Kinderzimmer	[sound:das Kinderzimmer.mp3]		[sound:s_das Kinderzimmer.mp3]	
+durmak	stehen	[sound:stehen.mp3]	Der Bus steht schon an der Haltestelle. <br> Ich bin Verkäuferin. In meinem Beruf muss ich viel stehen. <br> Was steht heute in der Zeitung?	<br> [sound:s_stehen.mp3][sound:s_stehen2.mp3][sound:s_stehen3.mp3]	Otobüs durakta zaten duruyor.<br>Satış görevlisiyim. Mesleğimde çok ayakta durmam gerekiyor.<br>Bugün gazetede ne yazıyor?
+"<img src=""der Herd.jpg"">"	der Herd	[sound:der Herd.mp3]	In der neuen Küche fehlt noch der Herd.	[sound:s_der Herd.mp3]	Yeni mutfakta ocak hâlâ eksik.
+saç kurutma makineleri	die Föhne	[sound:die Föhne.mp3]			
+el havluları	die Handtücher	[sound:die Handtücher.mp3]			
+"<img src=""das Handtuch.jpg"">"	das Handtuch	[sound:das Handtuch.mp3]	Gibst du mir bitte ein frisches Handtuch?	[sound:s_das Handtuch.mp3]	Bana lütfen temiz bir havlu verir misin?
+"<img src=""die Couch.jpg"">"	die Couch	[sound:die Couch.mp3]	Wir haben uns eine Couch und neue Sessel gekauft.	[sound:s_die Couch.mp3]	Kendimize bir kanepe ve yeni tekli koltuklar aldık.
+bütün; tüm; herkes	alle	[sound:alle.mp3]	Ich wünsche dir alles Gute! <br> Hast du alles? <br> Möchten Sie noch etwas? - Nein, danke. Das ist alles. <br> Sind alle da? - Nein, Rita fehlt noch. <br> Alle Freunde kommen.	<br> [sound:s_alle.mp3][sound:s_alle2.mp3][sound:s_alle3.mp3][sound:s_alle4.mp3][sound:s_alle5.mp3]	Sana her şeyin en iyisini dilerim!<br>Her şey tamam mı?<br>Başka bir şey ister misiniz? - Hayır, teşekkürler. Hepsi bu.<br>Herkes burada mı? - Hayır, Rita henüz gelmedi.<br>Bütün arkadaşlar geliyor.
+"<img src=""das Bett.jpg"">"	das Bett	[sound:das Bett.mp3]	Wir wollten uns neue Betten kaufen. <br> Solange Sie Fieber haben, müssen Sie im Bett bleiben.	<br> [sound:s_das Bett.mp3][sound:s_das Bett2.mp3]	Kendimiz için yeni yataklar almak istiyorduk.<br>Ateşiniz olduğu sürece yatakta kalmanız gerekiyor.
+"<img src=""der Bürostuhl.jpg"">"	der Bürostuhl	[sound:der Bürostuhl.mp3]		[sound:s_der Bürostuhl.mp3]	
+uyumak	schlafen	[sound:schlafen.mp3]	Haben Sie gut geschlafen? <br> Wenn Sie mal nach München kommen, können Sie bei uns schlafen.	<br> [sound:s_schlafen.mp3][sound:s_schlafen2.mp3]	İyi uyudunuz mu?<br>Bir gün Münih'e gelirseniz bizde kalabilirsiniz.
+halılar	die Teppiche	[sound:die Teppiche.mp3]			
+külotlar	die Unterhosen	[sound:die Unterhosen.mp3]			
+bilakis; aksine	doch	[sound:doch.mp3]	Isst du kein Fleisch? – Doch, manchmal schon. <br> Ich habe es mir anders überlegt. Ich komme doch mit in die Stadt. <br> Ihr kommt doch heute Abend? <br> Fragen Sie doch Herrn Müller, der ist Computerspezialist. <br> Ach, wenn doch schon Sonntag wäre!	<br> [sound:s_doch.mp3][sound:s_doch2.mp3][sound:s_doch3.mp3][sound:s_doch4.mp3][sound:s_doch5.mp3]	Et yemiyor musun? – Yiyorum, bazen de yerim.<br>Fikrimi değiştirdim. Şehre ben de geliyorum.<br>Bu akşam geliyorsunuz, değil mi?<br>Bay Müller'e sorun, kendisi bilgisayar uzmanıdır.<br>Ah, keşke şimdiden pazar olsaydı!
+modası geçmiş	spießig	[sound:spießig.mp3]		[sound:s_spießig.mp3]	
+elbise dolapları	die Kleiderschränke	[sound:die Kleiderschränke.mp3]			
+bizim	unser	[sound:unser.mp3]	Das ist unsere Lehrerin.	[sound:s_unser.mp3]	Bu bizim öğretmenimiz.
+aynalar	die Spiegel	[sound:die Spiegel.mp3]			
+televizyonlar	die Fernseher	[sound:die Fernseher.mp3]			
+"<img src=""der Schreibtisch.jpg"">"	der Schreibtisch	[sound:der Schreibtisch.mp3]		[sound:s_der Schreibtisch.mp3]	
+ayaklı lambalar	die Stehlampen	[sound:die Stehlampen.mp3]			
+ocaklar	die Herde	[sound:die Herde.mp3]			
+yastıklar	die Kissen	[sound:die Kissen.mp3]			
+çok	zu	[sound:zu.mp3]		[sound:s_zu.mp3]	
+sıcak	warm	[sound:warm.mp3]	Hier ist es sehr warm. <br> Abends essen wir oft warm. <br> Du musst dich warm anziehen. <br> Mittags möchte ich gern ein warmes Essen. <br> Für den Winter brauche ich einen warmen Pullover.	<br> [sound:s_warm.mp3][sound:s_warm2.mp3][sound:s_warm3.mp3][sound:s_warm4.mp3][sound:s_warm5.mp3]	Burada çok sıcak.<br>Akşamları sık sık sıcak yemek yeriz.<br>Sıcak giyinmelisin.<br>Öğle vakti sıcak bir yemek yemek isterim.<br>Kış için sıcak tutan bir kazağa ihtiyacım var.
+rahat	bequem	[sound:bequem.mp3]	Meine Kinder ziehen am liebsten bequeme Sachen an. <br> Im Supermarkt einkaufen ist sehr bequem. <br> Diesen Sessel finde ich sehr bequem.	<br> [sound:s_bequem.mp3][sound:s_bequem2.mp3][sound:s_bequem3.mp3]	Çocuklarım en çok rahat kıyafetler giymeyi sever.<br>Süpermarketten alışveriş yapmak çok pratik.<br>Bu koltuğu çok rahat buluyorum.
+"<img src=""der Nachttisch.jpg"">"	der Nachttisch	[sound:der Nachttisch.mp3]		[sound:s_der Nachttisch.mp3]	
+çamaşır makineleri	die Waschmaschinen	[sound:die Waschmaschinen.mp3]			
+her zaman	immer	[sound:immer.mp3]	Frau Bast kommt immer zu spät. <br> Mein Kollege liegt immer noch im Krankenhaus. <br> Die Schmerzen werden immer schlimmer.	<br> [sound:s_immer.mp3][sound:s_immer2.mp3][sound:s_immer3.mp3]	Bayan Bast hep geç geliyor.<br>Meslektaşım hâlâ hastanede yatıyor.<br>Ağrılar gitgide daha kötü oluyor.
+"<img src=""der Spiegel.jpg"">"	der Spiegel	[sound:der Spiegel.mp3]	Ich möchte gerne sehen, wie mein Kleid sitzt. Hast du einen Spiegel?	[sound:s_der Spiegel.mp3]	Elbisemin nasıl durduğunu görmek istiyorum. Aynan var mı?
+"<img src=""der Schrank.jpg"">"	der Schrank	[sound:der Schrank.mp3]	Die Handtücher liegen im Schrank.	[sound:s_der Schrank.mp3]	Havlular dolapta.
+raflar	die Regale	[sound:die Regale.mp3]			
+çocuk odaları	die Kinderzimmer	[sound:die Kinderzimmer.mp3]			
