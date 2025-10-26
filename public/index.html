@@ -807,7 +807,11 @@
                 showNotification("No cards match the selected criteria.", "success");
                 return;
             }
-            cards.sort((a, b) => new Date(a.createdAt) - new Date(a.createdAt));
+            const toTime = (value) => {
+                const time = value ? new Date(value).getTime() : 0;
+                return Number.isFinite(time) ? time : 0;
+            };
+            cards.sort((a, b) => toTime(a.createdAt) - toTime(b.createdAt));
             const today = new Date().toISOString().split('T')[0];
             let content, fileName, mimeType;
 
