@@ -338,6 +338,27 @@
             return text.replace(/\s*<br\s*\/?>\s*/gi, '\n').trim();
         }
 
+        function buildBeispielSpeech(backText, beispielText) {
+            const tagBase = prepareForSoundTag(backText);
+            if (!tagBase) return '';
+
+            const normalizedBeispiel = unformatMultiLine(beispielText || '');
+            const sentences = normalizedBeispiel
+                ? normalizedBeispiel.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0)
+                : [];
+
+            if (sentences.length <= 1) {
+                return `[sound:s_${tagBase}.mp3]`;
+            }
+
+            const soundTags = sentences.map((_, index) => {
+                const suffix = index === 0 ? '' : index + 1;
+                return `[sound:s_${tagBase}${suffix}.mp3]`;
+            }).join('');
+
+            return `<br> ${soundTags}`;
+        }
+
         function isBlank(value) {
             if (value == null) return true;
             if (typeof value === 'string') return value.trim() === '';
@@ -376,22 +397,7 @@
             const soundTagText = prepareForSoundTag(backValue); 
 
             speechBox.textContent = soundTagText ? `[sound:${soundTagText}.mp3]` : ''; 
-            
-            if (!soundTagText) {
-                beispielSpeechBox.textContent = '';
-                return;
-            }
-
-            const sentences = beispielValue.split(/\r?\n|<br\s*\/?>/i).filter(s => s.trim() !== '');
-            if (sentences.length <= 1) {
-                beispielSpeechBox.textContent = `[sound:s_${soundTagText}.mp3]`;
-            } else {
-                const soundTags = sentences.map((_, index) => {
-                    const suffix = index === 0 ? '' : index + 1;
-                    return `[sound:s_${soundTagText}${suffix}.mp3]`;
-                }).join('');
-                beispielSpeechBox.textContent = `<br> ${soundTags}`;
-            }
+            beispielSpeechBox.textContent = buildBeispielSpeech(backValue, beispielValue);
         }
         
         function clearForm() {
@@ -844,13 +850,17 @@
                 mimeType = 'application/json';
             } else { // txt format
                 content = cards.map(data => {
+                    const soundTagBase = prepareForSoundTag(data.back);
+                    const speechValue = !isBlank(data.speech) ? data.speech : (soundTagBase ? `[sound:${soundTagBase}.mp3]` : '');
+                    const fallbackBeispielSpeech = buildBeispielSpeech(data.back, data.beispiel);
+                    const beispielSpeechValue = !isBlank(data.beispielSpeech) ? data.beispielSpeech : fallbackBeispielSpeech;
                     const sanitizedBack = sanitizeForExport(data.back);
                     const fields = [
                         sanitizeForExport(data.front, sanitizedBack),
                         sanitizedBack,
-                        sanitizeForExport(data.speech),
+                        sanitizeForExport(speechValue),
                         sanitizeForExport(data.beispiel),
-                        sanitizeForExport(data.beispielSpeech),
+                        sanitizeForExport(beispielSpeechValue),
                         sanitizeForExport(data.translation)
                     ];
                     return fields.join('\t');
@@ -901,7 +911,11 @@
             } else if (format === 'beispiel-speech') {
                 clipboardText = cardsToExport
                     .sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt))
-                    .map(data => sanitizeForExport(data.beispielSpeech))
+                    .map(data => {
+                        const fallbackBeispielSpeech = buildBeispielSpeech(data.back, data.beispiel);
+                        const beispielSpeechValue = !isBlank(data.beispielSpeech) ? data.beispielSpeech : fallbackBeispielSpeech;
+                        return sanitizeForExport(beispielSpeechValue);
+                    })
                     .filter(text => !isBlank(text))
                     .join('\n');
             } else if (format === 'clipboard-back-only') {
@@ -1094,15 +1108,24 @@
                         const fields = line.split('\t');
                         const cardTimestamp = new Date(importTimestamp.getTime() + index);
 
+                        const frontField = (fields[0] || '').trim();
+                        const backField = (fields[1] || '').trim();
+                        const speechField = (fields[2] || '').trim();
                         const beispielText = (fields[3] || '').split(/\s{2,}/).join('\n');
+                        const beispielSpeechField = (fields[4] || '').trim();
                         const translationText = (fields[5] || '').split(/\s{2,}/).join('\n');
 
+                        const formattedBeispiel = formatMultiLine(beispielText);
+                        const backTagBase = prepareForSoundTag(backField);
+                        const computedSpeech = speechField || (backTagBase ? `[sound:${backTagBase}.mp3]` : '');
+                        const computedBeispielSpeech = beispielSpeechField || buildBeispielSpeech(backField, beispielText);
+
                         const cardData = {
-                            front: fields[0] || '',
-                            back: fields[1] || '',
-                            speech: fields[2] || '',
-                            beispiel: formatMultiLine(beispielText),
-                            beispielSpeech: fields[4] || '',
+                            front: frontField,
+                            back: backField,
+                            speech: computedSpeech,
+                            beispiel: formattedBeispiel,
+                            beispielSpeech: computedBeispielSpeech,
                             translation: formatMultiLine(translationText),
                             createdAt: cardTimestamp.toISOString()
                         };
