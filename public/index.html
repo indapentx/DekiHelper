@@ -303,6 +303,7 @@
         let isSignUpMode = false;
         let isReviewEditing = false;
         let currentReviewDate = null;
+        let deleteShortcutState = { pending: false, timeoutId: null };
         
         function showNotification(message, level = 'error', duration = 3000) {
             const notification = document.getElementById('notification');
@@ -318,6 +319,14 @@
                 clearTimeout(reviewSession.autoSkipTimer);
                 reviewSession.autoSkipTimer = null;
             }
+        }
+
+        function resetDeleteShortcut() {
+            if (deleteShortcutState.timeoutId) {
+                clearTimeout(deleteShortcutState.timeoutId);
+                deleteShortcutState.timeoutId = null;
+            }
+            deleteShortcutState.pending = false;
         }
 
         function prepareForSoundTag(text) { 
@@ -653,6 +662,21 @@
             if (e.key === 'ArrowRight') handleReviewNav(1);
             if (e.key === 'ArrowLeft') handleReviewNav(-1);
             if (e.key === 'b' || e.key === 'B') document.querySelector('[data-target="review-back"]').click();
+            if (e.key === 'd' || e.key === 'D') {
+                e.preventDefault();
+                if (!deleteShortcutState.pending) {
+                    deleteShortcutState.pending = true;
+                    deleteShortcutState.timeoutId = setTimeout(() => {
+                        deleteShortcutState.pending = false;
+                        deleteShortcutState.timeoutId = null;
+                    }, 2000);
+                    showNotification("Press D again to open delete confirmation.", "error", 2000);
+                    return;
+                }
+                resetDeleteShortcut();
+                document.getElementById('delete-review-card-btn').click();
+                return;
+            }
             
             if (e.key === 'e' || e.key === 'E') {
                 e.preventDefault();
@@ -684,7 +708,10 @@
 
             if (e.key === 's' || e.key === 'S') document.querySelector('[data-target="review-beispiel-filename"]').click();
             if (e.key === 'Enter' && !isReviewEditing) enterReviewEditMode();
-            if (e.key === 'Delete') document.getElementById('delete-review-card-btn').click();
+            if (e.key === 'Delete') {
+                resetDeleteShortcut();
+                document.getElementById('delete-review-card-btn').click();
+            }
             if (e.key === 'm' || e.key === 'M') document.getElementById('mark-edited-btn').click();
         }
 
@@ -719,6 +746,7 @@
             reviewSession.cards = [...cardsForReview];
             reviewSession.currentIndex = 0;
             reviewSession.editedCardIds = new Set();
+            resetDeleteShortcut();
             
             // Fetch persisted edited IDs
             if (userId && currentReviewDate) {
@@ -743,6 +771,7 @@
         
         function endReviewSession() {
             clearAutoSkipTimer();
+            resetDeleteShortcut();
             reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, beispielCopyIndex: 0, editedCardIds: new Set(), originalCards: [] };
             currentReviewDate = null;
             document.getElementById('main-app').classList.remove('hidden');
@@ -807,6 +836,7 @@
         async function handleDeleteConfirmed() {
             if (!cardToDeleteId || !userId) return;
             const isReviewDelete = reviewSession.cards.length > 0;
+            resetDeleteShortcut();
             
             try {
                 const docRef = doc(db, `artifacts/${appId}/users/${userId}/cards`, cardToDeleteId);
@@ -1337,7 +1367,10 @@
             document.getElementById('update-btn').addEventListener('click', handleUpdateCard);
             document.getElementById('cancel-btn').addEventListener('click', () => setEditMode(false));
             document.getElementById('confirm-delete-btn').addEventListener('click', handleDeleteConfirmed);
-            document.getElementById('cancel-delete-btn').addEventListener('click', () => document.getElementById('delete-modal').classList.add('hidden'));
+            document.getElementById('cancel-delete-btn').addEventListener('click', () => {
+                resetDeleteShortcut();
+                document.getElementById('delete-modal').classList.add('hidden');
+            });
             document.getElementById('import-btn').addEventListener('click', () => document.getElementById('import-file-input').click());
             document.getElementById('import-file-input').addEventListener('change', importCardsFromFile);
             document.getElementById('review-btn').addEventListener('click', () => {
@@ -1350,6 +1383,7 @@
             document.getElementById('prev-card-btn').addEventListener('click', () => handleReviewNav(-1));
             document.getElementById('end-review-btn').addEventListener('click', endReviewSession);
             document.getElementById('delete-review-card-btn').addEventListener('click', () => {
+                resetDeleteShortcut();
                 if (reviewSession.cards[reviewSession.currentIndex]) {
                     cardToDeleteId = reviewSession.cards[reviewSession.currentIndex].id;
                     document.getElementById('delete-modal').classList.remove('hidden'); 
