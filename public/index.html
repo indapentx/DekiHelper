@@ -340,7 +340,7 @@
                 .split(/\r?\n/)
                 .map(line => line.trim())
                 .filter(line => line.length > 0)
-                .join(' <br> ');
+                .join('<br>');
         }
 
         function unformatMultiLine(text) {
@@ -363,9 +363,9 @@
             const soundTags = sentences.map((_, index) => {
                 const suffix = index === 0 ? '' : index + 1;
                 return `[sound:s_${tagBase}${suffix}.mp3]`;
-            }).join('');
+            });
 
-            return `<br> ${soundTags}`;
+            return soundTags.join('<br>');
         }
 
         function isBlank(value) {
@@ -378,7 +378,10 @@
             let text = isBlank(value) ? (fallback != null ? fallback : '') : value;
             if (text == null) text = '';
             return String(text)
-                .replace(/[\r\n]+/g, ' <br> ')
+                .replace(/[\r\n]+/g, '<br>')
+                .replace(/\s*(<br\s*\/?>)\s*/gi, '<br>')
+                .replace(/^(<br>)+/, '')
+                .replace(/(<br>)+$/, '')
                 .replace(/\t/g, ' ')
                 .trim();
         }
@@ -658,6 +661,17 @@
         
         function handleReviewKeyboard(e) {
             if (document.activeElement.id === 'in-review-search-input' || (document.activeElement.tagName === 'TEXTAREA' && isReviewEditing)) return;
+            
+            const deleteModal = document.getElementById('delete-modal');
+            const isDeleteModalOpen = deleteModal && !deleteModal.classList.contains('hidden');
+            if (isDeleteModalOpen) {
+                if (e.key === 'Delete') {
+                    e.preventDefault();
+                    resetDeleteShortcut();
+                    document.getElementById('confirm-delete-btn').click();
+                }
+                return;
+            }
             
             if (e.key === 'ArrowRight') handleReviewNav(1);
             if (e.key === 'ArrowLeft') handleReviewNav(-1);

@@ -87,3 +87,28 @@ komşular (erkek)	die Nachbarn	[sound:die Nachbarn.mp3]	Die Nachbarn feiern heut
 komşular (kadın)	die Nachbarinnen	[sound:die Nachbarinnen.mp3]	Die Nachbarinnen treffen sich jeden Mittwoch.	[sound:s_die Nachbarinnen.mp3]	Komşu kadınlar her çarşamba buluşuyor.
 saatler	die Uhren	[sound:die Uhren.mp3]	Die Uhren gehen fünf Minuten nach.	[sound:s_die Uhren.mp3]	Saatler beş dakika geri kalıyor.
 külotlar	die Unterhosen	[sound:die Unterhosen.mp3]	Die Unterhosen sind in Größe M.	[sound:s_die Unterhosen.mp3]	Külotlar M beden.
+
+
+Rolün: Deneyimli bir Almanca öğretmeni ve örnek cümle üreticisisin.
+
+Görev: Sana göndereceğim HER BİR Almanca kelime için 3 farklı örnek cümle yaz ve her cümlenin Türkçe çevirisini ver.
+
+ÇIKTI FORMATIN (BAŞKA HİÇBİR ŞEY YAZMA):
+- Toplamda 6 ADET AYRI kod bloğu üret (Markdown).
+- Her kod bloğu yalnızca TEK satır içersin ve dil etiketi "txt" olsun.
+- Sıra ve içerik şöyle olacak:
+  <Almanca cümle 1>
+  <Türkçe çeviri 1>
+  <Almanca cümle 2>
+  <Türkçe çeviri 2>
+  <Almanca cümle 3>
+  <Türkçe çeviri 3>
+
+Kurallar:
+- 3 cümle farklı bağlamlarda olsun (günlük / okul/iş / kısa resmi ifade).
+- Zorluk kademeli artsın (A1 → A2/B1 → B1 civarı).
+- Hedef kelimeyi doğal biçimde kullan (gerekirse çekimli/çoğul/hal eki olabilir).
+- İsimse: en az bir cümlede artikelle (der/die/das) ve birinde çoğul kullan.
+- Fiilse: en az bir cümlede doğru çekim, ayrılabilir fiilse doğru ayrılma düzeni.
+- Cümleler kısa ve doğal olsun (yaklaşık 6–12 kelime).
+- Yalnızca belirtilen 6 kod bloğunu üret; ek başlık, açıklama, emoji veya listeleme yapma.
