@@ -67,6 +67,15 @@
     <div id="main-app" class="container mx-auto max-w-2xl p-4 sm:p-8 hidden">
         <form id="anki-form" class="space-y-6 mb-12">
             <div>
+                <label for="folder-select" class="anki-label">Folder</label>
+                <div class="flex items-center gap-3">
+                    <select id="folder-select" class="anki-input flex-1"></select>
+                    <button type="button" id="create-folder-btn" class="btn btn-secondary btn-sm whitespace-nowrap">
+                        <i class="fas fa-folder-plus"></i> New Folder
+                    </button>
+                </div>
+            </div>
+            <div>
                 <div class="flex justify-between items-center">
                     <label for="front" class="anki-label">Front</label>
                     <button type="button" id="generate-img-tag-btn" class="text-sm text-blue-400 hover:text-blue-300 cursor-pointer" title="Generate or Cycle Image Tag (t)">
@@ -289,6 +298,22 @@
         </div>
     </div>
 
+    <div id="folder-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-4">Create Folder</h2>
+            <div class="space-y-4">
+                <div>
+                    <label for="folder-name-input" class="anki-label mb-2 block">Folder Name</label>
+                    <input type="text" id="folder-name-input" class="anki-input" placeholder="e.g. Grammar">
+                </div>
+            </div>
+            <div class="flex justify-end items-center space-x-4 mt-8">
+                <button id="cancel-folder-btn" class="btn btn-secondary">Cancel</button>
+                <button id="save-folder-btn" class="btn btn-primary">Create</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -296,14 +321,21 @@
 
         const firebaseConfig = { apiKey: "AIzaSyD6zpZUM_ABNngOX-RKFxwNoTqePDivrGE", authDomain: "deki-helper.firebaseapp.com", projectId: "deki-helper", storageBucket: "deki-helper.appspot.com", messagingSenderId: "612229919023", appId: "1:612229919023:web:c6507af0e5a2ddd84731da" };
         const appId = 'anki-card-generator-default';
+        const NO_FOLDER_VALUE = '__none__';
+        const FOLDER_STORAGE_KEY = 'deki-helper-current-folder';
+
         
         let app, auth, db, userId, cardsCollectionRef, unsubscribe;
+        let foldersCollectionRef, foldersUnsubscribe;
         let currentEditId = null, cardToDeleteId = null, allCards = [];
+        let folders = [];
+        let currentFolderId = null;
         let reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, beispielCopyIndex: 0, editedCardIds: new Set(), originalCards: [] };
         let isSignUpMode = false;
         let isReviewEditing = false;
         let currentReviewDate = null;
         let deleteShortcutState = { pending: false, timeoutId: null };
+        let hasRestoredFolderPreference = false;
         
         function showNotification(message, level = 'error', duration = 3000) {
             const notification = document.getElementById('notification');
@@ -327,6 +359,184 @@
                 deleteShortcutState.timeoutId = null;
             }
             deleteShortcutState.pending = false;
+        }
+
+
+
+        function restoreFolderPreference() {
+            if (hasRestoredFolderPreference) return;
+            hasRestoredFolderPreference = true;
+            try {
+                const storedValue = localStorage.getItem(FOLDER_STORAGE_KEY);
+                if (!storedValue) return;
+                if (storedValue === NO_FOLDER_VALUE) {
+                    currentFolderId = null;
+                    return;
+                }
+                const exists = folders.some(folder => folder.id === storedValue);
+                currentFolderId = exists ? storedValue : null;
+            } catch (error) {
+                console.warn('Failed to restore folder preference:', error);
+            }
+        }
+
+        function persistFolderPreference() {
+            try {
+                localStorage.setItem(FOLDER_STORAGE_KEY, currentFolderId || NO_FOLDER_VALUE);
+            } catch (error) {
+                console.warn('Failed to persist folder preference:', error);
+            }
+        }
+
+        function ensureCurrentFolderIsValid() {
+            if (!currentFolderId) return;
+            const exists = folders.some(folder => folder.id === currentFolderId);
+            if (!exists) {
+                currentFolderId = null;
+                persistFolderPreference();
+            }
+        }
+
+        function updateFolderSelection(value, { persist = true, updateSelect = true } = {}) {
+            const normalized = value === NO_FOLDER_VALUE ? null : value;
+            const previous = currentFolderId;
+            currentFolderId = normalized;
+            const changed = previous !== currentFolderId;
+            if (persist && changed) persistFolderPreference();
+            if (updateSelect) {
+                const folderSelect = document.getElementById('folder-select');
+                if (folderSelect) {
+                    const targetValue = normalized != null ? normalized : NO_FOLDER_VALUE;
+                    if (folderSelect.value !== targetValue) {
+                        folderSelect.value = targetValue;
+                    }
+                }
+            }
+            return changed;
+        }
+
+        function getCurrentFolderMeta() {
+            if (!currentFolderId) return null;
+            return folders.find(folder => folder.id === currentFolderId) || null;
+        }
+
+        function getSelectedFolderDetails() {
+            const meta = getCurrentFolderMeta();
+            if (meta) {
+                return { id: meta.id, name: meta.name || null };
+            }
+            if (!currentFolderId) {
+                return { id: null, name: null };
+            }
+            const folderSelect = document.getElementById('folder-select');
+            if (folderSelect) {
+                const option = Array.from(folderSelect.options).find(opt => opt.value === currentFolderId);
+                if (option) {
+                    return { id: currentFolderId, name: option.textContent || null };
+                }
+            }
+            return { id: currentFolderId, name: null };
+        }
+
+        function renderFolderOptions() {
+            const folderSelect = document.getElementById('folder-select');
+            if (!folderSelect) return;
+
+            const selectedValue = (currentFolderId != null ? currentFolderId : NO_FOLDER_VALUE);
+            folderSelect.innerHTML = '';
+
+            const noFolderOption = document.createElement('option');
+            noFolderOption.value = NO_FOLDER_VALUE;
+            noFolderOption.textContent = 'No Folder';
+            folderSelect.appendChild(noFolderOption);
+
+            const sortedFolders = [...folders].sort((a, b) => {
+                const nameA = (a.name || '').toLowerCase();
+                const nameB = (b.name || '').toLowerCase();
+                if (nameA === nameB) {
+                    return getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt);
+                }
+                return nameA.localeCompare(nameB);
+            });
+
+            sortedFolders.forEach(folder => {
+                const option = document.createElement('option');
+                option.value = folder.id;
+                option.textContent = folder.name || 'Untitled Folder';
+                folderSelect.appendChild(option);
+            });
+
+            if (currentFolderId && !sortedFolders.some(folder => folder.id === currentFolderId)) {
+                updateFolderSelection(NO_FOLDER_VALUE, { updateSelect: false });
+            }
+
+            folderSelect.value = (currentFolderId != null ? currentFolderId : NO_FOLDER_VALUE);
+        }
+
+        function openFolderModal() {
+            const modal = document.getElementById('folder-modal');
+            const input = document.getElementById('folder-name-input');
+            if (!modal || !input) return;
+
+            input.value = '';
+            modal.classList.remove('hidden');
+            setTimeout(() => input.focus(), 0);
+        }
+
+        function closeFolderModal() {
+            const modal = document.getElementById('folder-modal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+        }
+
+        async function handleCreateFolder() {
+            const input = document.getElementById('folder-name-input');
+            if (!input) return;
+
+            const name = input.value.trim();
+            if (!name) {
+                showNotification('Please enter a folder name.');
+                return;
+            }
+            if (!userId || !foldersCollectionRef) {
+                showNotification('Not connected.');
+                return;
+            }
+
+            const duplicate = folders.some(folder => (folder.name || '').toLowerCase() === name.toLowerCase());
+            if (duplicate) {
+                showNotification('A folder with this name already exists.');
+                return;
+            }
+
+            try {
+                const docRef = await addDoc(foldersCollectionRef, {
+                    name,
+                    createdAt: new Date().toISOString()
+                });
+                const selectionChanged = updateFolderSelection(docRef.id, { updateSelect: false });
+                const folderSelect = document.getElementById('folder-select');
+                if (folderSelect) {
+                    let option = Array.from(folderSelect.options).find(opt => opt.value === docRef.id);
+                    if (!option) {
+                        option = document.createElement('option');
+                        option.value = docRef.id;
+                        option.textContent = name;
+                        folderSelect.appendChild(option);
+                    } else {
+                        option.textContent = name;
+                    }
+                    folderSelect.value = docRef.id;
+                }
+                if (selectionChanged) {
+                    filterAndRenderCards();
+                }
+                closeFolderModal();
+                showNotification('Folder created successfully.', 'success');
+            } catch (error) {
+                console.error('Failed to create folder:', error);
+                showNotification('Could not create folder.');
+            }
         }
 
         function prepareForSoundTag(text) { 
@@ -415,9 +625,23 @@
         function clearForm() {
             const ankiForm = document.getElementById('anki-form');
             const front = document.getElementById('front');
-            if(ankiForm) ankiForm.reset();
+            const folderSelect = document.getElementById('folder-select');
+            const preservedFolderValue = folderSelect ? folderSelect.value : ((currentFolderId != null ? currentFolderId : NO_FOLDER_VALUE));
+            if (ankiForm) ankiForm.reset();
+            if (folderSelect) {
+                const availableValues = Array.from(folderSelect.options).map(option => option.value);
+                const valueToRestore = availableValues.includes(preservedFolderValue) ? preservedFolderValue : NO_FOLDER_VALUE;
+                folderSelect.value = valueToRestore;
+                const normalizedCurrent = (currentFolderId != null ? currentFolderId : NO_FOLDER_VALUE);
+                if (valueToRestore !== normalizedCurrent) {
+                    const selectionChanged = updateFolderSelection(valueToRestore, { persist: false, updateSelect: false });
+                    if (selectionChanged) {
+                        filterAndRenderCards();
+                    }
+                }
+            }
             updateSpeechFields();
-            if(front) front.focus();
+            if (front) front.focus();
         }
 
         function setEditMode(isEditing, cardData = null) {
@@ -427,6 +651,7 @@
             const back = document.getElementById('back');
             const beispiel = document.getElementById('beispiel');
             const translation = document.getElementById('translation');
+            const folderSelect = document.getElementById('folder-select');
 
             if (isEditing) {
                 document.getElementById('main-app').scrollIntoView();
@@ -435,6 +660,17 @@
                 back.value = cardData.back || '';
                 beispiel.value = unformatMultiLine(cardData.beispiel || '');
                 translation.value = unformatMultiLine(cardData.translation || '');
+                if (folderSelect) {
+                    const folderValue = cardData && cardData.folderId ? cardData.folderId : NO_FOLDER_VALUE;
+                    const availableValues = Array.from(folderSelect.options).map(option => option.value);
+                    const valueToApply = folderValue !== NO_FOLDER_VALUE && !availableValues.includes(folderValue)
+                        ? NO_FOLDER_VALUE
+                        : folderValue;
+                    const selectionChanged = updateFolderSelection(valueToApply);
+                    if (selectionChanged) {
+                        filterAndRenderCards();
+                    }
+                }
                 updateSpeechFields();
                 defaultActions.classList.add('hidden');
                 editActions.classList.remove('hidden');
@@ -458,6 +694,11 @@
             if (cardsToRender.length === 0) {
                 if (searchTerm) {
                     cardList.innerHTML = '<p class="text-gray-500 text-center">No cards match your search.</p>';
+                } else if (allCards.length > 0) {
+                    const folderMeta = getCurrentFolderMeta();
+                    const folderLabel = currentFolderId ? (folderMeta && folderMeta.name ? folderMeta.name : 'Selected folder') : 'No Folder';
+                    const sanitizedLabel = folderLabel.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                    cardList.innerHTML = `<p class="text-gray-500 text-center">No cards in "${sanitizedLabel}" yet.</p>`;
                 } else {
                     cardList.innerHTML = '<p class="text-gray-500 text-center">No cards saved yet.</p>';
                 }
@@ -477,6 +718,7 @@
                     <div class="card-item-content mr-4">
                         <p class="card-item-front">${frontDisplay}</p>
                         <p class="card-item-back">${cardData.back || '<em>No Back</em>'}</p>
+                        <p class="card-item-folder text-xs text-gray-500 mt-2"></p>
                     </div>
                     <div class="flex items-center space-x-2">
                         <button class="btn-icon copy-btn" title="Copy Back (C)"><i class="fas fa-copy"></i></button>
@@ -485,6 +727,12 @@
                     </div>
                 `;
                 cardList.appendChild(cardEl);
+                const folderLabelEl = cardEl.querySelector('.card-item-folder');
+                if (folderLabelEl) {
+                    const folderMeta = cardData.folderId ? folders.find(folder => folder.id === cardData.folderId) : null;
+                    const displayName = folderMeta && folderMeta.name ? folderMeta.name : (cardData.folderName || 'No Folder');
+                    folderLabelEl.textContent = `Folder: ${displayName}`;
+                }
                 cardEl.querySelector('.copy-btn').addEventListener('click', (e) => {
                     const backText = e.target.closest('.card-item').querySelector('.card-item-back').textContent;
                     if (backText) {
@@ -805,6 +1053,7 @@
             const translation = document.getElementById('translation');
             const speechBox = document.getElementById('speech');
             const beispielSpeechBox = document.getElementById('beispiel-speech');
+            const { id: selectedFolderId, name: selectedFolderName } = getSelectedFolderDetails();
 
             const cardData = {
                 front: front.value.trim(),
@@ -813,6 +1062,8 @@
                 beispiel: formatMultiLine(beispiel.value),
                 beispielSpeech: beispielSpeechBox.textContent,
                 translation: formatMultiLine(translation.value),
+                folderId: selectedFolderId,
+                folderName: selectedFolderName,
                 createdAt: new Date().toISOString()
             };
             if (!cardData.front && !cardData.back) return;
@@ -830,6 +1081,7 @@
              const translation = document.getElementById('translation');
              const speechBox = document.getElementById('speech');
              const beispielSpeechBox = document.getElementById('beispiel-speech');
+             const { id: selectedFolderId, name: selectedFolderName } = getSelectedFolderDetails();
              const cardData = {
                 front: front.value.trim(),
                 back: back.value.trim(),
@@ -837,6 +1089,8 @@
                 beispiel: formatMultiLine(beispiel.value),
                 beispielSpeech: beispielSpeechBox.textContent,
                 translation: formatMultiLine(translation.value),
+                folderId: selectedFolderId,
+                folderName: selectedFolderName,
                 createdAt: allCards.find(c => c.id === currentEditId)?.createdAt || new Date().toISOString()
             };
             try {
@@ -1087,7 +1341,13 @@
             document.getElementById('login-view').classList.remove('hidden');
             document.getElementById('main-app').classList.add('hidden');
             if (unsubscribe) unsubscribe();
+            if (foldersUnsubscribe) foldersUnsubscribe();
             allCards = [];
+            folders = [];
+            foldersCollectionRef = null;
+            hasRestoredFolderPreference = false;
+            updateFolderSelection(NO_FOLDER_VALUE, { persist: false, updateSelect: false });
+            renderFolderOptions();
             const cardListEl = document.getElementById('card-list');
             if(cardListEl) cardListEl.innerHTML = '';
             const sessionCounter = document.getElementById('session-counter');
@@ -1104,7 +1364,20 @@
             
             userId = user.uid;
             const collectionPath = `artifacts/${appId}/users/${userId}/cards`;
+            const folderPath = `artifacts/${appId}/users/${userId}/folders`;
             cardsCollectionRef = collection(db, collectionPath);
+            foldersCollectionRef = collection(db, folderPath);
+
+            if (foldersUnsubscribe) foldersUnsubscribe();
+            foldersUnsubscribe = onSnapshot(foldersCollectionRef, (snapshot) => {
+                folders = [];
+                snapshot.forEach(folderDoc => folders.push({ id: folderDoc.id, ...folderDoc.data() }));
+                restoreFolderPreference();
+                ensureCurrentFolderIsValid();
+                renderFolderOptions();
+                filterAndRenderCards();
+            });
+
             if (unsubscribe) unsubscribe();
             unsubscribe = onSnapshot(cardsCollectionRef, (snapshot) => {
                 allCards = [];
@@ -1145,6 +1418,7 @@
                     showNotification("You must be logged in to import cards.");
                     return;
                 }
+                const { id: selectedFolderId, name: selectedFolderName } = getSelectedFolderDetails();
                 try {
                     const batch = writeBatch(db);
                     const importTimestamp = new Date();
@@ -1171,6 +1445,8 @@
                             beispiel: formattedBeispiel,
                             beispielSpeech: computedBeispielSpeech,
                             translation: formatMultiLine(translationText),
+                            folderId: selectedFolderId,
+                            folderName: selectedFolderName,
                             createdAt: cardTimestamp.toISOString()
                         };
                         const newCardRef = doc(collection(db, `artifacts/${appId}/users/${userId}/cards`));
@@ -1189,13 +1465,28 @@
         }
         
         function filterAndRenderCards() {
-            const searchTerm = document.getElementById('search-input').value.toLowerCase().trim();
-            const filteredCards = searchTerm ? allCards.filter(card => {
-                return (card.front || '').toLowerCase().includes(searchTerm) ||
-                       (card.back || '').toLowerCase().includes(searchTerm) ||
-                       (card.beispiel || '').toLowerCase().includes(searchTerm) ||
-                       (card.translation || '').toLowerCase().includes(searchTerm);
-            }) : allCards;
+            const searchInput = document.getElementById('search-input');
+            const searchTerm = (searchInput ? searchInput.value : '').toLowerCase().trim();
+            let filteredCards = [...allCards];
+
+            if (searchTerm) {
+                filteredCards = filteredCards.filter(card => {
+                    const folderMeta = card.folderId ? folders.find(folder => folder.id === card.folderId) : null;
+                    const folderNameToMatch = ((folderMeta && folderMeta.name) || card.folderName || '').toLowerCase();
+                    return (card.front || '').toLowerCase().includes(searchTerm) ||
+                           (card.back || '').toLowerCase().includes(searchTerm) ||
+                           (card.beispiel || '').toLowerCase().includes(searchTerm) ||
+                           (card.translation || '').toLowerCase().includes(searchTerm) ||
+                           folderNameToMatch.includes(searchTerm);
+                });
+            }
+
+            if (currentFolderId) {
+                filteredCards = filteredCards.filter(card => card.folderId === currentFolderId);
+            } else {
+                filteredCards = filteredCards.filter(card => !card.folderId);
+            }
+
             renderCards(filteredCards);
         }
 
@@ -1363,8 +1654,38 @@
             const beispielInput = document.getElementById('beispiel');
             const translationInput = document.getElementById('translation');
             const frontInput = document.getElementById('front');
+            const folderSelectEl = document.getElementById('folder-select');
+            const folderNameInput = document.getElementById('folder-name-input');
             
             document.getElementById('auth-form').addEventListener('submit', handleAuthSubmit);
+            if (folderSelectEl) {
+                folderSelectEl.addEventListener('change', (event) => {
+                    const selectionChanged = updateFolderSelection(event.target.value);
+                    if (selectionChanged) {
+                        filterAndRenderCards();
+                    }
+                });
+            }
+            document.getElementById('create-folder-btn').addEventListener('click', openFolderModal);
+            document.getElementById('cancel-folder-btn').addEventListener('click', () => closeFolderModal());
+            document.getElementById('save-folder-btn').addEventListener('click', handleCreateFolder);
+            document.getElementById('folder-modal').addEventListener('click', (event) => {
+                if (event.target === event.currentTarget) {
+                    closeFolderModal();
+                }
+            });
+            if (folderNameInput) {
+                folderNameInput.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        handleCreateFolder();
+                    } else if (event.key === 'Escape') {
+                        event.preventDefault();
+                        closeFolderModal();
+                    }
+                });
+            }
+            
             document.getElementById('auth-toggle-btn').addEventListener('click', toggleAuthMode);
             document.getElementById('logout-btn').addEventListener('click', userSignOut);
             document.getElementById('anki-form').addEventListener('submit', handleFormSubmit);
@@ -1483,6 +1804,12 @@
 
 
             document.addEventListener('keydown', (e) => {
+                const folderModal = document.getElementById('folder-modal');
+                if (e.key === 'Escape' && folderModal && !folderModal.classList.contains('hidden')) {
+                    e.preventDefault();
+                    closeFolderModal();
+                    return;
+                }
                 const formInputs = ['front', 'back', 'beispiel', 'translation'];
                 const reviewInputs = ['edit-beispiel', 'edit-translation'];
                 const activeId = document.activeElement.id;
@@ -1525,6 +1852,7 @@
                     }
                 }
             });
+            renderFolderOptions();
             onAuthStateChanged(auth, user => { if (user) showAppUI(user); else showLoginUI(); });
             document.getElementById('delete-cards-btn').addEventListener('click', openDeleteCardsModal);
             document.getElementById('confirm-delete-cards-btn').addEventListener('click', handleConfirmDeleteCards);
