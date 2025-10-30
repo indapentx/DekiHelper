@@ -130,6 +130,10 @@
                 <h2 class="text-4xl font-bold mb-8">Start Review Session</h2>
                 <div class="w-full max-w-xs space-y-4">
                     <div>
+                        <label for="review-folder-selector" class="anki-label mb-2 block">Select Folder:</label>
+                        <select id="review-folder-selector" class="anki-input"></select>
+                    </div>
+                    <div>
                         <label for="review-date-selector" class="anki-label mb-2 block">Select Date:</label>
                         <select id="review-date-selector" class="anki-input"></select>
                     </div>
@@ -322,6 +326,7 @@
         const firebaseConfig = { apiKey: "AIzaSyD6zpZUM_ABNngOX-RKFxwNoTqePDivrGE", authDomain: "deki-helper.firebaseapp.com", projectId: "deki-helper", storageBucket: "deki-helper.appspot.com", messagingSenderId: "612229919023", appId: "1:612229919023:web:c6507af0e5a2ddd84731da" };
         const appId = 'anki-card-generator-default';
         const NO_FOLDER_VALUE = '__none__';
+        const ALL_FOLDERS_VALUE = '__all_folders__';
         const FOLDER_STORAGE_KEY = 'deki-helper-current-folder';
 
         
@@ -331,9 +336,11 @@
         let folders = [];
         let currentFolderId = null;
         let reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, beispielCopyIndex: 0, editedCardIds: new Set(), originalCards: [] };
+        let currentReviewFolderId = ALL_FOLDERS_VALUE;
+        let currentReviewSessionId = null;
         let isSignUpMode = false;
         let isReviewEditing = false;
-        let currentReviewDate = null;
+        let currentReviewDate = "all";
         let deleteShortcutState = { pending: false, timeoutId: null };
         let hasRestoredFolderPreference = false;
         
@@ -471,6 +478,8 @@
             }
 
             folderSelect.value = (currentFolderId != null ? currentFolderId : NO_FOLDER_VALUE);
+            renderReviewFolderOptions();
+            updateReviewDateSelector();
         }
 
         function openFolderModal() {
@@ -537,6 +546,66 @@
                 console.error('Failed to create folder:', error);
                 showNotification('Could not create folder.');
             }
+        }
+
+        function cardMatchesFolder(card, folderValue) {
+            if (folderValue === ALL_FOLDERS_VALUE) return true;
+            if (!folderValue || folderValue === NO_FOLDER_VALUE) {
+                return !card.folderId;
+            }
+            return card.folderId === folderValue;
+        }
+
+        function renderReviewFolderOptions() {
+            const selector = document.getElementById('review-folder-selector');
+            if (!selector) return;
+
+            const desiredValue = currentReviewFolderId || ALL_FOLDERS_VALUE;
+            selector.innerHTML = '';
+
+            const options = [
+                { value: ALL_FOLDERS_VALUE, label: 'All Folders' },
+                { value: NO_FOLDER_VALUE, label: 'No Folder' }
+            ];
+
+            const sortedFolders = [...folders].sort((a, b) => {
+                const nameA = (a.name || '').toLowerCase();
+                const nameB = (b.name || '').toLowerCase();
+                if (nameA === nameB) {
+                    return getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt);
+                }
+                return nameA.localeCompare(nameB);
+            });
+            sortedFolders.forEach(folder => {
+                options.push({ value: folder.id, label: folder.name || 'Untitled Folder' });
+            });
+
+            const availableValues = [];
+            options.forEach(option => {
+                const optionEl = document.createElement('option');
+                optionEl.value = option.value;
+                optionEl.textContent = option.label;
+                selector.appendChild(optionEl);
+                availableValues.push(option.value);
+            });
+
+            let valueToApply = desiredValue;
+            if (!availableValues.includes(valueToApply)) {
+                valueToApply = ALL_FOLDERS_VALUE;
+            }
+            currentReviewFolderId = valueToApply;
+            selector.value = valueToApply;
+        }
+
+        function buildReviewSessionId(selectedDate, folderValue) {
+            const datePart = selectedDate === 'all' ? 'date_all' : `date_${selectedDate}`;
+            let folderPart = 'folder_none';
+            if (folderValue === ALL_FOLDERS_VALUE) {
+                folderPart = 'folder_all';
+            } else if (folderValue && folderValue !== NO_FOLDER_VALUE) {
+                folderPart = `folder_${folderValue}`;
+            }
+            return `${datePart}__${folderPart}`;
         }
 
         function prepareForSoundTag(text) { 
@@ -769,22 +838,33 @@
         function updateReviewDateSelector() {
             const reviewDateSelector = document.getElementById('review-date-selector');
             const reviewBtn = document.getElementById('review-btn');
+            const startSessionBtn = document.getElementById('start-session-btn');
+            const relevantCards = allCards.filter(card => cardMatchesFolder(card, currentReviewFolderId));
             const dates = new Set();
-            allCards.forEach(card => {
+            relevantCards.forEach(card => {
                 if (card.createdAt && typeof card.createdAt === 'string') {
                     const datePart = card.createdAt.split('T')[0];
                     dates.add(datePart);
                 }
             });
-            
+
             const sortedDates = Array.from(dates).sort().reverse();
             if (reviewDateSelector) {
-                reviewDateSelector.innerHTML = '<option value="all">All Cards</option>' + sortedDates.map(date => `<option value="${date}">${date}</option>`).join('');
-                if (sortedDates.length > 0) {
-                    reviewDateSelector.value = sortedDates[0];
+                const preferredValue = (reviewDateSelector.value || currentReviewDate || 'all');
+                reviewDateSelector.innerHTML = '<option value="all">All Dates</option>' + sortedDates.map(date => `<option value="${date}">${date}</option>`).join('');
+                let valueToApply = preferredValue;
+                if (valueToApply !== 'all' && !sortedDates.includes(valueToApply)) {
+                    valueToApply = sortedDates.length > 0 ? sortedDates[0] : 'all';
                 }
+                if (sortedDates.length === 0) {
+                    valueToApply = 'all';
+                }
+                reviewDateSelector.value = valueToApply;
+                currentReviewDate = reviewDateSelector.value;
             }
-            if(reviewBtn) reviewBtn.disabled = allCards.length === 0;
+
+            if (reviewBtn) reviewBtn.disabled = allCards.length === 0;
+            if (startSessionBtn) startSessionBtn.disabled = relevantCards.length === 0;
         }
 
         function updateProgressBar() {
@@ -978,31 +1058,38 @@
         }
 
         async function updateEditedCardsInFirestore() {
-            if (!userId || !currentReviewDate) return;
+            if (!userId || !currentReviewSessionId) return;
             try {
-                const docRef = doc(db, `artifacts/${appId}/users/${userId}/review_sessions`, currentReviewDate);
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/review_sessions`, currentReviewSessionId);
                 const idsArray = Array.from(reviewSession.editedCardIds);
                 await setDoc(docRef, { editedCardIds: idsArray });
             } catch (error) {
-                console.error("Failed to save review progress:", error);
-                showNotification("Could not save review progress.");
+                console.error('Failed to save review progress:', error);
+                showNotification('Could not save review progress.');
             }
         }
 
         async function startReviewSession() {
-            const selectedDate = document.getElementById('review-date-selector').value;
-            currentReviewDate = selectedDate;
-            let cardsForReview = [];
+            const reviewDateSelector = document.getElementById('review-date-selector');
+            const reviewFolderSelector = document.getElementById('review-folder-selector');
+            const selectedDate = reviewDateSelector ? reviewDateSelector.value : 'all';
+            const selectedFolder = reviewFolderSelector ? reviewFolderSelector.value : ALL_FOLDERS_VALUE;
 
-            if (selectedDate === 'all') {
-                cardsForReview = [...allCards].sort((a,b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt));
-            } else {
-                cardsForReview = allCards
-                    .filter(card => card.createdAt && card.createdAt.startsWith(selectedDate))
-                    .sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt));
+            currentReviewDate = selectedDate;
+            currentReviewFolderId = selectedFolder;
+
+            let cardsForReview = allCards.filter(card => cardMatchesFolder(card, selectedFolder));
+            if (selectedDate !== 'all') {
+                cardsForReview = cardsForReview.filter(card => card.createdAt && card.createdAt.startsWith(selectedDate));
+            }
+            cardsForReview.sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt));
+
+            if (cardsForReview.length === 0) {
+                showNotification('No cards found for the selected filters.');
+                return;
             }
 
-            if (cardsForReview.length === 0) { showNotification(`No cards found.`); return; }
+            currentReviewSessionId = buildReviewSessionId(selectedDate, selectedFolder);
 
             reviewSession.originalCards = [...cardsForReview];
             reviewSession.cards = [...cardsForReview];
@@ -1011,16 +1098,16 @@
             resetDeleteShortcut();
             
             // Fetch persisted edited IDs
-            if (userId && currentReviewDate) {
+            if (userId && currentReviewSessionId) {
                 try {
-                    const docRef = doc(db, `artifacts/${appId}/users/${userId}/review_sessions`, currentReviewDate);
+                    const docRef = doc(db, `artifacts/${appId}/users/${userId}/review_sessions`, currentReviewSessionId);
                     const docSnap = await getDoc(docRef);
                     if (docSnap.exists() && docSnap.data().editedCardIds) {
                         const editedIds = docSnap.data().editedCardIds;
                         reviewSession.editedCardIds = new Set(editedIds);
                     }
                 } catch (error) {
-                    console.error("Error fetching review session:", error);
+                    console.error('Error fetching review session:', error);
                 }
             }
 
@@ -1035,12 +1122,13 @@
             clearAutoSkipTimer();
             resetDeleteShortcut();
             reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, beispielCopyIndex: 0, editedCardIds: new Set(), originalCards: [] };
-            currentReviewDate = null;
+            currentReviewSessionId = null;
             document.getElementById('main-app').classList.remove('hidden');
             document.getElementById('review-modal').classList.add('hidden');
             document.getElementById('review-setup').classList.remove('hidden');
             document.getElementById('review-session').classList.add('hidden');
             document.removeEventListener('keydown', handleReviewKeyboard);
+            updateReviewDateSelector();
         }
         
         async function handleFormSubmit(e) {
@@ -1346,6 +1434,9 @@
             folders = [];
             foldersCollectionRef = null;
             hasRestoredFolderPreference = false;
+            currentReviewFolderId = ALL_FOLDERS_VALUE;
+            currentReviewSessionId = null;
+            currentReviewDate = 'all';
             updateFolderSelection(NO_FOLDER_VALUE, { persist: false, updateSelect: false });
             renderFolderOptions();
             const cardListEl = document.getElementById('card-list');
@@ -1361,6 +1452,9 @@
             document.getElementById('main-app').classList.remove('hidden');
             document.getElementById('user-email').textContent = user.email;
             document.getElementById('session-counter').textContent = '0';
+            currentReviewFolderId = ALL_FOLDERS_VALUE;
+            currentReviewSessionId = null;
+            currentReviewDate = 'all';
             
             userId = user.uid;
             const collectionPath = `artifacts/${appId}/users/${userId}/cards`;
@@ -1481,11 +1575,7 @@
                 });
             }
 
-            if (currentFolderId) {
-                filteredCards = filteredCards.filter(card => card.folderId === currentFolderId);
-            } else {
-                filteredCards = filteredCards.filter(card => !card.folderId);
-            }
+            filteredCards = filteredCards.filter(card => cardMatchesFolder(card, currentFolderId));
 
             renderCards(filteredCards);
         }
@@ -1656,6 +1746,7 @@
             const frontInput = document.getElementById('front');
             const folderSelectEl = document.getElementById('folder-select');
             const folderNameInput = document.getElementById('folder-name-input');
+            const reviewFolderSelector = document.getElementById('review-folder-selector');
             
             document.getElementById('auth-form').addEventListener('submit', handleAuthSubmit);
             if (folderSelectEl) {
@@ -1664,6 +1755,12 @@
                     if (selectionChanged) {
                         filterAndRenderCards();
                     }
+                });
+            }
+            if (reviewFolderSelector) {
+                reviewFolderSelector.addEventListener('change', (event) => {
+                    currentReviewFolderId = event.target.value;
+                    updateReviewDateSelector();
                 });
             }
             document.getElementById('create-folder-btn').addEventListener('click', openFolderModal);
