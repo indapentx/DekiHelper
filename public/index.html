@@ -569,11 +569,12 @@
                 { value: NO_FOLDER_VALUE, label: 'No Folder' }
             ];
             const sortedFolders = [...folders].sort((a, b) => {
+                const createdAtDiff = getCreatedAtTime(b.createdAt) - getCreatedAtTime(a.createdAt);
+                if (createdAtDiff !== 0) {
+                    return createdAtDiff;
+                }
                 const nameA = (a.name || '').toLowerCase();
                 const nameB = (b.name || '').toLowerCase();
-                if (nameA === nameB) {
-                    return getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt);
-                }
                 return nameA.localeCompare(nameB);
             });
             sortedFolders.forEach(folder => {
