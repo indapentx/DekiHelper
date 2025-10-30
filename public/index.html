@@ -1810,6 +1810,14 @@
                     closeFolderModal();
                     return;
                 }
+                if ((e.metaKey || e.ctrlKey) && (e.key === 'n' || e.key === 'N')) {
+                    const otherModalOpen = document.querySelector('.modal-backdrop:not(#review-modal):not(.hidden)');
+                    if (!otherModalOpen && folderModal && folderModal.classList.contains('hidden')) {
+                        e.preventDefault();
+                        openFolderModal();
+                    }
+                    return;
+                }
                 const formInputs = ['front', 'back', 'beispiel', 'translation'];
                 const reviewInputs = ['edit-beispiel', 'edit-translation'];
                 const activeId = document.activeElement.id;
