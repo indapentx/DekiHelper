@@ -111,8 +111,9 @@
         <hr class="border-gray-700 my-8">
         <div>
             <h2 class="text-2xl font-bold mb-4 text-gray-300">Saved Cards</h2>
-            <div class="mb-4">
-                <input type="text" id="search-input" class="anki-input" placeholder="Search in front, back, beispiel, translation...">
+            <div class="mb-4 flex flex-col sm:flex-row gap-3">
+                <input type="text" id="search-input" class="anki-input flex-1" placeholder="Search in front, back, beispiel, translation...">
+                <select id="view-folder-selector" class="anki-input sm:w-56" title="Filter cards by folder"></select>
             </div>
             <div id="card-list"></div>
         </div>
@@ -338,6 +339,7 @@
         let reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, beispielCopyIndex: 0, editedCardIds: new Set(), originalCards: [] };
         let currentReviewFolderId = ALL_FOLDERS_VALUE;
         let currentReviewSessionId = null;
+        let currentViewFolderId = ALL_FOLDERS_VALUE;
         let isSignUpMode = false;
         let isReviewEditing = false;
         let currentReviewDate = "all";
@@ -478,7 +480,12 @@
             }
 
             folderSelect.value = (currentFolderId != null ? currentFolderId : NO_FOLDER_VALUE);
+            const previousViewFolder = currentViewFolderId;
+            renderViewFolderOptions();
             renderReviewFolderOptions();
+            if (currentViewFolderId !== previousViewFolder) {
+                filterAndRenderCards();
+            }
             updateReviewDateSelector();
         }
 
@@ -556,18 +563,11 @@
             return card.folderId === folderValue;
         }
 
-        function renderReviewFolderOptions() {
-            const selector = document.getElementById('review-folder-selector');
-            if (!selector) return;
-
-            const desiredValue = currentReviewFolderId || ALL_FOLDERS_VALUE;
-            selector.innerHTML = '';
-
+        function buildFolderSelectOptions() {
             const options = [
                 { value: ALL_FOLDERS_VALUE, label: 'All Folders' },
                 { value: NO_FOLDER_VALUE, label: 'No Folder' }
             ];
-
             const sortedFolders = [...folders].sort((a, b) => {
                 const nameA = (a.name || '').toLowerCase();
                 const nameB = (b.name || '').toLowerCase();
@@ -579,22 +579,38 @@
             sortedFolders.forEach(folder => {
                 options.push({ value: folder.id, label: folder.name || 'Untitled Folder' });
             });
+            return options;
+        }
 
-            const availableValues = [];
+        function populateFolderSelect(selectElement, currentValue) {
+            if (!selectElement) return currentValue || ALL_FOLDERS_VALUE;
+            const options = buildFolderSelectOptions();
+            const fragment = document.createDocumentFragment();
+            let hasCurrentValue = false;
             options.forEach(option => {
                 const optionEl = document.createElement('option');
                 optionEl.value = option.value;
                 optionEl.textContent = option.label;
-                selector.appendChild(optionEl);
-                availableValues.push(option.value);
+                fragment.appendChild(optionEl);
+                if (option.value === currentValue) {
+                    hasCurrentValue = true;
+                }
             });
+            selectElement.innerHTML = '';
+            selectElement.appendChild(fragment);
+            const valueToApply = hasCurrentValue ? currentValue : ALL_FOLDERS_VALUE;
+            selectElement.value = valueToApply;
+            return valueToApply;
+        }
 
-            let valueToApply = desiredValue;
-            if (!availableValues.includes(valueToApply)) {
-                valueToApply = ALL_FOLDERS_VALUE;
-            }
-            currentReviewFolderId = valueToApply;
-            selector.value = valueToApply;
+        function renderReviewFolderOptions() {
+            const selector = document.getElementById('review-folder-selector');
+            currentReviewFolderId = populateFolderSelect(selector, currentReviewFolderId);
+        }
+
+        function renderViewFolderOptions() {
+            const selector = document.getElementById('view-folder-selector');
+            currentViewFolderId = populateFolderSelect(selector, currentViewFolderId);
         }
 
         function buildReviewSessionId(selectedDate, folderValue) {
@@ -764,8 +780,13 @@
                 if (searchTerm) {
                     cardList.innerHTML = '<p class="text-gray-500 text-center">No cards match your search.</p>';
                 } else if (allCards.length > 0) {
-                    const folderMeta = getCurrentFolderMeta();
-                    const folderLabel = currentFolderId ? (folderMeta && folderMeta.name ? folderMeta.name : 'Selected folder') : 'No Folder';
+                    let folderLabel = 'Selected folder';
+                    if (currentViewFolderId === ALL_FOLDERS_VALUE) folderLabel = 'All Folders';
+                    else if (currentViewFolderId === NO_FOLDER_VALUE) folderLabel = 'No Folder';
+                    else {
+                        const viewFolderMeta = folders.find(folder => folder.id === currentViewFolderId);
+                        if (viewFolderMeta && viewFolderMeta.name) folderLabel = viewFolderMeta.name;
+                    }
                     const sanitizedLabel = folderLabel.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
                     cardList.innerHTML = `<p class="text-gray-500 text-center">No cards in "${sanitizedLabel}" yet.</p>`;
                 } else {
@@ -1437,6 +1458,7 @@
             currentReviewFolderId = ALL_FOLDERS_VALUE;
             currentReviewSessionId = null;
             currentReviewDate = 'all';
+            currentViewFolderId = ALL_FOLDERS_VALUE;
             updateFolderSelection(NO_FOLDER_VALUE, { persist: false, updateSelect: false });
             renderFolderOptions();
             const cardListEl = document.getElementById('card-list');
@@ -1455,6 +1477,7 @@
             currentReviewFolderId = ALL_FOLDERS_VALUE;
             currentReviewSessionId = null;
             currentReviewDate = 'all';
+            currentViewFolderId = ALL_FOLDERS_VALUE;
             
             userId = user.uid;
             const collectionPath = `artifacts/${appId}/users/${userId}/cards`;
@@ -1575,7 +1598,7 @@
                 });
             }
 
-            filteredCards = filteredCards.filter(card => cardMatchesFolder(card, currentFolderId));
+            filteredCards = filteredCards.filter(card => cardMatchesFolder(card, currentViewFolderId));
 
             renderCards(filteredCards);
         }
@@ -1747,6 +1770,7 @@
             const folderSelectEl = document.getElementById('folder-select');
             const folderNameInput = document.getElementById('folder-name-input');
             const reviewFolderSelector = document.getElementById('review-folder-selector');
+            const viewFolderSelector = document.getElementById('view-folder-selector');
             
             document.getElementById('auth-form').addEventListener('submit', handleAuthSubmit);
             if (folderSelectEl) {
@@ -1761,6 +1785,12 @@
                 reviewFolderSelector.addEventListener('change', (event) => {
                     currentReviewFolderId = event.target.value;
                     updateReviewDateSelector();
+                });
+            }
+            if (viewFolderSelector) {
+                viewFolderSelector.addEventListener('change', (event) => {
+                    currentViewFolderId = event.target.value;
+                    filterAndRenderCards();
                 });
             }
             document.getElementById('create-folder-btn').addEventListener('click', openFolderModal);
@@ -1907,14 +1937,6 @@
                     closeFolderModal();
                     return;
                 }
-                if ((e.metaKey || e.ctrlKey) && (e.key === 'n' || e.key === 'N')) {
-                    const otherModalOpen = document.querySelector('.modal-backdrop:not(#review-modal):not(.hidden)');
-                    if (!otherModalOpen && folderModal && folderModal.classList.contains('hidden')) {
-                        e.preventDefault();
-                        openFolderModal();
-                    }
-                    return;
-                }
                 const formInputs = ['front', 'back', 'beispiel', 'translation'];
                 const reviewInputs = ['edit-beispiel', 'edit-translation'];
                 const activeId = document.activeElement.id;
@@ -1933,7 +1955,17 @@
                     }
                 }
 
-                if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.querySelector('.modal-backdrop:not(#review-modal):not(.hidden)')) return;
+                const otherModalOpen = document.querySelector('.modal-backdrop:not(#review-modal):not(.hidden)');
+                if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || otherModalOpen) return;
+
+                if (e.key === 'n' || e.key === 'N') {
+                    const reviewModal = document.getElementById('review-modal');
+                    if (folderModal && folderModal.classList.contains('hidden') && reviewModal && reviewModal.classList.contains('hidden')) {
+                        e.preventDefault();
+                        openFolderModal();
+                        return;
+                    }
+                }
                 
                 if (document.getElementById('review-session').classList.contains('hidden')) {
                     if (e.key === 't') { 
@@ -1958,6 +1990,7 @@
                 }
             });
             renderFolderOptions();
+            filterAndRenderCards();
             onAuthStateChanged(auth, user => { if (user) showAppUI(user); else showLoginUI(); });
             document.getElementById('delete-cards-btn').addEventListener('click', openDeleteCardsModal);
             document.getElementById('confirm-delete-cards-btn').addEventListener('click', handleConfirmDeleteCards);
