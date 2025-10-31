@@ -441,7 +441,10 @@
             if (folderSelect) {
                 const option = Array.from(folderSelect.options).find(opt => opt.value === currentFolderId);
                 if (option) {
-                    return { id: currentFolderId, name: option.textContent || null };
+                    const baseName = option.dataset && option.dataset.folderName
+                        ? option.dataset.folderName
+                        : (option.textContent || null);
+                    return { id: currentFolderId, name: baseName };
                 }
             }
             return { id: currentFolderId, name: null };
@@ -453,25 +456,30 @@
 
             const selectedValue = (currentFolderId != null ? currentFolderId : NO_FOLDER_VALUE);
             folderSelect.innerHTML = '';
+            const counts = getFolderCardCounts();
 
             const noFolderOption = document.createElement('option');
             noFolderOption.value = NO_FOLDER_VALUE;
-            noFolderOption.textContent = 'No Folder';
+            noFolderOption.dataset.folderName = '';
+            noFolderOption.textContent = formatFolderLabel('No Folder', counts[NO_FOLDER_VALUE]);
             folderSelect.appendChild(noFolderOption);
 
             const sortedFolders = [...folders].sort((a, b) => {
+                const createdAtDiff = getCreatedAtTime(b.createdAt) - getCreatedAtTime(a.createdAt);
+                if (createdAtDiff !== 0) {
+                    return createdAtDiff;
+                }
                 const nameA = (a.name || '').toLowerCase();
                 const nameB = (b.name || '').toLowerCase();
-                if (nameA === nameB) {
-                    return getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt);
-                }
                 return nameA.localeCompare(nameB);
             });
 
             sortedFolders.forEach(folder => {
                 const option = document.createElement('option');
                 option.value = folder.id;
-                option.textContent = folder.name || 'Untitled Folder';
+                const baseName = folder.name || 'Untitled Folder';
+                option.dataset.folderName = baseName;
+                option.textContent = formatFolderLabel(baseName, counts[folder.id]);
                 folderSelect.appendChild(option);
             });
 
@@ -534,13 +542,16 @@
                 const folderSelect = document.getElementById('folder-select');
                 if (folderSelect) {
                     let option = Array.from(folderSelect.options).find(opt => opt.value === docRef.id);
+                    const optionLabel = formatFolderLabel(name, 0);
                     if (!option) {
                         option = document.createElement('option');
                         option.value = docRef.id;
-                        option.textContent = name;
+                        option.dataset.folderName = name;
+                        option.textContent = optionLabel;
                         folderSelect.appendChild(option);
                     } else {
-                        option.textContent = name;
+                        option.dataset.folderName = name;
+                        option.textContent = optionLabel;
                     }
                     folderSelect.value = docRef.id;
                 }
@@ -563,10 +574,35 @@
             return card.folderId === folderValue;
         }
 
+        function formatFolderLabel(baseName, count) {
+            const safeName = baseName && baseName.trim().length > 0 ? baseName : 'Untitled Folder';
+            const cardCount = Number.isFinite(count) ? count : 0;
+            return `${safeName} (${cardCount})`;
+        }
+
+        function getFolderCardCounts() {
+            const counts = {
+                [ALL_FOLDERS_VALUE]: allCards.length,
+                [NO_FOLDER_VALUE]: 0
+            };
+            folders.forEach(folder => {
+                counts[folder.id] = 0;
+            });
+            allCards.forEach(card => {
+                const folderKey = card.folderId ? card.folderId : NO_FOLDER_VALUE;
+                if (!Number.isFinite(counts[folderKey])) {
+                    counts[folderKey] = 0;
+                }
+                counts[folderKey] += 1;
+            });
+            return counts;
+        }
+
         function buildFolderSelectOptions() {
+            const counts = getFolderCardCounts();
             const options = [
-                { value: ALL_FOLDERS_VALUE, label: 'All Folders' },
-                { value: NO_FOLDER_VALUE, label: 'No Folder' }
+                { value: ALL_FOLDERS_VALUE, label: formatFolderLabel('All Folders', counts[ALL_FOLDERS_VALUE]) },
+                { value: NO_FOLDER_VALUE, label: formatFolderLabel('No Folder', counts[NO_FOLDER_VALUE]) }
             ];
             const sortedFolders = [...folders].sort((a, b) => {
                 const createdAtDiff = getCreatedAtTime(b.createdAt) - getCreatedAtTime(a.createdAt);
@@ -578,7 +614,7 @@
                 return nameA.localeCompare(nameB);
             });
             sortedFolders.forEach(folder => {
-                options.push({ value: folder.id, label: folder.name || 'Untitled Folder' });
+                options.push({ value: folder.id, label: formatFolderLabel(folder.name || 'Untitled Folder', counts[folder.id]) });
             });
             return options;
         }
@@ -1515,6 +1551,7 @@
                     document.getElementById('session-counter').textContent = 0;
                 }
 
+                renderFolderOptions();
                 filterAndRenderCards();
                 updateReviewDateSelector();
             });
