@@ -336,6 +336,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, getDocs, query, doc, deleteDoc, setDoc, writeBatch, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 
         const firebaseConfig = { apiKey: "AIzaSyD6zpZUM_ABNngOX-RKFxwNoTqePDivrGE", authDomain: "deki-helper.firebaseapp.com", projectId: "deki-helper", storageBucket: "deki-helper.appspot.com", messagingSenderId: "612229919023", appId: "1:612229919023:web:c6507af0e5a2ddd84731da" };
         const appId = 'anki-card-generator-default';
@@ -346,7 +347,8 @@
         const DEEPL_SOURCE_LANG = 'DE';
         const DEEPL_TARGET_LANG = 'TR';
         const DEEPL_REQUEST_DELAY_MS = 250;
-        const DEFAULT_DEEPL_KEY = 'c69f1368-83ea-4fb2-9a06-9c6ce95d8677:fx';
+        const DEFAULT_DEEPL_KEY = '';
+        const FIREBASE_FUNCTIONS_REGION = 'us-central1';
 
         
         let app, auth, db, userId, cardsCollectionRef, unsubscribe;
@@ -364,6 +366,8 @@
         let deleteShortcutState = { pending: false, timeoutId: null };
         let hasRestoredFolderPreference = false;
         let isBulkTranslating = false;
+        let functionsInstance = null;
+        let translateWithDeepLCallable = null;
         
         function showNotification(message, level = 'error', duration = 3000) {
             const notification = document.getElementById('notification');
@@ -435,13 +439,6 @@
             }
         }
 
-        function getDeepLApiUrl(apiKey) {
-            if (apiKey && apiKey.trim().toLowerCase().endsWith(':fx')) {
-                return 'https://api-free.deepl.com/v2/translate';
-            }
-            return 'https://api.deepl.com/v2/translate';
-        }
-
         function normalizeSentencesFromBeispiel(value) {
             if (!value) return [];
             let raw = typeof value === 'string' ? value : String(value ?? '');
@@ -455,62 +452,36 @@
                 .filter(line => line.length > 0);
         }
 
-        async function translateSentencesWithDeepL(sentences, apiKey, attempt = 0) {
+        function getTranslateCallable() {
+            if (!functionsInstance) {
+                functionsInstance = getFunctions(app, FIREBASE_FUNCTIONS_REGION);
+            }
+            if (!translateWithDeepLCallable) {
+                translateWithDeepLCallable = httpsCallable(functionsInstance, 'translateWithDeepL');
+            }
+            return translateWithDeepLCallable;
+        }
+
+        async function translateSentencesWithDeepL(sentences, apiKey) {
             if (!apiKey) throw new Error('DeepL API key is not set.');
             if (!sentences || sentences.length === 0) return [];
 
-            const url = getDeepLApiUrl(apiKey);
-            const params = new URLSearchParams();
-            sentences.forEach(sentence => params.append('text', sentence));
-            params.append('target_lang', DEEPL_TARGET_LANG);
-            params.append('preserve_formatting', '1');
-            params.append('formality', 'default');
-            if (DEEPL_SOURCE_LANG) {
-                params.append('source_lang', DEEPL_SOURCE_LANG);
-            }
-
-            let response;
+            const callable = getTranslateCallable();
             try {
-                response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'Authorization': `DeepL-Auth-Key ${apiKey}`
-                    },
-                    body: params.toString()
+                const { data } = await callable({
+                    sentences,
+                    apiKey,
+                    targetLang: DEEPL_TARGET_LANG,
+                    sourceLang: DEEPL_SOURCE_LANG || undefined
                 });
-            } catch (networkError) {
-                throw new Error('Network error while contacting DeepL.');
-            }
-
-            if (!response.ok) {
-                if (response.status === 429 && attempt < 3) {
-                    await sleep(1000 * (attempt + 1));
-                    return translateSentencesWithDeepL(sentences, apiKey, attempt + 1);
+                if (!data || !Array.isArray(data.translations)) {
+                    throw new Error('Unexpected response from translation service.');
                 }
-                if (response.status === 456) {
-                    throw new Error('DeepL quota exceeded. Check your plan limits.');
-                }
-                let errorMessage = `DeepL request failed with status ${response.status}.`;
-                try {
-                    const errorBody = await response.text();
-                    if (errorBody) {
-                        errorMessage += ` ${errorBody}`;
-                    }
-                } catch (_) {
-                    // ignore parsing errors for the error body
-                }
-                throw new Error(errorMessage);
-            }
-
-            try {
-                const data = await response.json();
-                if (!data.translations || !Array.isArray(data.translations)) {
-                    throw new Error('Unexpected DeepL response format.');
-                }
-                return data.translations.map(item => (item.text || '').trim());
-            } catch (parseError) {
-                throw new Error('Failed to parse DeepL response.');
+                return data.translations.map(text => (text || '').trim());
+            } catch (error) {
+                console.error('DeepL proxy error.', error);
+                const message = error?.message || 'Translation request failed.';
+                throw new Error(message);
             }
         }
 
