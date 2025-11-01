@@ -91,7 +91,19 @@
                 <textarea id="beispiel" class="anki-input" autocomplete="off" rows="3"></textarea>
             </div>
             <div><label class="anki-label">Beispiel (Speech)</label><div id="beispiel-speech" class="anki-readonly-box"></div></div>
-            <div><label for="translation" class="anki-label">Translation</label><textarea id="translation" class="anki-input" autocomplete="off" rows="3"></textarea></div>
+            <div>
+                <label for="translation" class="anki-label">Translation</label>
+                <textarea id="translation" class="anki-input" autocomplete="off" rows="3"></textarea>
+                <div class="flex flex-wrap gap-3 mt-3">
+                    <button type="button" id="translate-beispiel-btn" class="btn btn-primary btn-sm">
+                        <i class="fas fa-language"></i> Translate Beispiel → TR
+                    </button>
+                    <button type="button" id="set-deepl-key-btn" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-key"></i> Set DeepL Key
+                    </button>
+                </div>
+                <p id="deepl-key-status" class="text-xs text-gray-500 mt-2"></p>
+            </div>
             <button type="submit" style="display: none;"></button>
         </form>
         <div id="action-bar" class="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -100,6 +112,7 @@
                 <button id="import-btn" class="btn btn-secondary w-full sm:w-auto"><i class="fas fa-upload"></i> Import</button>
                 <input type="file" id="import-file-input" class="hidden" accept=".txt, .tsv">
                 <button id="review-btn" class="btn btn-secondary w-full sm:w-auto"><i class="fas fa-eye"></i> Review</button>
+                <button id="bulk-translate-btn" class="btn btn-success w-full sm:w-auto"><i class="fas fa-language"></i> Translate Beispiele</button>
                 <button id="export-btn" class="btn btn-primary w-full sm:w-auto"><i class="fas fa-download"></i> Export</button>
                 <button id="delete-cards-btn" class="btn btn-danger w-full sm:w-auto"><i class="fas fa-trash-alt"></i> Delete by Date</button>
              </div>
@@ -329,6 +342,11 @@
         const NO_FOLDER_VALUE = '__none__';
         const ALL_FOLDERS_VALUE = '__all_folders__';
         const FOLDER_STORAGE_KEY = 'deki-helper-current-folder';
+        const DEEPL_KEY_STORAGE_KEY = 'deki-helper-deepl-key';
+        const DEEPL_SOURCE_LANG = 'DE';
+        const DEEPL_TARGET_LANG = 'TR';
+        const DEEPL_REQUEST_DELAY_MS = 250;
+        const DEFAULT_DEEPL_KEY = 'c69f1368-83ea-4fb2-9a06-9c6ce95d8677:fx';
 
         
         let app, auth, db, userId, cardsCollectionRef, unsubscribe;
@@ -345,6 +363,7 @@
         let currentReviewDate = "all";
         let deleteShortcutState = { pending: false, timeoutId: null };
         let hasRestoredFolderPreference = false;
+        let isBulkTranslating = false;
         
         function showNotification(message, level = 'error', duration = 3000) {
             const notification = document.getElementById('notification');
@@ -353,6 +372,166 @@
             notification.className = `fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg ${level === 'error' ? 'bg-red-600' : 'bg-green-600'}`;
             notification.classList.remove('hidden');
             setTimeout(() => { notification.classList.add('hidden'); }, duration);
+        }
+
+        function setButtonLoading(button, isLoading, loadingText = 'Processing...') {
+            if (!button) return;
+            if (isLoading) {
+                if (!button.dataset.originalContent) {
+                    button.dataset.originalContent = button.innerHTML;
+                }
+                button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
+                button.disabled = true;
+            } else {
+                if (button.dataset.originalContent) {
+                    button.innerHTML = button.dataset.originalContent;
+                    delete button.dataset.originalContent;
+                }
+                button.disabled = false;
+            }
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function getStoredDeepLKey() {
+            try {
+                const key = localStorage.getItem(DEEPL_KEY_STORAGE_KEY);
+                if (key && key.trim()) return key.trim();
+            } catch (error) {
+                console.error('Unable to access DeepL key in localStorage.', error);
+            }
+            return DEFAULT_DEEPL_KEY;
+        }
+
+        function updateDeepLKeyStatus() {
+            const statusEl = document.getElementById('deepl-key-status');
+            if (!statusEl) return;
+            let storedKey = '';
+            try {
+                storedKey = localStorage.getItem(DEEPL_KEY_STORAGE_KEY) || '';
+            } catch (error) {
+                console.error('Unable to read DeepL key status.', error);
+            }
+            if (storedKey.trim()) {
+                statusEl.textContent = 'DeepL key stored locally in this browser.';
+            } else if (DEFAULT_DEEPL_KEY) {
+                statusEl.textContent = 'Using embedded DeepL key. Replace it here if you prefer your own.';
+            } else {
+                statusEl.textContent = 'DeepL key not set. Provide it to enable translations.';
+            }
+        }
+
+        function preloadDefaultDeepLKey() {
+            if (!DEFAULT_DEEPL_KEY) return;
+            try {
+                const current = localStorage.getItem(DEEPL_KEY_STORAGE_KEY);
+                if (!current || !current.trim()) {
+                    localStorage.setItem(DEEPL_KEY_STORAGE_KEY, DEFAULT_DEEPL_KEY);
+                }
+            } catch (error) {
+                console.error('Failed to preload DeepL key.', error);
+            }
+        }
+
+        function getDeepLApiUrl(apiKey) {
+            if (apiKey && apiKey.trim().toLowerCase().endsWith(':fx')) {
+                return 'https://api-free.deepl.com/v2/translate';
+            }
+            return 'https://api.deepl.com/v2/translate';
+        }
+
+        function normalizeSentencesFromBeispiel(value) {
+            if (!value) return [];
+            let raw = typeof value === 'string' ? value : String(value ?? '');
+            if (raw.includes('<br')) {
+                raw = unformatMultiLine(raw);
+            }
+            raw = raw.replace(/&nbsp;/gi, ' ');
+            return raw
+                .split(/\r?\n/)
+                .map(line => line.trim())
+                .filter(line => line.length > 0);
+        }
+
+        async function translateSentencesWithDeepL(sentences, apiKey, attempt = 0) {
+            if (!apiKey) throw new Error('DeepL API key is not set.');
+            if (!sentences || sentences.length === 0) return [];
+
+            const url = getDeepLApiUrl(apiKey);
+            const params = new URLSearchParams();
+            sentences.forEach(sentence => params.append('text', sentence));
+            params.append('target_lang', DEEPL_TARGET_LANG);
+            params.append('preserve_formatting', '1');
+            params.append('formality', 'default');
+            if (DEEPL_SOURCE_LANG) {
+                params.append('source_lang', DEEPL_SOURCE_LANG);
+            }
+
+            let response;
+            try {
+                response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Authorization': `DeepL-Auth-Key ${apiKey}`
+                    },
+                    body: params.toString()
+                });
+            } catch (networkError) {
+                throw new Error('Network error while contacting DeepL.');
+            }
+
+            if (!response.ok) {
+                if (response.status === 429 && attempt < 3) {
+                    await sleep(1000 * (attempt + 1));
+                    return translateSentencesWithDeepL(sentences, apiKey, attempt + 1);
+                }
+                if (response.status === 456) {
+                    throw new Error('DeepL quota exceeded. Check your plan limits.');
+                }
+                let errorMessage = `DeepL request failed with status ${response.status}.`;
+                try {
+                    const errorBody = await response.text();
+                    if (errorBody) {
+                        errorMessage += ` ${errorBody}`;
+                    }
+                } catch (_) {
+                    // ignore parsing errors for the error body
+                }
+                throw new Error(errorMessage);
+            }
+
+            try {
+                const data = await response.json();
+                if (!data.translations || !Array.isArray(data.translations)) {
+                    throw new Error('Unexpected DeepL response format.');
+                }
+                return data.translations.map(item => (item.text || '').trim());
+            } catch (parseError) {
+                throw new Error('Failed to parse DeepL response.');
+            }
+        }
+
+        function promptForDeepLKey() {
+            const currentKey = getStoredDeepLKey();
+            const newKey = prompt('Enter your DeepL API key (leave blank to clear it):', currentKey);
+            if (newKey === null) return;
+            const trimmed = newKey.trim();
+            try {
+                if (trimmed) {
+                    localStorage.setItem(DEEPL_KEY_STORAGE_KEY, trimmed);
+                    showNotification('DeepL key saved locally.', 'success');
+                } else {
+                    localStorage.removeItem(DEEPL_KEY_STORAGE_KEY);
+                    showNotification('DeepL key cleared.', 'success');
+                }
+            } catch (storageError) {
+                console.error('Failed to persist DeepL key.', storageError);
+                showNotification('Unable to store DeepL key in this browser.');
+            }
+            updateDeepLKeyStatus();
         }
 
         function clearAutoSkipTimer() {
@@ -1219,6 +1398,43 @@
             } catch (error) { showNotification("Failed to save the card."); }
         }
 
+        async function handleTranslateCurrentBeispiel() {
+            const translateBtn = document.getElementById('translate-beispiel-btn');
+            const beispielInput = document.getElementById('beispiel');
+            const translationInput = document.getElementById('translation');
+            if (!beispielInput || !translationInput) return;
+
+            const apiKey = getStoredDeepLKey();
+            if (!apiKey) {
+                showNotification('Set your DeepL API key first.', 'error');
+                return;
+            }
+
+            const sentences = normalizeSentencesFromBeispiel(beispielInput.value);
+            if (sentences.length === 0) {
+                showNotification('Add at least one Beispiel sentence to translate.', 'error');
+                return;
+            }
+
+            try {
+                setButtonLoading(translateBtn, true, 'Translating...');
+                const translations = await translateSentencesWithDeepL(sentences, apiKey);
+                if (!translations.length) {
+                    showNotification('No translation returned by DeepL.');
+                    return;
+                }
+                const textareaValue = translations.join('\n');
+                translationInput.value = textareaValue;
+                translationInput.dispatchEvent(new Event('input', { bubbles: true }));
+                showNotification('Example translated successfully.', 'success');
+            } catch (error) {
+                console.error('DeepL translation failed.', error);
+                showNotification(error && error.message ? error.message : 'Translation failed.');
+            } finally {
+                setButtonLoading(translateBtn, false);
+            }
+        }
+
         async function handleUpdateCard() {
              if (!currentEditId || !userId) return;
              const front = document.getElementById('front');
@@ -1245,6 +1461,72 @@
                 showNotification("Card updated successfully.", "success");
                 setEditMode(false);
             } catch (error) { showNotification("Failed to update card."); }
+        }
+
+        async function handleBulkTranslateBeispiele() {
+            if (isBulkTranslating) return;
+            if (!userId || !cardsCollectionRef) {
+                showNotification('Sign in to translate cards.', 'error');
+                return;
+            }
+
+            const apiKey = getStoredDeepLKey();
+            if (!apiKey) {
+                showNotification('Set your DeepL API key first.', 'error');
+                return;
+            }
+
+            const cardsToTranslate = allCards.filter(card => {
+                const sentences = normalizeSentencesFromBeispiel(card.beispiel);
+                return sentences.length > 0 && (isBlank(card.translation) || !card.translation);
+            });
+
+            if (cardsToTranslate.length === 0) {
+                showNotification('All Beispiel sentences already have translations or no Beispiel text found.', 'success');
+                return;
+            }
+
+            const shouldProceed = confirm(`Translate ${cardsToTranslate.length} cards with DeepL? This will use your DeepL character allowance.`);
+            if (!shouldProceed) return;
+
+            isBulkTranslating = true;
+            const bulkBtn = document.getElementById('bulk-translate-btn');
+            setButtonLoading(bulkBtn, true, 'Translating...');
+
+            let successCount = 0;
+            let failureCount = 0;
+            const failures = [];
+
+            for (const card of cardsToTranslate) {
+                const sentences = normalizeSentencesFromBeispiel(card.beispiel);
+                if (sentences.length === 0) continue;
+                try {
+                    const translations = await translateSentencesWithDeepL(sentences, apiKey);
+                    if (!translations.length) {
+                        failureCount += 1;
+                        failures.push({ id: card.id, reason: 'DeepL returned no translation.' });
+                        continue;
+                    }
+                    const formattedTranslation = formatMultiLine(translations.join('\n'));
+                    const docRef = doc(db, `artifacts/${appId}/users/${userId}/cards`, card.id);
+                    await updateDoc(docRef, { translation: formattedTranslation });
+                    successCount += 1;
+                } catch (error) {
+                    console.error(`Failed to translate card ${card.id}`, error);
+                    failureCount += 1;
+                    failures.push({ id: card.id, error: error?.message || error });
+                }
+                await sleep(DEEPL_REQUEST_DELAY_MS);
+            }
+
+            setButtonLoading(bulkBtn, false);
+            isBulkTranslating = false;
+
+            const summaryMessage = `DeepL translation finished. ${successCount} card(s) updated${failureCount ? `, ${failureCount} failed` : ''}.`;
+            showNotification(summaryMessage, failureCount ? 'error' : 'success', 7000);
+            if (failures.length) {
+                console.warn('DeepL bulk translation failures:', failures);
+            }
         }
         
         async function handleDeleteConfirmed() {
@@ -1873,6 +2155,12 @@
             });
             document.getElementById('import-btn').addEventListener('click', () => document.getElementById('import-file-input').click());
             document.getElementById('import-file-input').addEventListener('change', importCardsFromFile);
+            const translateBeispielBtn = document.getElementById('translate-beispiel-btn');
+            if (translateBeispielBtn) translateBeispielBtn.addEventListener('click', handleTranslateCurrentBeispiel);
+            const setDeepLKeyBtn = document.getElementById('set-deepl-key-btn');
+            if (setDeepLKeyBtn) setDeepLKeyBtn.addEventListener('click', promptForDeepLKey);
+            const bulkTranslateBtn = document.getElementById('bulk-translate-btn');
+            if (bulkTranslateBtn) bulkTranslateBtn.addEventListener('click', handleBulkTranslateBeispiele);
             document.getElementById('review-btn').addEventListener('click', () => {
                 document.getElementById('main-app').classList.add('hidden');
                 document.getElementById('review-modal').classList.remove('hidden');
@@ -1904,6 +2192,8 @@
                 document.body.removeChild(tempInput);
                 showNotification("Copied to clipboard!", "success");
             });
+            preloadDefaultDeepLKey();
+            updateDeepLKeyStatus();
             document.querySelectorAll('input[name="export-format"]').forEach(radio => {
                 radio.addEventListener('change', () => {
                     if (!radio.value.startsWith('clipboard')) {
