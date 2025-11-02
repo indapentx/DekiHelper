@@ -336,7 +336,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, getDocs, query, doc, deleteDoc, setDoc, writeBatch, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 
         const firebaseConfig = { apiKey: "AIzaSyD6zpZUM_ABNngOX-RKFxwNoTqePDivrGE", authDomain: "deki-helper.firebaseapp.com", projectId: "deki-helper", storageBucket: "deki-helper.appspot.com", messagingSenderId: "612229919023", appId: "1:612229919023:web:c6507af0e5a2ddd84731da" };
         const appId = 'anki-card-generator-default';
@@ -349,6 +348,8 @@
         const DEEPL_REQUEST_DELAY_MS = 250;
         const DEFAULT_DEEPL_KEY = '';
         const FIREBASE_FUNCTIONS_REGION = 'us-central1';
+        const PRODUCTION_TRANSLATE_ENDPOINT = `https://${FIREBASE_FUNCTIONS_REGION}-${firebaseConfig.projectId}.cloudfunctions.net/translateWithDeepL`;
+        const LOCAL_TRANSLATE_ENDPOINT = `http://localhost:5001/${firebaseConfig.projectId}/${FIREBASE_FUNCTIONS_REGION}/translateWithDeepL`;
 
         
         let app, auth, db, userId, cardsCollectionRef, unsubscribe;
@@ -366,8 +367,6 @@
         let deleteShortcutState = { pending: false, timeoutId: null };
         let hasRestoredFolderPreference = false;
         let isBulkTranslating = false;
-        let functionsInstance = null;
-        let translateWithDeepLCallable = null;
         
         function showNotification(message, level = 'error', duration = 3000) {
             const notification = document.getElementById('notification');
@@ -452,37 +451,51 @@
                 .filter(line => line.length > 0);
         }
 
-        function getTranslateCallable() {
-            if (!functionsInstance) {
-                functionsInstance = getFunctions(app, FIREBASE_FUNCTIONS_REGION);
-            }
-            if (!translateWithDeepLCallable) {
-                translateWithDeepLCallable = httpsCallable(functionsInstance, 'translateWithDeepL');
-            }
-            return translateWithDeepLCallable;
-        }
-
         async function translateSentencesWithDeepL(sentences, apiKey) {
             if (!apiKey) throw new Error('DeepL API key is not set.');
             if (!sentences || sentences.length === 0) return [];
 
-            const callable = getTranslateCallable();
+            const translateEndpoint = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                ? LOCAL_TRANSLATE_ENDPOINT
+                : PRODUCTION_TRANSLATE_ENDPOINT;
+
+            let response;
             try {
-                const { data } = await callable({
-                    sentences,
-                    apiKey,
-                    targetLang: DEEPL_TARGET_LANG,
-                    sourceLang: DEEPL_SOURCE_LANG || undefined
+                response = await fetch(translateEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sentences,
+                        apiKey,
+                        targetLang: DEEPL_TARGET_LANG,
+                        sourceLang: DEEPL_SOURCE_LANG || undefined
+                    })
                 });
-                if (!data || !Array.isArray(data.translations)) {
-                    throw new Error('Unexpected response from translation service.');
-                }
-                return data.translations.map(text => (text || '').trim());
-            } catch (error) {
-                console.error('DeepL proxy error.', error);
-                const message = error?.message || 'Translation request failed.';
-                throw new Error(message);
+            } catch (networkError) {
+                console.error('DeepL proxy network error.', networkError);
+                throw new Error('Network error while contacting the translation service.');
             }
+
+            let payload;
+            try {
+                payload = await response.json();
+            } catch (parseError) {
+                console.error('DeepL proxy parse error.', parseError);
+                throw new Error('Unexpected response from the translation service.');
+            }
+
+            if (!response.ok) {
+                const errorMessage = payload?.error || `Translation request failed (${response.status}).`;
+                throw new Error(errorMessage);
+            }
+
+            if (!payload || !Array.isArray(payload.translations)) {
+                throw new Error('Unexpected response from the translation service.');
+            }
+
+            return payload.translations.map(text => (text || '').trim());
         }
 
         function promptForDeepLKey() {
