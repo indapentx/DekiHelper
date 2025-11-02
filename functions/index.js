@@ -20,14 +20,20 @@ function resolveAllowedOrigins() {
 function setCorsHeaders(req, res) {
   const origin = req.get('Origin');
   const allowedOrigins = resolveAllowedOrigins();
-  if (origin && allowedOrigins.includes(origin)) {
+  const allowAny = allowedOrigins.includes('*');
+  if (origin && (allowAny || allowedOrigins.includes(origin))) {
     res.set('Access-Control-Allow-Origin', origin);
   } else {
     res.set('Access-Control-Allow-Origin', allowedOrigins[0] || '*');
   }
   res.set('Vary', 'Origin');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  const requestedHeaders = req.get('Access-Control-Request-Headers');
+  if (requestedHeaders) {
+    res.set('Access-Control-Allow-Headers', requestedHeaders);
+  } else {
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  }
 }
 
 exports.translateWithDeepL = functions
