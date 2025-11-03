@@ -350,6 +350,13 @@
                     <div id="export-date-selection" class="hidden pl-6 pt-2 mt-2 max-h-32 overflow-y-auto border-l-2 border-gray-700">
                         <!-- Date checkboxes will be inserted here by JS -->
                     </div>
+                    <label class="flex items-center space-x-2 mt-2">
+                        <input type="radio" id="export-folder-radio" name="export-range" value="folder" class="form-radio">
+                        <span>Cards from selected folders</span>
+                    </label>
+                    <div id="export-folder-selection" class="hidden pl-6 pt-2 mt-2 max-h-32 overflow-y-auto border-l-2 border-gray-700">
+                        <!-- Folder checkboxes inserted by JS -->
+                    </div>
                 </div>
                 <div id="clipboard-output-container" class="hidden mt-6">
                     <label for="clipboard-output" class="anki-label mb-2">Formatted Text</label>
@@ -2363,12 +2370,12 @@
             const clipboardOutputContainer = document.getElementById('clipboard-output-container');
             const clipboardOutput = document.getElementById('clipboard-output');
             let cardsToExport = [];
-        
+
             clipboardOutputContainer.classList.add('hidden');
 
             if (range === 'all') {
                 cardsToExport = [...allCards];
-            } else { 
+            } else if (range === 'date') { 
                 const selectedDateNodes = document.querySelectorAll('#export-date-selection input[type="checkbox"]:checked');
                 if (selectedDateNodes.length === 0) {
                     showNotification("Please select at least one date to export.");
@@ -2376,6 +2383,19 @@
                 }
                 const selectedDates = Array.from(selectedDateNodes).map(el => el.value);
                 cardsToExport = allCards.filter(card => card.createdAt && card.createdAt.split('T')[0] && selectedDates.includes(card.createdAt.split('T')[0]));
+            } else if (range === 'folder') {
+                const selectedFolderNodes = document.querySelectorAll('#export-folder-selection input[type="checkbox"]:checked');
+                if (selectedFolderNodes.length === 0) {
+                    showNotification("Please select at least one folder to export.");
+                    return;
+                }
+                const selectedFolders = Array.from(selectedFolderNodes).map(el => el.value);
+                cardsToExport = allCards.filter(card => {
+                    if (!card.folderId) {
+                        return selectedFolders.includes(NO_FOLDER_VALUE);
+                    }
+                    return selectedFolders.includes(card.folderId);
+                });
             }
 
             if (cardsToExport.length === 0) {
@@ -2433,6 +2453,7 @@
             }
             document.getElementById('export-all-radio').checked = true;
             document.getElementById('export-date-selection').classList.add('hidden');
+            document.getElementById('export-folder-selection').classList.add('hidden');
             document.getElementById('clipboard-output-container').classList.add('hidden');
             
             const dates = [...new Set(allCards.map(card => card.createdAt && card.createdAt.split('T')[0]).filter(Boolean))].sort().reverse();
@@ -2451,6 +2472,25 @@
                 document.getElementById('export-date-radio').disabled = true;
             }
             
+            const exportFolderSelection = document.getElementById('export-folder-selection');
+            exportFolderSelection.innerHTML = '';
+            const folderOptions = new Map();
+            allCards.forEach(card => {
+                const key = card.folderId || NO_FOLDER_VALUE;
+                const folderMeta = folders.find(f => f.id === card.folderId);
+                const displayName = folderMeta && folderMeta.name ? folderMeta.name : (card.folderName || 'No Folder');
+                const label = key === NO_FOLDER_VALUE ? 'No Folder' : displayName;
+                folderOptions.set(key, label);
+            });
+            Array.from(folderOptions.entries())
+                .sort((a, b) => a[1].toLowerCase().localeCompare(b[1].toLowerCase()))
+                .forEach(([value, label]) => {
+                    const checkbox = document.createElement('label');
+                    checkbox.className = 'flex items-center space-x-2 text-gray-300 py-1';
+                    checkbox.innerHTML = `<input type="checkbox" value="${value}" class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded"> <span>${label}</span>`;
+                    exportFolderSelection.appendChild(checkbox);
+                });
+
             document.getElementById('export-modal').classList.remove('hidden');
         }
 
@@ -3007,8 +3047,24 @@
                     }
                 });
             });
-            document.getElementById('export-all-radio').addEventListener('change', (e) => { if(e.target.checked) document.getElementById('export-date-selection').classList.add('hidden'); });
-            document.getElementById('export-date-radio').addEventListener('change', (e) => { if(e.target.checked) document.getElementById('export-date-selection').classList.remove('hidden'); });
+            document.getElementById('export-all-radio').addEventListener('change', (e) => {
+                if(e.target.checked) {
+                    document.getElementById('export-date-selection').classList.add('hidden');
+                    document.getElementById('export-folder-selection').classList.add('hidden');
+                }
+            });
+            document.getElementById('export-date-radio').addEventListener('change', (e) => {
+                if(e.target.checked) {
+                    document.getElementById('export-date-selection').classList.remove('hidden');
+                    document.getElementById('export-folder-selection').classList.add('hidden');
+                }
+            });
+            document.getElementById('export-folder-radio').addEventListener('change', (e) => {
+                if(e.target.checked) {
+                    document.getElementById('export-folder-selection').classList.remove('hidden');
+                    document.getElementById('export-date-selection').classList.add('hidden');
+                }
+            });
             
             document.getElementById('review-session').addEventListener('click', (e) => {
                 const lineCopyBtn = e.target.closest('.copy-line-btn');
