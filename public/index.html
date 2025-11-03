@@ -45,6 +45,19 @@
         #auto-skip-toggle:checked ~ .block { background-color: #2ecc71; }
         #pause-timer-toggle:checked ~ .dot { transform: translateX(100%); background-color: #c0392b; }
         #pause-timer-toggle:checked ~ .block { background-color: #e74c3c; }
+        .duplicates-page { min-height: 100vh; }
+        .duplicate-group { background-color: #111; border: 1px solid #333; border-radius: 12px; padding: 18px; }
+        .duplicate-field-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #888; }
+        .duplicate-field-value { color: #f0f0f0; font-size: 0.95rem; word-break: break-word; white-space: pre-wrap; line-height: 1.5; }
+        .duplicate-card-entry { background-color: #151515; border: 1px solid #2a2a2a; border-radius: 10px; padding: 16px; }
+        .duplicate-card-meta { font-size: 0.75rem; color: #b0b0b0; word-break: break-word; }
+        .duplicate-card-entry.highlight { border-color: #1d72f3; box-shadow: 0 0 0 1px rgba(29, 114, 243, 0.2); }
+        .deleted-page { min-height: 100vh; }
+        .deleted-card-entry { background-color: #151515; border: 1px solid #333; border-radius: 12px; padding: 16px; }
+        .deleted-card-entry header { display: flex; flex-direction: column; gap: 4px; }
+        .deleted-card-entry .meta { font-size: 0.75rem; color: #a0a0a0; display: flex; flex-wrap: wrap; gap: 6px; }
+        .deleted-card-entry .field-label { font-size: 0.7rem; text-transform: uppercase; color: #888; letter-spacing: 0.04em; }
+        .deleted-card-entry .field-value { font-size: 0.95rem; color: #f0f0f0; white-space: pre-wrap; word-break: break-word; line-height: 1.5; }
     </style>
 </head>
 <body class="text-white">
@@ -114,6 +127,14 @@
                 <button id="review-btn" class="btn btn-secondary w-full sm:w-auto"><i class="fas fa-eye"></i> Review</button>
                 <button id="bulk-translate-btn" class="btn btn-success w-full sm:w-auto"><i class="fas fa-language"></i> Translate Beispiele</button>
                 <button id="export-btn" class="btn btn-primary w-full sm:w-auto"><i class="fas fa-download"></i> Export</button>
+                <button id="show-duplicates-btn" class="btn btn-secondary w-full sm:w-auto">
+                    <i class="fas fa-clone"></i> Duplicates
+                    <span id="duplicate-count-badge" class="hidden text-xs font-semibold bg-red-500 text-white px-2 py-0.5 rounded-full"></span>
+                </button>
+                <button id="show-deleted-btn" class="btn btn-secondary w-full sm:w-auto">
+                    <i class="fas fa-trash-restore"></i> Deleted
+                    <span id="deleted-count-badge" class="hidden text-xs font-semibold bg-yellow-500 text-black px-2 py-0.5 rounded-full"></span>
+                </button>
                 <button id="delete-cards-btn" class="btn btn-danger w-full sm:w-auto"><i class="fas fa-trash-alt"></i> Delete by Date</button>
              </div>
              <div id="edit-actions" class="hidden space-x-4">
@@ -239,6 +260,53 @@
              </div>
         </div>
     </div>
+    <div id="duplicates-view" class="duplicates-page hidden container mx-auto max-w-5xl p-4 sm:p-8">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+            <div>
+                <h1 class="text-3xl font-bold">Duplicate Cards</h1>
+                <p id="duplicates-summary" class="text-sm text-gray-400 mt-2"></p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <button id="duplicates-export-btn" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-download"></i> Export Visible
+                </button>
+                <button id="duplicates-back-btn" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left"></i> Back to Cards
+                </button>
+            </div>
+        </div>
+        <div class="flex flex-col md:flex-row md:items-center gap-4 mb-6">
+            <input id="duplicates-search-input" class="anki-input flex-1" placeholder="Search in front, back, translation, beispiel...">
+            <select id="duplicates-folder-filter" class="anki-input md:w-56">
+                <option value="__all__">All folders</option>
+                <option value="__none__">No folder</option>
+            </select>
+            <button id="duplicates-refresh-btn" class="btn btn-secondary btn-sm md:whitespace-nowrap">
+                <i class="fas fa-arrows-rotate"></i> Refresh
+            </button>
+        </div>
+        <div id="duplicates-empty-state" class="hidden text-gray-500 text-center border border-dashed border-gray-700 rounded-lg p-10">
+            No duplicate cards found.
+        </div>
+        <div id="duplicates-container" class="space-y-6"></div>
+    </div>
+    <div id="deleted-view" class="deleted-page hidden container mx-auto max-w-4xl p-4 sm:p-8">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+            <div>
+                <h1 class="text-3xl font-bold">Recently Deleted</h1>
+                <p id="deleted-summary" class="text-sm text-gray-400 mt-2"></p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <button id="deleted-back-btn" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left"></i> Back to Cards
+                </button>
+            </div>
+        </div>
+        <div id="deleted-empty-state" class="hidden text-gray-500 text-center border border-dashed border-gray-700 rounded-lg p-10">
+            No deleted cards in history.
+        </div>
+        <div id="deleted-container" class="space-y-4"></div>
+    </div>
     <div id="export-modal" class="modal-backdrop hidden">
         <div class="modal-content">
             <h2 class="text-2xl font-bold mb-6">Export Options</h2>
@@ -335,7 +403,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, getDocs, query, doc, deleteDoc, setDoc, writeBatch, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, getDocs, query, doc, deleteDoc, setDoc, writeBatch, updateDoc, getDoc, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyD6zpZUM_ABNngOX-RKFxwNoTqePDivrGE", authDomain: "deki-helper.firebaseapp.com", projectId: "deki-helper", storageBucket: "deki-helper.appspot.com", messagingSenderId: "612229919023", appId: "1:612229919023:web:c6507af0e5a2ddd84731da" };
         const appId = 'anki-card-generator-default';
@@ -354,7 +422,9 @@
         
         let app, auth, db, userId, cardsCollectionRef, unsubscribe;
         let foldersCollectionRef, foldersUnsubscribe;
+        let deletedCardsCollectionRef, deletedCardsUnsubscribe;
         let currentEditId = null, cardToDeleteId = null, allCards = [];
+        let deletedCards = [];
         let folders = [];
         let currentFolderId = null;
         let reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, beispielCopyIndex: 0, editedCardIds: new Set(), originalCards: [] };
@@ -658,6 +728,7 @@
                 filterAndRenderCards();
             }
             updateReviewDateSelector();
+            populateDuplicatesFolderFilter();
         }
 
         function openFolderModal() {
@@ -890,6 +961,633 @@
             }
             const time = new Date(value).getTime();
             return Number.isFinite(time) ? time : 0;
+        }
+
+        function normalizeDuplicateValue(value) {
+            if (!value) return '';
+            return String(value)
+                .replace(/<br\s*\/?>/gi, ' ')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .toLowerCase();
+        }
+
+        function createDuplicateKey(card) {
+            if (!card) return '';
+            const frontKey = normalizeDuplicateValue(card.front);
+            const backKey = normalizeDuplicateValue(card.back);
+            if (!frontKey && !backKey) return '';
+            return `${frontKey}|||${backKey}`;
+        }
+
+        function findDuplicateGroups(cards) {
+            const groups = new Map();
+            cards.forEach(card => {
+                const key = createDuplicateKey(card);
+                if (!key) return;
+                if (!groups.has(key)) {
+                    groups.set(key, []);
+                }
+                groups.get(key).push(card);
+            });
+            return Array.from(groups.values()).filter(group => group.length > 1);
+        }
+
+        function formatDuplicateField(value) {
+            if (!value) return '—';
+            const cleaned = String(value)
+                .replace(/<br\s*\/?>/gi, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+            return cleaned || '—';
+        }
+
+        function formatDuplicateTimestamp(value) {
+            const time = getCreatedAtTime(value);
+            if (!time) return 'Unknown';
+            const date = new Date(time);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${minutes}`;
+        }
+
+        function resolveFolderName(card) {
+            if (!card) return 'No folder';
+            if (!card.folderId) return 'No folder';
+            const folderMeta = folders.find(folder => folder.id === card.folderId);
+            if (folderMeta && folderMeta.name) return folderMeta.name;
+            if (card.folderName) return card.folderName;
+            return `Folder ID: ${card.folderId}`;
+        }
+
+        function formatDuplicateDisplayValue(value) {
+            if (!value) return '—';
+            const normalized = unformatMultiLine(String(value));
+            return normalized && normalized.trim() ? normalized : '—';
+        }
+
+        function createDuplicateFieldElement(label, value) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'space-y-1';
+            const labelEl = document.createElement('p');
+            labelEl.className = 'duplicate-field-label';
+            labelEl.textContent = label;
+            const valueEl = document.createElement('div');
+            valueEl.className = 'duplicate-field-value';
+            valueEl.textContent = formatDuplicateDisplayValue(value);
+            wrapper.append(labelEl, valueEl);
+            return wrapper;
+        }
+
+        function isDuplicatesViewActive() {
+            const view = document.getElementById('duplicates-view');
+            return view ? !view.classList.contains('hidden') : false;
+        }
+
+        function populateDuplicatesFolderFilter() {
+            const filterSelect = document.getElementById('duplicates-folder-filter');
+            if (!filterSelect) return;
+
+            const previousValue = filterSelect.value || '__all__';
+            filterSelect.innerHTML = '';
+
+            const baseOptions = [
+                { value: '__all__', label: 'All folders' },
+                { value: '__none__', label: 'No folder' }
+            ];
+            baseOptions.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt.value;
+                option.textContent = opt.label;
+                filterSelect.appendChild(option);
+            });
+
+            const sortedFolders = [...folders].sort((a, b) => {
+                const nameA = (a.name || '').toLowerCase();
+                const nameB = (b.name || '').toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+            sortedFolders.forEach(folder => {
+                const option = document.createElement('option');
+                option.value = folder.id;
+                option.textContent = folder.name || 'Untitled Folder';
+                filterSelect.appendChild(option);
+            });
+
+            const availableValues = Array.from(filterSelect.options).map(opt => opt.value);
+            filterSelect.value = availableValues.includes(previousValue) ? previousValue : '__all__';
+        }
+
+        function buildDuplicateViewModel({ searchTerm = '', folderFilter = '__all__' } = {}) {
+            const baseGroups = findDuplicateGroups(allCards);
+            const totalDuplicateCards = baseGroups.reduce((sum, group) => sum + group.length, 0);
+            let filteredGroups = baseGroups;
+
+            if (folderFilter === '__none__') {
+                filteredGroups = filteredGroups.filter(group => group.some(card => !card.folderId));
+            } else if (folderFilter && folderFilter !== '__all__') {
+                filteredGroups = filteredGroups.filter(group => group.some(card => card.folderId === folderFilter));
+            }
+
+            const normalizedSearch = searchTerm.toLowerCase();
+            if (normalizedSearch) {
+                filteredGroups = filteredGroups.filter(group => {
+                    return group.some(card => {
+                        const folderName = resolveFolderName(card).toLowerCase();
+                        if (folderName.includes(normalizedSearch)) return true;
+                        if ((card.id || '').toLowerCase().includes(normalizedSearch)) return true;
+                        return [card.front, card.back, card.translation, card.beispiel, card.speech, card.beispielSpeech]
+                            .some(field => (field || '').toLowerCase().includes(normalizedSearch));
+                    });
+                });
+            }
+
+            const filteredCardCount = filteredGroups.reduce((sum, group) => sum + group.length, 0);
+
+            return {
+                baseGroups,
+                filteredGroups,
+                totalDuplicateCards,
+                filteredCardCount
+            };
+        }
+
+        function updateDuplicateBadge() {
+            const badge = document.getElementById('duplicate-count-badge');
+            if (!badge) return;
+            const duplicateGroups = findDuplicateGroups(allCards);
+            if (duplicateGroups.length === 0) {
+                badge.classList.add('hidden');
+                badge.textContent = '';
+            } else {
+                badge.textContent = duplicateGroups.length.toString();
+                badge.classList.remove('hidden');
+            }
+            if (isDuplicatesViewActive()) {
+                renderDuplicatesView();
+            }
+        }
+
+        function renderDuplicatesView() {
+            const container = document.getElementById('duplicates-container');
+            const summary = document.getElementById('duplicates-summary');
+            const emptyState = document.getElementById('duplicates-empty-state');
+            const searchInput = document.getElementById('duplicates-search-input');
+            const folderFilterSelect = document.getElementById('duplicates-folder-filter');
+            if (!container || !summary || !emptyState) return;
+
+            populateDuplicatesFolderFilter();
+
+            const searchTerm = (searchInput ? searchInput.value : '').trim();
+            const folderFilter = folderFilterSelect ? folderFilterSelect.value : '__all__';
+
+            const { baseGroups, filteredGroups, totalDuplicateCards } = buildDuplicateViewModel({ searchTerm, folderFilter });
+
+            if (baseGroups.length === 0) {
+                summary.textContent = 'No duplicate cards detected.';
+            } else {
+                summary.textContent = `${baseGroups.length} duplicate group${baseGroups.length > 1 ? 's' : ''} covering ${totalDuplicateCards} card${totalDuplicateCards > 1 ? 's' : ''}.`;
+            }
+
+            container.innerHTML = '';
+
+            if (filteredGroups.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            filteredGroups
+                .slice()
+                .sort((a, b) => {
+                    if (b.length !== a.length) return b.length - a.length;
+                    const newestB = b.reduce((max, card) => Math.max(max, getCreatedAtTime(card.createdAt)), 0);
+                    const newestA = a.reduce((max, card) => Math.max(max, getCreatedAtTime(card.createdAt)), 0);
+                    if (newestB !== newestA) return newestB - newestA;
+                    const frontB = formatDuplicateField(b[0].front);
+                    const frontA = formatDuplicateField(a[0].front);
+                    return frontA.localeCompare(frontB);
+                })
+                .forEach(group => {
+                    const groupCard = document.createElement('div');
+                    groupCard.className = 'duplicate-group space-y-5';
+
+                    const header = document.createElement('div');
+                    header.className = 'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3';
+
+                    const title = document.createElement('div');
+                    const groupFront = formatDuplicateField(group[0].front);
+                    const groupBack = formatDuplicateField(group[0].back);
+                    const titleFront = document.createElement('p');
+                    titleFront.className = 'text-lg font-semibold text-gray-100';
+                    titleFront.textContent = groupFront !== '—' ? groupFront : 'No Front';
+                    const titleBack = document.createElement('p');
+                    titleBack.className = 'text-sm text-gray-400';
+                    titleBack.textContent = groupBack !== '—' ? groupBack : 'No Back';
+                    title.append(titleFront, titleBack);
+                    header.appendChild(title);
+
+                    const badgeWrapper = document.createElement('div');
+                    badgeWrapper.className = 'flex flex-wrap gap-2 items-center';
+
+                    const countPill = document.createElement('span');
+                    countPill.className = 'text-xs font-semibold text-gray-300 bg-gray-800 px-2 py-1 rounded-full';
+                    countPill.textContent = `${group.length} card${group.length > 1 ? 's' : ''}`;
+                    badgeWrapper.appendChild(countPill);
+
+                    const folderPill = document.createElement('span');
+                    folderPill.className = 'text-xs text-gray-400';
+                    const uniqueFolders = Array.from(new Set(group.map(card => resolveFolderName(card))));
+                    folderPill.textContent = `Folders: ${uniqueFolders.join(', ')}`;
+                    badgeWrapper.appendChild(folderPill);
+
+                    header.appendChild(badgeWrapper);
+                    groupCard.appendChild(header);
+
+                    const groupCardsWrapper = document.createElement('div');
+                    groupCardsWrapper.className = 'space-y-4';
+
+                    const cardsForRender = group.slice().sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt));
+                    cardsForRender.forEach(card => {
+                        const cardEntry = document.createElement('div');
+                        cardEntry.className = 'duplicate-card-entry space-y-4';
+
+                        const matchesFolder =
+                            folderFilter === '__all__' ||
+                            (folderFilter === '__none__' && !card.folderId) ||
+                            (folderFilter !== '__none__' && folderFilter === card.folderId);
+                        if (matchesFolder && folderFilter !== '__all__') {
+                            cardEntry.classList.add('highlight');
+                        }
+
+                        const meta = document.createElement('div');
+                        meta.className = 'duplicate-card-meta flex flex-wrap gap-2';
+                        const folderName = resolveFolderName(card);
+                        const metaSegments = [
+                            formatDuplicateTimestamp(card.createdAt),
+                            '•',
+                            folderName,
+                            '•',
+                            `ID: ${card.id}`
+                        ];
+                        metaSegments.forEach((segment, index) => {
+                            const span = document.createElement('span');
+                            span.textContent = segment;
+                            meta.appendChild(span);
+                            if (index === metaSegments.length - 1) return;
+                        });
+                        cardEntry.appendChild(meta);
+
+                        const primaryGrid = document.createElement('div');
+                        primaryGrid.className = 'grid gap-4 md:grid-cols-2';
+                        primaryGrid.appendChild(createDuplicateFieldElement('Front', card.front));
+                        primaryGrid.appendChild(createDuplicateFieldElement('Back', card.back));
+                        primaryGrid.appendChild(createDuplicateFieldElement('Translation', card.translation));
+                        primaryGrid.appendChild(createDuplicateFieldElement('Beispiel', card.beispiel));
+                        cardEntry.appendChild(primaryGrid);
+
+                        const optionalGrid = document.createElement('div');
+                        optionalGrid.className = 'grid gap-4 md:grid-cols-2';
+                        let hasOptional = false;
+                        const optionalFields = [
+                            { label: 'Speech', value: card.speech },
+                            { label: 'Beispiel Speech', value: card.beispielSpeech }
+                        ];
+                        optionalFields.forEach(field => {
+                            if (formatDuplicateDisplayValue(field.value) !== '—') {
+                                optionalGrid.appendChild(createDuplicateFieldElement(field.label, field.value));
+                                hasOptional = true;
+                            }
+                        });
+                        if (hasOptional) {
+                            cardEntry.appendChild(optionalGrid);
+                        }
+
+                        const actionsRow = document.createElement('div');
+                        actionsRow.className = 'flex flex-wrap items-center gap-2';
+
+                        const editBtn = document.createElement('button');
+                        editBtn.className = 'btn btn-secondary btn-sm duplicate-edit-btn';
+                        editBtn.dataset.cardId = card.id;
+                        editBtn.innerHTML = '<i class="fas fa-pen"></i> Edit';
+                        actionsRow.appendChild(editBtn);
+
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'btn btn-danger btn-sm duplicate-delete-btn';
+                        deleteBtn.dataset.cardId = card.id;
+                        deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete';
+                        actionsRow.appendChild(deleteBtn);
+
+                        const copyBtn = document.createElement('button');
+                        copyBtn.className = 'btn btn-secondary btn-sm duplicate-copy-btn';
+                        copyBtn.dataset.cardId = card.id;
+                        copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy Back';
+                        actionsRow.appendChild(copyBtn);
+
+                        cardEntry.appendChild(actionsRow);
+                        groupCardsWrapper.appendChild(cardEntry);
+                    });
+
+                    groupCard.appendChild(groupCardsWrapper);
+                    container.appendChild(groupCard);
+                });
+        }
+
+        function showMainAppView() {
+            const mainApp = document.getElementById('main-app');
+            const duplicatesView = document.getElementById('duplicates-view');
+            const deletedView = document.getElementById('deleted-view');
+            if (mainApp) mainApp.classList.remove('hidden');
+            if (duplicatesView) duplicatesView.classList.add('hidden');
+            if (deletedView) deletedView.classList.add('hidden');
+            const duplicatesSearchInput = document.getElementById('duplicates-search-input');
+            if (duplicatesSearchInput && !isDuplicatesViewActive()) {
+                duplicatesSearchInput.blur();
+            }
+        }
+
+        function showDuplicatesView() {
+            renderDuplicatesView();
+            const mainApp = document.getElementById('main-app');
+            const duplicatesView = document.getElementById('duplicates-view');
+            const deletedView = document.getElementById('deleted-view');
+            const reviewModal = document.getElementById('review-modal');
+            if (mainApp) mainApp.classList.add('hidden');
+            if (deletedView) deletedView.classList.add('hidden');
+            if (duplicatesView) duplicatesView.classList.remove('hidden');
+            if (reviewModal) reviewModal.classList.add('hidden');
+            const searchInput = document.getElementById('duplicates-search-input');
+            if (searchInput) searchInput.focus();
+        }
+
+        function showDeletedView() {
+            renderDeletedView();
+            const mainApp = document.getElementById('main-app');
+            const duplicatesView = document.getElementById('duplicates-view');
+            const deletedView = document.getElementById('deleted-view');
+            const reviewModal = document.getElementById('review-modal');
+            if (mainApp) mainApp.classList.add('hidden');
+            if (duplicatesView) duplicatesView.classList.add('hidden');
+            if (deletedView) deletedView.classList.remove('hidden');
+            if (reviewModal) reviewModal.classList.add('hidden');
+        }
+
+        function exportVisibleDuplicates() {
+            const searchInput = document.getElementById('duplicates-search-input');
+            const folderFilterSelect = document.getElementById('duplicates-folder-filter');
+            const searchTerm = (searchInput ? searchInput.value : '').trim();
+            const folderFilter = folderFilterSelect ? folderFilterSelect.value : '__all__';
+
+            const { filteredGroups } = buildDuplicateViewModel({ searchTerm, folderFilter });
+            if (filteredGroups.length === 0) {
+                showNotification('No duplicates to export.', 'error');
+                return;
+            }
+
+            const seen = new Set();
+            const exportCards = [];
+            filteredGroups.forEach(group => {
+                group.forEach(card => {
+                    if (seen.has(card.id)) return;
+                    seen.add(card.id);
+                    exportCards.push({
+                        id: card.id,
+                        front: card.front || '',
+                        back: card.back || '',
+                        translation: card.translation || '',
+                        beispiel: card.beispiel || '',
+                        speech: card.speech || '',
+                        beispielSpeech: card.beispielSpeech || '',
+                        folderId: card.folderId || '',
+                        folderName: resolveFolderName(card),
+                        createdAt: card.createdAt || ''
+                    });
+                });
+            });
+
+            const payload = {
+                generatedAt: new Date().toISOString(),
+                duplicateGroupCount: filteredGroups.length,
+                cardCount: exportCards.length,
+                cards: exportCards
+            };
+
+            const today = new Date().toISOString().split('T')[0];
+            triggerDownload(JSON.stringify(payload, null, 2), `duplicate-cards-${today}.json`, 'application/json');
+            showNotification('Duplicate snapshot exported.', 'success');
+        }
+
+        function isDeletedViewActive() {
+            const view = document.getElementById('deleted-view');
+            return view ? !view.classList.contains('hidden') : false;
+        }
+
+        function createDeletedFieldElement(label, value) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'space-y-1';
+            const labelEl = document.createElement('p');
+            labelEl.className = 'field-label';
+            labelEl.textContent = label;
+            const valueEl = document.createElement('div');
+            valueEl.className = 'field-value';
+            valueEl.textContent = formatDuplicateDisplayValue(value);
+            wrapper.append(labelEl, valueEl);
+            return wrapper;
+        }
+
+        function renderDeletedView() {
+            const container = document.getElementById('deleted-container');
+            const summary = document.getElementById('deleted-summary');
+            const emptyState = document.getElementById('deleted-empty-state');
+            if (!container || !summary || !emptyState) return;
+
+            container.innerHTML = '';
+
+            if (deletedCards.length === 0) {
+                summary.textContent = 'No deleted cards in history.';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            summary.textContent = `Showing the last ${deletedCards.length} deleted card${deletedCards.length > 1 ? 's' : ''} (max 20 stored).`;
+            emptyState.classList.add('hidden');
+
+            deletedCards
+                .slice()
+                .sort((a, b) => getCreatedAtTime(b.deletedAt) - getCreatedAtTime(a.deletedAt))
+                .forEach(card => {
+                    const entry = document.createElement('div');
+                    entry.className = 'deleted-card-entry space-y-4';
+                    entry.dataset.cardId = card.id;
+
+                    const header = document.createElement('header');
+                    const titleFront = document.createElement('p');
+                    titleFront.className = 'text-lg font-semibold text-gray-100';
+                    titleFront.textContent = formatDuplicateDisplayValue(card.front) !== '—' ? formatDuplicateDisplayValue(card.front) : 'No Front';
+                    const titleBack = document.createElement('p');
+                    titleBack.className = 'text-sm text-gray-400';
+                    titleBack.textContent = formatDuplicateDisplayValue(card.back) !== '—' ? formatDuplicateDisplayValue(card.back) : 'No Back';
+                    header.append(titleFront, titleBack);
+                    entry.appendChild(header);
+
+                    const meta = document.createElement('div');
+                    meta.className = 'meta';
+                    const metaSegments = [
+                        `Deleted: ${formatDuplicateTimestamp(card.deletedAt)}`,
+                        `Original ID: ${card.originalId || card.id}`,
+                        `Folder: ${resolveFolderName(card)}`
+                    ];
+                    metaSegments.forEach(segment => {
+                        const span = document.createElement('span');
+                        span.textContent = segment;
+                        meta.appendChild(span);
+                    });
+                    entry.appendChild(meta);
+
+                    const primaryGrid = document.createElement('div');
+                    primaryGrid.className = 'grid gap-4 md:grid-cols-2';
+                    primaryGrid.appendChild(createDeletedFieldElement('Front', card.front));
+                    primaryGrid.appendChild(createDeletedFieldElement('Back', card.back));
+                    primaryGrid.appendChild(createDeletedFieldElement('Translation', card.translation));
+                    primaryGrid.appendChild(createDeletedFieldElement('Beispiel', card.beispiel));
+                    entry.appendChild(primaryGrid);
+
+                    const optionalGrid = document.createElement('div');
+                    optionalGrid.className = 'grid gap-4 md:grid-cols-2';
+                    let hasOptional = false;
+                    [
+                        { label: 'Speech', value: card.speech },
+                        { label: 'Beispiel Speech', value: card.beispielSpeech }
+                    ].forEach(field => {
+                        if (formatDuplicateDisplayValue(field.value) !== '—') {
+                            optionalGrid.appendChild(createDeletedFieldElement(field.label, field.value));
+                            hasOptional = true;
+                        }
+                    });
+                    if (hasOptional) entry.appendChild(optionalGrid);
+
+                    const actions = document.createElement('div');
+                    actions.className = 'flex flex-wrap gap-2';
+
+                    const restoreBtn = document.createElement('button');
+                    restoreBtn.className = 'btn btn-success btn-sm deleted-restore-btn';
+                    restoreBtn.dataset.cardId = card.id;
+                    restoreBtn.innerHTML = '<i class="fas fa-undo"></i> Restore';
+                    actions.appendChild(restoreBtn);
+
+                    const restoreEditBtn = document.createElement('button');
+                    restoreEditBtn.className = 'btn btn-secondary btn-sm deleted-restore-edit-btn';
+                    restoreEditBtn.dataset.cardId = card.id;
+                    restoreEditBtn.innerHTML = '<i class="fas fa-pen"></i> Restore & Edit';
+                    actions.appendChild(restoreEditBtn);
+
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'btn btn-secondary btn-sm deleted-copy-btn';
+                    copyBtn.dataset.cardId = card.id;
+                    copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy Back';
+                    actions.appendChild(copyBtn);
+
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'btn btn-danger btn-sm deleted-remove-btn';
+                    removeBtn.dataset.cardId = card.id;
+                    removeBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Remove';
+                    actions.appendChild(removeBtn);
+
+                    entry.appendChild(actions);
+                    container.appendChild(entry);
+                });
+        }
+
+        function buildArchivedCardPayload(cardData) {
+            if (!cardData || !cardData.id) return null;
+            const { id: originalId, ...rest } = cardData;
+            const cleaned = {};
+            Object.entries(rest).forEach(([key, value]) => {
+                cleaned[key] = value === undefined ? null : value;
+            });
+            return {
+                ...cleaned,
+                originalId,
+                deletedAt: new Date().toISOString()
+            };
+        }
+
+        async function archiveCardBeforeDeletion(cardData) {
+            if (!deletedCardsCollectionRef || !cardData || !cardData.id) return;
+            const archivedCard = buildArchivedCardPayload(cardData);
+            if (!archivedCard) return;
+            try {
+                const archiveDocRef = doc(deletedCardsCollectionRef);
+                await setDoc(archiveDocRef, archivedCard);
+            } catch (error) {
+                console.error('Failed to archive card before deletion:', error);
+            }
+        }
+
+        async function restoreDeletedCard(card, options = {}) {
+            if (!card || !cardsCollectionRef || !deletedCardsCollectionRef) {
+                showNotification('Unable to restore this card right now.', 'error');
+                return;
+            }
+            const cardId = card.originalId || card.id;
+            const { deletedAt, originalId, ...rest } = card;
+            const payload = {
+                front: rest.front || '',
+                back: rest.back || '',
+                speech: rest.speech || '',
+                beispiel: rest.beispiel || '',
+                beispielSpeech: rest.beispielSpeech || '',
+                translation: rest.translation || '',
+                folderId: rest.folderId || null,
+                folderName: rest.folderName || null,
+                createdAt: rest.createdAt || new Date().toISOString()
+            };
+
+            try {
+                await setDoc(doc(cardsCollectionRef, cardId), payload);
+                await deleteDoc(doc(deletedCardsCollectionRef, card.id));
+                showNotification('Card restored.', 'success');
+                deletedCards = deletedCards.filter(existing => existing.id !== card.id);
+                updateDeletedBadge();
+                if (options.edit) {
+                    showMainAppView();
+                    setEditMode(true, { ...payload, id: cardId });
+                }
+            } catch (error) {
+                console.error('Restore failed:', error);
+                showNotification('Failed to restore card.', 'error');
+            }
+        }
+
+        async function permanentlyDeleteArchivedCard(cardId) {
+            if (!cardId || !deletedCardsCollectionRef) return;
+            try {
+                await deleteDoc(doc(deletedCardsCollectionRef, cardId));
+                showNotification('Card removed from history.', 'success');
+                deletedCards = deletedCards.filter(card => card.id !== cardId);
+                updateDeletedBadge();
+            } catch (error) {
+                console.error('Failed to remove archived card:', error);
+                showNotification('Could not remove card from history.', 'error');
+            }
+        }
+
+        function updateDeletedBadge() {
+            const badge = document.getElementById('deleted-count-badge');
+            if (!badge) return;
+            if (!deletedCards.length) {
+                badge.classList.add('hidden');
+                badge.textContent = '';
+            } else {
+                badge.textContent = deletedCards.length.toString();
+                badge.classList.remove('hidden');
+            }
+            if (isDeletedViewActive()) {
+                renderDeletedView();
+            }
         }
 
         function updateSpeechFields() { 
@@ -1519,6 +2217,20 @@
             resetDeleteShortcut();
             
             try {
+                let cardData = allCards.find(card => card.id === cardToDeleteId);
+                if (!cardData && cardsCollectionRef) {
+                    try {
+                        const cardDoc = await getDoc(doc(cardsCollectionRef, cardToDeleteId));
+                        if (cardDoc.exists()) {
+                            cardData = { id: cardDoc.id, ...cardDoc.data() };
+                        }
+                    } catch (error) {
+                        console.error('Failed to fetch card before deletion:', error);
+                    }
+                }
+                if (cardData) {
+                    await archiveCardBeforeDeletion(cardData);
+                }
                 const docRef = doc(db, `artifacts/${appId}/users/${userId}/cards`, cardToDeleteId);
                 await deleteDoc(docRef);
                 
@@ -1754,9 +2466,13 @@
             document.getElementById('main-app').classList.add('hidden');
             if (unsubscribe) unsubscribe();
             if (foldersUnsubscribe) foldersUnsubscribe();
+            if (deletedCardsUnsubscribe) deletedCardsUnsubscribe();
             allCards = [];
+            deletedCards = [];
             folders = [];
             foldersCollectionRef = null;
+            deletedCardsCollectionRef = null;
+            deletedCardsUnsubscribe = null;
             hasRestoredFolderPreference = false;
             currentReviewFolderId = ALL_FOLDERS_VALUE;
             currentReviewSessionId = null;
@@ -1770,6 +2486,26 @@
             if(sessionCounter) sessionCounter.textContent = '0';
             const totalCounter = document.getElementById('total-counter');
             if(totalCounter) totalCounter.textContent = '0';
+            const duplicatesView = document.getElementById('duplicates-view');
+            if (duplicatesView) duplicatesView.classList.add('hidden');
+            const duplicatesContainer = document.getElementById('duplicates-container');
+            if (duplicatesContainer) duplicatesContainer.innerHTML = '';
+            const duplicatesSummary = document.getElementById('duplicates-summary');
+            if (duplicatesSummary) duplicatesSummary.textContent = '';
+            const duplicatesEmptyState = document.getElementById('duplicates-empty-state');
+            if (duplicatesEmptyState) duplicatesEmptyState.classList.add('hidden');
+            const duplicatesSearchInput = document.getElementById('duplicates-search-input');
+            if (duplicatesSearchInput) duplicatesSearchInput.value = '';
+            updateDuplicateBadge();
+            const deletedView = document.getElementById('deleted-view');
+            if (deletedView) deletedView.classList.add('hidden');
+            const deletedContainer = document.getElementById('deleted-container');
+            if (deletedContainer) deletedContainer.innerHTML = '';
+            const deletedSummary = document.getElementById('deleted-summary');
+            if (deletedSummary) deletedSummary.textContent = '';
+            const deletedEmptyState = document.getElementById('deleted-empty-state');
+            if (deletedEmptyState) deletedEmptyState.classList.add('hidden');
+            updateDeletedBadge();
         }
 
         function showAppUI(user) {
@@ -1777,6 +2513,8 @@
             document.getElementById('main-app').classList.remove('hidden');
             document.getElementById('user-email').textContent = user.email;
             document.getElementById('session-counter').textContent = '0';
+            showMainAppView();
+            updateDuplicateBadge();
             currentReviewFolderId = ALL_FOLDERS_VALUE;
             currentReviewSessionId = null;
             currentReviewDate = 'all';
@@ -1787,6 +2525,7 @@
             const folderPath = `artifacts/${appId}/users/${userId}/folders`;
             cardsCollectionRef = collection(db, collectionPath);
             foldersCollectionRef = collection(db, folderPath);
+            deletedCardsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/deleted_cards`);
 
             if (foldersUnsubscribe) foldersUnsubscribe();
             foldersUnsubscribe = onSnapshot(foldersCollectionRef, (snapshot) => {
@@ -1796,6 +2535,15 @@
                 ensureCurrentFolderIsValid();
                 renderFolderOptions();
                 filterAndRenderCards();
+            });
+
+            if (deletedCardsUnsubscribe) deletedCardsUnsubscribe();
+            const deletedQuery = query(deletedCardsCollectionRef, orderBy('deletedAt', 'desc'), limit(20));
+            deletedCardsUnsubscribe = onSnapshot(deletedQuery, (snapshot) => {
+                deletedCards = [];
+                snapshot.forEach(docSnap => deletedCards.push({ id: docSnap.id, ...docSnap.data() }));
+                updateDeletedBadge();
+                if (isDeletedViewActive()) renderDeletedView();
             });
 
             if (unsubscribe) unsubscribe();
@@ -1820,6 +2568,7 @@
                 renderFolderOptions();
                 filterAndRenderCards();
                 updateReviewDateSelector();
+                updateDuplicateBadge();
             });
         }
 
@@ -1945,7 +2694,14 @@
             // if (!confirm(`Are you sure you want to delete ${cardsToDelete.length} card(s)? This action cannot be undone.`)) return;
             try {
                 const batch = writeBatch(db);
-                cardsToDelete.forEach(card => batch.delete(doc(db, `artifacts/${appId}/users/${userId}/cards`, card.id)));
+                cardsToDelete.forEach(card => {
+                    const archivedPayload = buildArchivedCardPayload(card);
+                    if (archivedPayload && deletedCardsCollectionRef) {
+                        const archiveDocRef = doc(deletedCardsCollectionRef);
+                        batch.set(archiveDocRef, archivedPayload);
+                    }
+                    batch.delete(doc(db, `artifacts/${appId}/users/${userId}/cards`, card.id));
+                });
                 await batch.commit();
                 showNotification(`Successfully deleted ${cardsToDelete.length} cards!`, 'success');
                 document.getElementById('delete-cards-modal').classList.add('hidden');
@@ -2243,6 +2999,20 @@
 
 
             document.addEventListener('keydown', (e) => {
+                if (isDuplicatesViewActive()) {
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        showMainAppView();
+                    }
+                    return;
+                }
+                if (isDeletedViewActive()) {
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        showMainAppView();
+                    }
+                    return;
+                }
                 const folderModal = document.getElementById('folder-modal');
                 if (e.key === 'Escape' && folderModal && !folderModal.classList.contains('hidden')) {
                     e.preventDefault();
@@ -2307,6 +3077,109 @@
             document.getElementById('delete-cards-btn').addEventListener('click', openDeleteCardsModal);
             document.getElementById('confirm-delete-cards-btn').addEventListener('click', handleConfirmDeleteCards);
             document.getElementById('cancel-delete-cards-btn').addEventListener('click', () => document.getElementById('delete-cards-modal').classList.add('hidden'));
+            const showDuplicatesBtn = document.getElementById('show-duplicates-btn');
+            if (showDuplicatesBtn) {
+                showDuplicatesBtn.addEventListener('click', () => {
+                    showDuplicatesView();
+                });
+            }
+            const duplicatesBackBtn = document.getElementById('duplicates-back-btn');
+            if (duplicatesBackBtn) duplicatesBackBtn.addEventListener('click', showMainAppView);
+            const duplicatesSearchInput = document.getElementById('duplicates-search-input');
+            if (duplicatesSearchInput) {
+                duplicatesSearchInput.addEventListener('input', () => {
+                    if (isDuplicatesViewActive()) renderDuplicatesView();
+                });
+            }
+            const duplicatesFolderFilter = document.getElementById('duplicates-folder-filter');
+            if (duplicatesFolderFilter) {
+                duplicatesFolderFilter.addEventListener('change', () => {
+                    if (isDuplicatesViewActive()) renderDuplicatesView();
+                });
+            }
+            const duplicatesRefreshBtn = document.getElementById('duplicates-refresh-btn');
+            if (duplicatesRefreshBtn) duplicatesRefreshBtn.addEventListener('click', () => renderDuplicatesView());
+            const duplicatesExportBtn = document.getElementById('duplicates-export-btn');
+            if (duplicatesExportBtn) duplicatesExportBtn.addEventListener('click', exportVisibleDuplicates);
+            const duplicatesContainer = document.getElementById('duplicates-container');
+            if (duplicatesContainer) {
+                duplicatesContainer.addEventListener('click', (e) => {
+                    const editBtn = e.target.closest('.duplicate-edit-btn');
+                    if (editBtn) {
+                        const card = allCards.find(c => c.id === editBtn.dataset.cardId);
+                        if (card) {
+                            showMainAppView();
+                            setEditMode(true, card);
+                        }
+                        return;
+                    }
+                    const deleteBtn = e.target.closest('.duplicate-delete-btn');
+                    if (deleteBtn) {
+                        const cardId = deleteBtn.dataset.cardId;
+                        if (cardId) {
+                            cardToDeleteId = cardId;
+                            const deleteModal = document.getElementById('delete-modal');
+                            if (deleteModal) deleteModal.classList.remove('hidden');
+                        }
+                        return;
+                    }
+                    const copyBtn = e.target.closest('.duplicate-copy-btn');
+                    if (copyBtn) {
+                        const card = allCards.find(c => c.id === copyBtn.dataset.cardId);
+                        if (card && card.back) {
+                            const tempInput = document.createElement('textarea');
+                            tempInput.value = unformatMultiLine(card.back);
+                            document.body.appendChild(tempInput);
+                            tempInput.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(tempInput);
+                            showNotification('Back copied to clipboard!', 'success', 1500);
+                        }
+                    }
+                });
+            }
+            const showDeletedBtn = document.getElementById('show-deleted-btn');
+            if (showDeletedBtn) showDeletedBtn.addEventListener('click', showDeletedView);
+            const deletedBackBtn = document.getElementById('deleted-back-btn');
+            if (deletedBackBtn) deletedBackBtn.addEventListener('click', showMainAppView);
+            const deletedContainer = document.getElementById('deleted-container');
+            if (deletedContainer) {
+                deletedContainer.addEventListener('click', (e) => {
+                    const restoreBtn = e.target.closest('.deleted-restore-btn');
+                    if (restoreBtn) {
+                        const card = deletedCards.find(c => c.id === restoreBtn.dataset.cardId);
+                        if (card) restoreDeletedCard(card, { edit: false });
+                        return;
+                    }
+                    const restoreEditBtn = e.target.closest('.deleted-restore-edit-btn');
+                    if (restoreEditBtn) {
+                        const card = deletedCards.find(c => c.id === restoreEditBtn.dataset.cardId);
+                        if (card) restoreDeletedCard(card, { edit: true });
+                        return;
+                    }
+                    const copyBtn = e.target.closest('.deleted-copy-btn');
+                    if (copyBtn) {
+                        const card = deletedCards.find(c => c.id === copyBtn.dataset.cardId);
+                        if (card && card.back) {
+                            const tempInput = document.createElement('textarea');
+                            tempInput.value = unformatMultiLine(card.back);
+                            document.body.appendChild(tempInput);
+                            tempInput.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(tempInput);
+                            showNotification('Back copied to clipboard!', 'success', 1500);
+                        }
+                        return;
+                    }
+                    const removeBtn = e.target.closest('.deleted-remove-btn');
+                    if (removeBtn) {
+                        const cardId = removeBtn.dataset.cardId;
+                        if (cardId) {
+                            permanentlyDeleteArchivedCard(cardId);
+                        }
+                    }
+                });
+            }
             document.getElementById('edit-review-card-btn').addEventListener('click', enterReviewEditMode);
             
             document.getElementById('save-review-edit-btn').addEventListener('click', async () => {
