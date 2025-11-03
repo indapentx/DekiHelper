@@ -119,9 +119,9 @@
             </div>
             <button type="submit" style="display: none;"></button>
         </form>
-        <div id="action-bar" class="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-             <p class="text-base font-semibold text-gray-400">Cards: <span id="session-counter" title="Cards from latest session" class="text-green-400 font-bold">0</span> / <span id="total-counter" title="Total cards" class="text-blue-400 font-bold">0</span></p>
-             <div id="default-actions" class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+        <div id="action-bar" class="mt-8 flex flex-col sm:flex-row sm:flex-wrap sm:items-start gap-4 sm:gap-3">
+             <p class="text-base font-semibold text-gray-400 flex items-center gap-2">Cards: <span id="session-counter" title="Cards from latest session" class="text-green-400 font-bold">0</span> / <span id="total-counter" title="Total cards" class="text-blue-400 font-bold">0</span></p>
+             <div id="default-actions" class="flex flex-col sm:flex-row sm:flex-wrap gap-3 w-full">
                 <button id="import-btn" class="btn btn-secondary w-full sm:w-auto"><i class="fas fa-upload"></i> Import</button>
                 <input type="file" id="import-file-input" class="hidden" accept=".txt, .tsv">
                 <button id="review-btn" class="btn btn-secondary w-full sm:w-auto"><i class="fas fa-eye"></i> Review</button>
