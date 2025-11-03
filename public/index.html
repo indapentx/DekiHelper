@@ -403,7 +403,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, getDocs, query, doc, deleteDoc, setDoc, writeBatch, updateDoc, getDoc, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, getDocs, query, doc, deleteDoc, setDoc, writeBatch, updateDoc, getDoc, orderBy, limit, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyD6zpZUM_ABNngOX-RKFxwNoTqePDivrGE", authDomain: "deki-helper.firebaseapp.com", projectId: "deki-helper", storageBucket: "deki-helper.appspot.com", messagingSenderId: "612229919023", appId: "1:612229919023:web:c6507af0e5a2ddd84731da" };
         const appId = 'anki-card-generator-default';
@@ -1899,10 +1899,11 @@
 
             // Mark the card we are leaving as edited
             if (direction > 0 && reviewSession.currentIndex > -1) {
-                const cardId = reviewSession.cards[reviewSession.currentIndex].id;
-                if (!reviewSession.editedCardIds.has(cardId)) {
-                    reviewSession.editedCardIds.add(cardId);
-                    await updateEditedCardsInFirestore();
+                const currentCard = reviewSession.cards[reviewSession.currentIndex];
+                const cardId = currentCard && currentCard.id;
+                if (cardId && !reviewSession.editedCardIds.has(cardId)) {
+                    setLocalEditedState(cardId, true);
+                    await updateEditedCardsInFirestore(cardId, true);
                 }
             }
             
@@ -2010,16 +2011,44 @@
             if (e.key === 'm' || e.key === 'M') document.getElementById('mark-edited-btn').click();
         }
 
-        async function updateEditedCardsInFirestore() {
-            if (!userId || !currentReviewSessionId) return;
-            try {
-                const docRef = doc(db, `artifacts/${appId}/users/${userId}/review_sessions`, currentReviewSessionId);
-                const idsArray = Array.from(reviewSession.editedCardIds);
-                await setDoc(docRef, { editedCardIds: idsArray });
-            } catch (error) {
-                console.error('Failed to save review progress:', error);
-                showNotification('Could not save review progress.');
+        function setLocalEditedState(cardId, isEdited) {
+            if (!cardId) return;
+            if (isEdited) reviewSession.editedCardIds.add(cardId);
+            else reviewSession.editedCardIds.delete(cardId);
+
+            const updateInList = (list) => {
+                if (!Array.isArray(list)) return;
+                const card = list.find(c => c.id === cardId);
+                if (card) card.reviewEdited = isEdited;
+            };
+            updateInList(reviewSession.cards);
+            updateInList(reviewSession.originalCards);
+            const allCard = allCards.find(c => c.id === cardId);
+            if (allCard) allCard.reviewEdited = isEdited;
+        }
+
+        async function updateEditedCardsInFirestore(cardId, isEdited) {
+            if (!userId) return;
+            const writes = [];
+            if (cardId && cardsCollectionRef) {
+                const cardRef = doc(cardsCollectionRef, cardId);
+                const payload = isEdited
+                    ? { reviewEdited: true, reviewEditedAt: new Date().toISOString() }
+                    : { reviewEdited: deleteField(), reviewEditedAt: deleteField() };
+                writes.push(updateDoc(cardRef, payload).catch(error => {
+                    console.error('Failed to update card edited state:', error);
+                    showNotification('Could not update card edited state.', 'error');
+                }));
             }
+            if (currentReviewSessionId) {
+                const sessionRef = doc(db, `artifacts/${appId}/users/${userId}/review_sessions`, currentReviewSessionId);
+                const idsArray = Array.from(reviewSession.editedCardIds);
+                writes.push(setDoc(sessionRef, { editedCardIds: idsArray }, { merge: true }).catch(error => {
+                    console.error('Failed to save review progress:', error);
+                    showNotification('Could not save review progress.');
+                }));
+            }
+            await Promise.all(writes);
         }
 
         async function startReviewSession() {
@@ -2047,7 +2076,7 @@
             reviewSession.originalCards = [...cardsForReview];
             reviewSession.cards = [...cardsForReview];
             reviewSession.currentIndex = 0;
-            reviewSession.editedCardIds = new Set();
+            reviewSession.editedCardIds = new Set(cardsForReview.filter(card => card.reviewEdited).map(card => card.id));
             resetDeleteShortcut();
             
             // Fetch persisted edited IDs
@@ -2057,7 +2086,7 @@
                     const docSnap = await getDoc(docRef);
                     if (docSnap.exists() && docSnap.data().editedCardIds) {
                         const editedIds = docSnap.data().editedCardIds;
-                        reviewSession.editedCardIds = new Set(editedIds);
+                        editedIds.forEach(id => setLocalEditedState(id, true));
                     }
                 } catch (error) {
                     console.error('Error fetching review session:', error);
@@ -2583,7 +2612,10 @@
             if (unsubscribe) unsubscribe();
             unsubscribe = onSnapshot(cardsCollectionRef, (snapshot) => {
                 allCards = [];
-                snapshot.forEach(doc => allCards.push({ id: doc.id, ...doc.data() }));
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    allCards.push({ id: doc.id, ...data, reviewEdited: !!data.reviewEdited });
+                });
                 document.getElementById('total-counter').textContent = allCards.length;
                 
                 if (allCards.length > 0) {
@@ -2824,8 +2856,8 @@
                 card.translation = newTranslation;
                 card.beispielSpeech = newBeispielSpeech;
                 
-                reviewSession.editedCardIds.add(card.id);
-                await updateEditedCardsInFirestore();
+                setLocalEditedState(card.id, true);
+                await updateEditedCardsInFirestore(card.id, true);
                 showNotification('Card updated successfully.', 'success');
                 return true;
             } catch (error) { 
@@ -3251,11 +3283,12 @@
                 if (reviewSession.currentIndex > -1) {
                     const cardId = reviewSession.cards[reviewSession.currentIndex].id;
                     if (reviewSession.editedCardIds.has(cardId)) {
-                        reviewSession.editedCardIds.delete(cardId);
+                        setLocalEditedState(cardId, false);
+                        await updateEditedCardsInFirestore(cardId, false);
                     } else {
-                        reviewSession.editedCardIds.add(cardId);
+                        setLocalEditedState(cardId, true);
+                        await updateEditedCardsInFirestore(cardId, true);
                     }
-                    await updateEditedCardsInFirestore();
                     renderReviewCard();
                 }
             });
