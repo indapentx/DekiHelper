@@ -1340,7 +1340,41 @@
                 return `[sound:s_${tagBase}${suffix}.mp3]`;
             });
 
-            return soundTags.join('<br>');
+            return ` <br> ${soundTags.join('')}`;
+        }
+
+        function resolveBeispielSpeechValue(backText, beispielText, storedValue) {
+            const fallback = buildBeispielSpeech(backText, beispielText);
+            const normalizedSentences = normalizeSentencesFromBeispiel(beispielText);
+            const requiresBreak = normalizedSentences.length > 1;
+
+            if (isBlank(storedValue)) {
+                return fallback;
+            }
+
+            const currentValue = String(storedValue);
+            const hasLeadingBreak = /^\s*<br\s*\/?>/i.test(currentValue);
+
+            if (requiresBreak && !hasLeadingBreak) {
+                return fallback;
+            }
+
+            return currentValue;
+        }
+
+        function setBeispielSpeechBoxValue(element, rawValue) {
+            if (!element) return;
+            const safeValue = rawValue || '';
+            element.dataset.raw = safeValue;
+            element.textContent = safeValue;
+        }
+
+        function getSpeechRawValue(element) {
+            if (!element) return '';
+            if (element.dataset && element.dataset.raw !== undefined) {
+                return element.dataset.raw;
+            }
+            return element.textContent || '';
         }
 
         function isBlank(value) {
@@ -1349,16 +1383,31 @@
             return String(value).trim() === '';
         }
 
-        function sanitizeForExport(value, fallback = '') {
+        function sanitizeForExport(value, fallback = '', options = {}) {
+            const settings = (options && typeof options === 'object') ? options : {};
+            const {
+                preserveLeadingBr = false,
+                preserveSpacingAroundBr = false,
+                keepOuterWhitespace = false
+            } = settings;
+
             let text = isBlank(value) ? (fallback != null ? fallback : '') : value;
             if (text == null) text = '';
-            return String(text)
-                .replace(/[\r\n]+/g, '<br>')
-                .replace(/\s*(<br\s*\/?>)\s*/gi, '<br>')
-                .replace(/^(<br>)+/, '')
-                .replace(/(<br>)+$/, '')
-                .replace(/\t/g, ' ')
-                .trim();
+
+            let sanitized = String(text).replace(/[\r\n]+/g, '<br>');
+            if (preserveSpacingAroundBr) {
+                sanitized = sanitized.replace(/<br\s*\/?>/gi, '<br>');
+            } else {
+                sanitized = sanitized.replace(/\s*(<br\s*\/?>)\s*/gi, '<br>');
+            }
+
+            if (!preserveLeadingBr) {
+                sanitized = sanitized.replace(/^(<br>)+/, '');
+            }
+            sanitized = sanitized.replace(/(<br>)+$/, '');
+            sanitized = sanitized.replace(/\t/g, ' ');
+
+            return keepOuterWhitespace ? sanitized : sanitized.trim();
         }
 
         function getCreatedAtTime(value) {
@@ -2035,8 +2084,12 @@
             const beispielValue = beispielInput.value;
             const soundTagText = prepareForSoundTag(backValue); 
 
-            speechBox.textContent = soundTagText ? `[sound:${soundTagText}.mp3]` : ''; 
-            beispielSpeechBox.textContent = buildBeispielSpeech(backValue, beispielValue);
+            const speechValue = soundTagText ? `[sound:${soundTagText}.mp3]` : '';
+            speechBox.textContent = speechValue;
+            speechBox.dataset.raw = speechValue;
+
+            const rawBeispielSpeech = buildBeispielSpeech(backValue, beispielValue);
+            setBeispielSpeechBoxValue(beispielSpeechBox, rawBeispielSpeech);
         }
         
         function clearForm() {
@@ -2562,9 +2615,9 @@
             const cardData = {
                 front: front.value.trim(),
                 back: back.value.trim(),
-                speech: speechBox.textContent,
+                speech: getSpeechRawValue(speechBox),
                 beispiel: formatMultiLine(beispiel.value),
-                beispielSpeech: beispielSpeechBox.textContent,
+                beispielSpeech: getSpeechRawValue(beispielSpeechBox),
                 translation: formatMultiLine(translation.value),
                 folderId: selectedFolderId,
                 folderName: selectedFolderName,
@@ -2626,9 +2679,9 @@
              const cardData = {
                 front: front.value.trim(),
                 back: back.value.trim(),
-                speech: speechBox.textContent,
+                speech: getSpeechRawValue(speechBox),
                 beispiel: formatMultiLine(beispiel.value),
-                beispielSpeech: beispielSpeechBox.textContent,
+                beispielSpeech: getSpeechRawValue(beispielSpeechBox),
                 translation: formatMultiLine(translation.value),
                 folderId: selectedFolderId,
                 folderName: selectedFolderName,
@@ -2834,15 +2887,18 @@
                 content = cards.map(data => {
                     const soundTagBase = prepareForSoundTag(data.back);
                     const speechValue = !isBlank(data.speech) ? data.speech : (soundTagBase ? `[sound:${soundTagBase}.mp3]` : '');
-                    const fallbackBeispielSpeech = buildBeispielSpeech(data.back, data.beispiel);
-                    const beispielSpeechValue = !isBlank(data.beispielSpeech) ? data.beispielSpeech : fallbackBeispielSpeech;
                     const sanitizedBack = sanitizeForExport(data.back);
+                    const resolvedBeispielSpeech = resolveBeispielSpeechValue(data.back, data.beispiel, data.beispielSpeech);
                     const fields = [
                         sanitizeForExport(data.front, sanitizedBack),
                         sanitizedBack,
                         sanitizeForExport(speechValue),
                         sanitizeForExport(data.beispiel),
-                        sanitizeForExport(beispielSpeechValue),
+                        sanitizeForExport(resolvedBeispielSpeech, '', {
+                            preserveLeadingBr: true,
+                            preserveSpacingAroundBr: true,
+                            keepOuterWhitespace: true
+                        }),
                         sanitizeForExport(data.translation)
                     ];
                     return fields.join('\t');
@@ -2907,9 +2963,12 @@
                 clipboardText = cardsToExport
                     .sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt))
                     .map(data => {
-                        const fallbackBeispielSpeech = buildBeispielSpeech(data.back, data.beispiel);
-                        const beispielSpeechValue = !isBlank(data.beispielSpeech) ? data.beispielSpeech : fallbackBeispielSpeech;
-                        return sanitizeForExport(beispielSpeechValue);
+                        const resolvedBeispielSpeech = resolveBeispielSpeechValue(data.back, data.beispiel, data.beispielSpeech);
+                        return sanitizeForExport(resolvedBeispielSpeech, '', {
+                            preserveLeadingBr: true,
+                            preserveSpacingAroundBr: true,
+                            keepOuterWhitespace: true
+                        });
                     })
                     .filter(text => !isBlank(text))
                     .join('\n');
@@ -3238,7 +3297,7 @@
                         const formattedBeispiel = formatMultiLine(beispielText);
                         const backTagBase = prepareForSoundTag(backField);
                         const computedSpeech = speechField || (backTagBase ? `[sound:${backTagBase}.mp3]` : '');
-                        const computedBeispielSpeech = beispielSpeechField || buildBeispielSpeech(backField, beispielText);
+                        const computedBeispielSpeech = resolveBeispielSpeechValue(backField, beispielText, beispielSpeechField);
 
                         const cardData = {
                             front: frontField,
@@ -3579,19 +3638,7 @@
             const card = reviewSession.cards[reviewSession.currentIndex];
             
             const backValue = card.back;
-            let newBeispielSpeech = '';
-            if (backValue) {
-                const sentences = newBeispiel.split(/<br\s*\/?>/i).filter(s => s.trim() !== '');
-                 if (sentences.length <= 1) {
-                    newBeispielSpeech = `[sound:s_${backValue}.mp3]`;
-                } else {
-                    const soundTags = sentences.map((_, index) => {
-                        const suffix = index === 0 ? '' : index + 1;
-                        return `[sound:s_${backValue}${suffix}.mp3]`;
-                    }).join('');
-                    newBeispielSpeech = `<br> ${soundTags}`;
-                }
-            }
+            const newBeispielSpeech = backValue ? buildBeispielSpeech(backValue, newBeispiel) : '';
 
             if (newBeispiel === card.beispiel && newTranslation === card.translation) {
                 return true;
