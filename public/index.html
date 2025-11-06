@@ -58,6 +58,14 @@
         .deleted-card-entry .meta { font-size: 0.75rem; color: #a0a0a0; display: flex; flex-wrap: wrap; gap: 6px; }
         .deleted-card-entry .field-label { font-size: 0.7rem; text-transform: uppercase; color: #888; letter-spacing: 0.04em; }
         .deleted-card-entry .field-value { font-size: 0.95rem; color: #f0f0f0; white-space: pre-wrap; word-break: break-word; line-height: 1.5; }
+        .legacy-page { min-height: 100vh; }
+        .legacy-card-entry { background-color: #151515; border: 1px solid #333; border-radius: 12px; padding: 16px; display: grid; gap: 12px; }
+        .legacy-card-meta { font-size: 0.75rem; color: #a0a0a0; display: flex; flex-wrap: wrap; gap: 6px; }
+        .legacy-field-label { font-size: 0.7rem; text-transform: uppercase; color: #888; letter-spacing: 0.04em; }
+        .legacy-field-value { color: #f0f0f0; font-size: 0.95rem; white-space: pre-wrap; word-break: break-word; line-height: 1.5; background-color: #111; border: 1px solid #2a2a2a; border-radius: 8px; padding: 12px; }
+        .legacy-code-block { background-color: #111; border: 1px solid #2a2a2a; border-radius: 8px; padding: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 0.85rem; color: #e0e0e0; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
+        .legacy-preview-box { background-color: #111; border: 1px dashed #444; border-radius: 8px; padding: 12px; display: inline-flex; align-items: center; justify-content: center; min-height: 80px; }
+        .legacy-preview-box img { max-width: 100%; max-height: 160px; object-fit: contain; }
     </style>
 </head>
 <body class="text-white">
@@ -85,6 +93,9 @@
                     <select id="folder-select" class="anki-input flex-1"></select>
                     <button type="button" id="create-folder-btn" class="btn btn-secondary btn-sm whitespace-nowrap">
                         <i class="fas fa-folder-plus"></i> New Folder
+                    </button>
+                    <button type="button" id="delete-folder-btn" class="btn btn-danger btn-sm whitespace-nowrap" title="Delete the selected folder" disabled>
+                        <i class="fas fa-folder-minus"></i> Delete Folder
                     </button>
                 </div>
             </div>
@@ -127,6 +138,11 @@
                 <button id="review-btn" class="btn btn-secondary w-full sm:w-auto"><i class="fas fa-eye"></i> Review</button>
                 <button id="bulk-translate-btn" class="btn btn-success w-full sm:w-auto"><i class="fas fa-language"></i> Translate Beispiele</button>
                 <button id="export-btn" class="btn btn-primary w-full sm:w-auto"><i class="fas fa-download"></i> Export</button>
+                <button id="fix-legacy-fronts-btn" class="btn btn-secondary w-full sm:w-auto"><i class="fas fa-wrench"></i> Fix Legacy Fronts</button>
+                <button id="show-legacy-btn" class="btn btn-secondary w-full sm:w-auto">
+                    <i class="fas fa-image"></i> Legacy Fronts
+                    <span id="legacy-count-badge" class="hidden text-xs font-semibold bg-orange-500 text-black px-2 py-0.5 rounded-full"></span>
+                </button>
                 <button id="show-duplicates-btn" class="btn btn-secondary w-full sm:w-auto">
                     <i class="fas fa-clone"></i> Duplicates
                     <span id="duplicate-count-badge" class="hidden text-xs font-semibold bg-red-500 text-white px-2 py-0.5 rounded-full"></span>
@@ -135,7 +151,7 @@
                     <i class="fas fa-trash-restore"></i> Deleted
                     <span id="deleted-count-badge" class="hidden text-xs font-semibold bg-yellow-500 text-black px-2 py-0.5 rounded-full"></span>
                 </button>
-                <button id="delete-cards-btn" class="btn btn-danger w-full sm:w-auto"><i class="fas fa-trash-alt"></i> Delete by Date</button>
+                <button id="delete-cards-btn" class="btn btn-danger w-full sm:w-auto"><i class="fas fa-trash-alt"></i> Delete Cards</button>
              </div>
              <div id="edit-actions" class="hidden space-x-4">
                 <button id="update-btn" class="btn btn-primary"><i class="fas fa-check"></i> Update</button>
@@ -290,6 +306,27 @@
         </div>
         <div id="duplicates-container" class="space-y-6"></div>
     </div>
+    <div id="legacy-view" class="legacy-page hidden container mx-auto max-w-4xl p-4 sm:p-8">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+            <div>
+                <h1 class="text-3xl font-bold">Legacy Image Fronts</h1>
+                <p id="legacy-summary" class="text-sm text-gray-400 mt-2"></p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <button type="button" id="legacy-fix-all-btn" class="btn btn-primary btn-sm">
+                    <i class="fas fa-wrench"></i> Fix All
+                </button>
+                <button type="button" id="legacy-back-btn" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left"></i> Back to Cards
+                </button>
+            </div>
+        </div>
+        <p class="text-gray-400 text-sm mb-6">Preview the cards that still use legacy encoded image fronts. You can fix cards one by one or all at once.</p>
+        <div id="legacy-empty-state" class="hidden text-gray-500 text-center border border-dashed border-gray-700 rounded-lg p-10">
+            No legacy image fronts detected.
+        </div>
+        <div id="legacy-container" class="space-y-4"></div>
+    </div>
     <div id="deleted-view" class="deleted-page hidden container mx-auto max-w-4xl p-4 sm:p-8">
         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
             <div>
@@ -375,14 +412,26 @@
     <div id="notification" class="fixed top-5 right-5 bg-red-600 text-white py-2 px-4 rounded-lg shadow-lg hidden z-50"><p id="notification-message"></p></div>
     <div id="delete-cards-modal" class="modal-backdrop hidden">
         <div class="modal-content">
-            <h2 class="text-2xl font-bold mb-6">Delete Cards by Date</h2>
-            <div class="space-y-4">
+            <h2 class="text-2xl font-bold mb-6">Delete Cards</h2>
+            <div class="space-y-6">
                 <div>
-                    <h3 class="anki-label mb-2">Select Dates to Delete Cards From</h3>
+                    <h3 class="anki-label mb-2">Choose what to delete</h3>
+                    <label class="flex items-center space-x-2">
+                        <input type="radio" id="delete-date-radio" name="delete-mode" value="date" class="form-radio" checked>
+                        <span>Cards from selected dates</span>
+                    </label>
                     <div id="delete-date-selection" class="pl-6 pt-2 mt-2 max-h-32 overflow-y-auto border-l-2 border-gray-700">
                         <!-- Date checkboxes will be inserted here by JS -->
                     </div>
+                    <label class="flex items-center space-x-2 mt-4">
+                        <input type="radio" id="delete-folder-radio" name="delete-mode" value="folder" class="form-radio">
+                        <span>Cards from selected folders</span>
+                    </label>
+                    <div id="delete-folder-selection" class="hidden pl-6 pt-2 mt-2 max-h-32 overflow-y-auto border-l-2 border-gray-700">
+                        <!-- Folder checkboxes will be inserted here by JS -->
+                    </div>
                 </div>
+                <p class="text-sm text-gray-400">Deleted cards move to the Deleted section, where you can restore them later.</p>
             </div>
             <div class="flex justify-end items-center space-x-4 mt-8">
                 <button id="cancel-delete-cards-btn" class="btn btn-secondary">Cancel</button>
@@ -403,6 +452,17 @@
             <div class="flex justify-end items-center space-x-4 mt-8">
                 <button id="cancel-folder-btn" class="btn btn-secondary">Cancel</button>
                 <button id="save-folder-btn" class="btn btn-primary">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="delete-folder-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-4">Delete Folder</h2>
+            <p id="delete-folder-summary" class="text-gray-300 text-sm leading-6"></p>
+            <div class="flex justify-end items-center space-x-4 mt-8">
+                <button id="cancel-delete-folder-btn" class="btn btn-secondary">Cancel</button>
+                <button id="confirm-delete-folder-btn" class="btn btn-danger">Delete Folder</button>
             </div>
         </div>
     </div>
@@ -434,6 +494,9 @@
         let deletedCards = [];
         let folders = [];
         let currentFolderId = null;
+        let pendingFolderDeleteId = null;
+        let pendingFolderDeleteName = '';
+        let pendingFolderDeleteCount = 0;
         let reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, beispielCopyIndex: 0, editedCardIds: new Set(), originalCards: [] };
         let currentReviewFolderId = ALL_FOLDERS_VALUE;
         let currentReviewSessionId = null;
@@ -444,6 +507,7 @@
         let deleteShortcutState = { pending: false, timeoutId: null };
         let hasRestoredFolderPreference = false;
         let isBulkTranslating = false;
+        let isFixingLegacyFronts = false;
         
         function showNotification(message, level = 'error', duration = 3000) {
             const notification = document.getElementById('notification');
@@ -661,6 +725,7 @@
                     }
                 }
             }
+            updateFolderDeleteButtonState();
             return changed;
         }
 
@@ -688,6 +753,72 @@
                 }
             }
             return { id: currentFolderId, name: null };
+        }
+
+        function updateFolderDeleteButtonState() {
+            const deleteBtn = document.getElementById('delete-folder-btn');
+            if (!deleteBtn) return;
+            const details = getSelectedFolderDetails();
+            const hasFolder = details && details.id;
+            deleteBtn.disabled = !hasFolder;
+        }
+
+        function resetPendingFolderDeletion() {
+            pendingFolderDeleteId = null;
+            pendingFolderDeleteName = '';
+            pendingFolderDeleteCount = 0;
+        }
+
+        function openDeleteFolderModal() {
+            const details = getSelectedFolderDetails();
+            if (!details || !details.id) {
+                showNotification('Select a folder to delete.', 'error');
+                return;
+            }
+
+            const counts = getFolderCardCounts();
+            pendingFolderDeleteId = details.id;
+            pendingFolderDeleteName = (details.name && details.name.trim()) ? details.name.trim() : 'Untitled Folder';
+            pendingFolderDeleteCount = Number.isFinite(counts[details.id]) ? counts[details.id] : 0;
+
+            const summary = document.getElementById('delete-folder-summary');
+            if (summary) {
+                const folderLabel = pendingFolderDeleteName;
+                if (pendingFolderDeleteCount > 0) {
+                    const cardLabel = pendingFolderDeleteCount === 1 ? '1 card' : `${pendingFolderDeleteCount} cards`;
+                    summary.textContent = `Deleting "${folderLabel}" removes the folder and moves ${cardLabel} to the Deleted section so you can restore them later.`;
+                } else {
+                    summary.textContent = `Deleting "${folderLabel}" removes the folder. No cards are currently assigned to it.`;
+                }
+            }
+
+            const modal = document.getElementById('delete-folder-modal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeDeleteFolderModal() {
+            const modal = document.getElementById('delete-folder-modal');
+            if (modal) modal.classList.add('hidden');
+            resetPendingFolderDeletion();
+        }
+
+        function createSelectionCheckbox(container, text, value, { disabled = false } = {}) {
+            if (!container) return;
+            const label = document.createElement('label');
+            label.className = 'flex items-center space-x-2 text-gray-300 py-1';
+            if (disabled) {
+                label.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.value = value;
+            input.disabled = disabled;
+            input.className = 'form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded';
+            const span = document.createElement('span');
+            span.textContent = text;
+            label.appendChild(input);
+            label.appendChild(span);
+            container.appendChild(label);
         }
 
         function renderFolderOptions() {
@@ -736,6 +867,7 @@
             }
             updateReviewDateSelector();
             populateDuplicatesFolderFilter();
+            updateFolderDeleteButtonState();
         }
 
         function openFolderModal() {
@@ -902,9 +1034,265 @@
             return `${datePart}__${folderPart}`;
         }
 
+        function parseTsvLine(line) {
+            if (!line) return [''];
+
+            const fields = [];
+            let current = '';
+            let i = 0;
+            let inQuotes = false;
+
+            while (i < line.length) {
+                const char = line[i];
+
+                if (char === '"') {
+                    if (inQuotes && line[i + 1] === '"') {
+                        current += '"';
+                        i += 2;
+                        continue;
+                    }
+                    inQuotes = !inQuotes;
+                    i += 1;
+                    continue;
+                }
+
+                if (char === '\t' && !inQuotes) {
+                    fields.push(current);
+                    current = '';
+                    i += 1;
+                    continue;
+                }
+
+                current += char;
+                i += 1;
+            }
+
+            fields.push(current);
+            return fields;
+        }
+
+        function decodeLegacyImageFront(value) {
+            if (typeof value !== 'string') return null;
+            const trimmed = value.trim();
+            if (!trimmed) return null;
+
+            if (/^<img\s+[^>]*>$/.test(trimmed)) {
+                return trimmed;
+            }
+
+            const candidates = new Set();
+            const enqueue = (input) => {
+                if (typeof input !== 'string') return;
+                const normalized = input.trim();
+                if (!normalized) return;
+                candidates.add(normalized);
+            };
+
+            const stripOuterQuotes = (input) => {
+                if ((input.startsWith('"') && input.endsWith('"')) || (input.startsWith("'") && input.endsWith("'"))) {
+                    return input.slice(1, -1);
+                }
+                return input;
+            };
+
+            const attemptJsonParse = (input) => {
+                if (typeof input !== 'string') return;
+                try {
+                    const parsed = JSON.parse(input);
+                    if (typeof parsed === 'string') {
+                        enqueue(parsed);
+                    }
+                } catch (error) {
+                    if (input.startsWith("'") && input.endsWith("'")) {
+                        try {
+                            const converted = `"${input.slice(1, -1).replace(/"/g, '\\"')}"`;
+                            const parsed = JSON.parse(converted);
+                            if (typeof parsed === 'string') {
+                                enqueue(parsed);
+                            }
+                        } catch (innerError) { /* ignore */ }
+                    }
+                }
+            };
+
+            enqueue(trimmed);
+            const withoutOuterQuotes = stripOuterQuotes(trimmed);
+            enqueue(withoutOuterQuotes);
+            attemptJsonParse(trimmed);
+            attemptJsonParse(withoutOuterQuotes);
+
+            const existingCandidates = Array.from(candidates);
+            existingCandidates.forEach(candidate => {
+                const unescaped = candidate
+                    .replace(/""/g, '"')
+                    .replace(/\\"/g, '"')
+                    .replace(/\\'/g, "'");
+                enqueue(unescaped);
+            });
+
+            if (typeof document !== 'undefined') {
+                const decoder = document.createElement('textarea');
+                Array.from(candidates).forEach(candidate => {
+                    decoder.innerHTML = candidate;
+                    const decoded = decoder.value.trim();
+                    if (decoded && decoded !== candidate) {
+                        enqueue(decoded);
+                    }
+                });
+            }
+
+            for (const candidate of candidates) {
+                if (/^<img\s+[^>]*>$/.test(candidate)) {
+                    let normalized = candidate;
+                    if (normalized.includes('""')) {
+                        normalized = normalized.replace(/""/g, '"');
+                    }
+                    normalized = normalized.replace(/\s+\/>$/, '>');
+                    if (typeof document !== 'undefined') {
+                        const wrapper = document.createElement('div');
+                        wrapper.innerHTML = normalized;
+                        const imgEl = wrapper.querySelector('img');
+                        if (imgEl) {
+                            normalized = imgEl.outerHTML.replace(/\s+\/>$/, '>');
+                        }
+                    }
+                    return normalized;
+                }
+            }
+
+            return null;
+        }
+
+        function getLegacyFrontCandidates() {
+            return allCards
+                .map(card => {
+                    const decoded = decodeLegacyImageFront(card.front);
+                    return decoded && decoded !== card.front ? { card, decoded } : null;
+                })
+                .filter(Boolean);
+        }
+
+        function buildLegacyCardEntry(card, decodedFront) {
+            const entry = document.createElement('article');
+            entry.className = 'legacy-card-entry';
+
+            const meta = document.createElement('div');
+            meta.className = 'legacy-card-meta';
+            const folderName = resolveFolderName(card) || 'No folder';
+            const createdAtLabel = card.createdAt ? formatDuplicateTimestamp(card.createdAt) : 'Unknown date';
+            meta.innerHTML = `
+                <span>ID: ${escapeHtml(card.id)}</span>
+                <span>Folder: ${escapeHtml(folderName)}</span>
+                <span>${escapeHtml(createdAtLabel)}</span>
+            `;
+            entry.appendChild(meta);
+
+            const storedBlock = document.createElement('div');
+            storedBlock.innerHTML = `
+                <p class="legacy-field-label mb-2">Stored Front</p>
+                <pre class="legacy-code-block">${escapeHtml(card.front || '')}</pre>
+            `;
+            entry.appendChild(storedBlock);
+
+            const previewWrapper = document.createElement('div');
+            previewWrapper.innerHTML = `<p class="legacy-field-label mb-2">Fixed Preview</p>`;
+            const previewBox = document.createElement('div');
+            previewBox.className = 'legacy-preview-box';
+            previewBox.innerHTML = decodedFront;
+            previewWrapper.appendChild(previewBox);
+            entry.appendChild(previewWrapper);
+
+            if (card.back) {
+                const backBlock = document.createElement('div');
+                backBlock.innerHTML = `
+                    <p class="legacy-field-label mb-2">Back</p>
+                    <div class="legacy-field-value">${escapeHtml(card.back)}</div>
+                `;
+                entry.appendChild(backBlock);
+            }
+
+            if (card.translation) {
+                const translationBlock = document.createElement('div');
+                translationBlock.innerHTML = `
+                    <p class="legacy-field-label mb-2">Translation</p>
+                    <div class="legacy-field-value">${escapeHtml(card.translation)}</div>
+                `;
+                entry.appendChild(translationBlock);
+            }
+
+            const actions = document.createElement('div');
+            actions.className = 'flex flex-wrap gap-2';
+            const fixBtn = document.createElement('button');
+            fixBtn.className = 'btn btn-primary btn-sm legacy-fix-btn';
+            fixBtn.dataset.cardId = card.id;
+            fixBtn.type = 'button';
+            fixBtn.innerHTML = '<i class="fas fa-wrench"></i> Fix Card';
+            actions.appendChild(fixBtn);
+            entry.appendChild(actions);
+
+            return entry;
+        }
+
+        function renderLegacyFrontsView() {
+            const container = document.getElementById('legacy-container');
+            const summary = document.getElementById('legacy-summary');
+            const emptyState = document.getElementById('legacy-empty-state');
+            const fixAllBtn = document.getElementById('legacy-fix-all-btn');
+            if (!container || !summary || !emptyState || !fixAllBtn) return;
+
+            container.innerHTML = '';
+            const candidates = getLegacyFrontCandidates();
+            const count = candidates.length;
+
+            if (count === 0) {
+                summary.textContent = 'All cards are using the updated front format.';
+                emptyState.classList.remove('hidden');
+                fixAllBtn.disabled = true;
+                return;
+            }
+
+            summary.textContent = `Found ${count} card${count === 1 ? '' : 's'} with legacy image fronts.`;
+            emptyState.classList.add('hidden');
+            fixAllBtn.disabled = isFixingLegacyFronts;
+
+            const sorted = [...candidates].sort((a, b) => {
+                return getCreatedAtTime(b.card.createdAt) - getCreatedAtTime(a.card.createdAt);
+            });
+            sorted.forEach(({ card, decoded }) => {
+                container.appendChild(buildLegacyCardEntry(card, decoded));
+            });
+        }
+
+        function updateLegacyBadge() {
+            const badge = document.getElementById('legacy-count-badge');
+            if (!badge) return;
+            const count = getLegacyFrontCandidates().length;
+            if (count > 0) {
+                badge.textContent = count > 99 ? '99+' : String(count);
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+                badge.textContent = '';
+            }
+            const fixAllBtn = document.getElementById('legacy-fix-all-btn');
+            if (fixAllBtn) {
+                fixAllBtn.disabled = count === 0 || isFixingLegacyFronts;
+            }
+        }
+
         function prepareForSoundTag(text) { 
             if (!text) return ''; 
             return text.trim(); 
+        }
+
+        function escapeHtml(value) {
+            if (value === null || value === undefined) return '';
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
         
         function formatMultiLine(text) {
@@ -1307,9 +1695,11 @@
             const mainApp = document.getElementById('main-app');
             const duplicatesView = document.getElementById('duplicates-view');
             const deletedView = document.getElementById('deleted-view');
+            const legacyView = document.getElementById('legacy-view');
             if (mainApp) mainApp.classList.remove('hidden');
             if (duplicatesView) duplicatesView.classList.add('hidden');
             if (deletedView) deletedView.classList.add('hidden');
+            if (legacyView) legacyView.classList.add('hidden');
             const duplicatesSearchInput = document.getElementById('duplicates-search-input');
             if (duplicatesSearchInput && !isDuplicatesViewActive()) {
                 duplicatesSearchInput.blur();
@@ -1321,9 +1711,11 @@
             const mainApp = document.getElementById('main-app');
             const duplicatesView = document.getElementById('duplicates-view');
             const deletedView = document.getElementById('deleted-view');
+            const legacyView = document.getElementById('legacy-view');
             const reviewModal = document.getElementById('review-modal');
             if (mainApp) mainApp.classList.add('hidden');
             if (deletedView) deletedView.classList.add('hidden');
+            if (legacyView) legacyView.classList.add('hidden');
             if (duplicatesView) duplicatesView.classList.remove('hidden');
             if (reviewModal) reviewModal.classList.add('hidden');
             const searchInput = document.getElementById('duplicates-search-input');
@@ -1335,11 +1727,32 @@
             const mainApp = document.getElementById('main-app');
             const duplicatesView = document.getElementById('duplicates-view');
             const deletedView = document.getElementById('deleted-view');
+            const legacyView = document.getElementById('legacy-view');
             const reviewModal = document.getElementById('review-modal');
             if (mainApp) mainApp.classList.add('hidden');
             if (duplicatesView) duplicatesView.classList.add('hidden');
+            if (legacyView) legacyView.classList.add('hidden');
             if (deletedView) deletedView.classList.remove('hidden');
             if (reviewModal) reviewModal.classList.add('hidden');
+        }
+
+        function showLegacyFrontsView() {
+            renderLegacyFrontsView();
+            const mainApp = document.getElementById('main-app');
+            const duplicatesView = document.getElementById('duplicates-view');
+            const deletedView = document.getElementById('deleted-view');
+            const legacyView = document.getElementById('legacy-view');
+            const reviewModal = document.getElementById('review-modal');
+            if (mainApp) mainApp.classList.add('hidden');
+            if (duplicatesView) duplicatesView.classList.add('hidden');
+            if (deletedView) deletedView.classList.add('hidden');
+            if (legacyView) legacyView.classList.remove('hidden');
+            if (reviewModal) reviewModal.classList.add('hidden');
+        }
+
+        function isLegacyViewActive() {
+            const legacyView = document.getElementById('legacy-view');
+            return legacyView ? !legacyView.classList.contains('hidden') : false;
         }
 
         function exportVisibleDuplicates() {
@@ -2326,6 +2739,69 @@
             } catch (error) { showNotification("Failed to delete card."); }
         }
         
+        async function applyLegacyFrontFixes(candidates, { triggerButton = null, confirmMessage = null, loadingText = 'Fixing...' } = {}) {
+            if (!Array.isArray(candidates) || candidates.length === 0) {
+                showNotification("No legacy image fronts detected.", "success");
+                updateLegacyBadge();
+                if (isLegacyViewActive()) {
+                    renderLegacyFrontsView();
+                }
+                return false;
+            }
+            if (!userId || !cardsCollectionRef) {
+                showNotification("You must be logged in to run the fix.");
+                return false;
+            }
+            if (isFixingLegacyFronts) return false;
+
+            if (confirmMessage) {
+                const confirmed = window.confirm(confirmMessage);
+                if (!confirmed) return false;
+            }
+
+            isFixingLegacyFronts = true;
+            if (triggerButton) setButtonLoading(triggerButton, true, loadingText);
+
+            const BATCH_LIMIT = 400;
+            try {
+                for (let index = 0; index < candidates.length; index += BATCH_LIMIT) {
+                    const slice = candidates.slice(index, index + BATCH_LIMIT);
+                    const batch = writeBatch(db);
+                    slice.forEach(({ card, decoded }) => {
+                        const docRef = doc(cardsCollectionRef, card.id);
+                        batch.update(docRef, { front: decoded });
+                    });
+                    await batch.commit();
+                    slice.forEach(({ card, decoded }) => {
+                        card.front = decoded;
+                    });
+                    await sleep(50);
+                }
+                showNotification(`Fixed ${candidates.length} legacy image front${candidates.length === 1 ? '' : 's'}.`, "success");
+                return true;
+            } catch (error) {
+                console.error("Failed to fix legacy image fronts:", error);
+                showNotification("Failed to fix legacy image fronts.");
+                return false;
+            } finally {
+                if (triggerButton) setButtonLoading(triggerButton, false);
+                isFixingLegacyFronts = false;
+                updateLegacyBadge();
+                if (isLegacyViewActive()) {
+                    renderLegacyFrontsView();
+                }
+            }
+        }
+
+        async function handleFixLegacyFronts() {
+            const button = document.getElementById('fix-legacy-fronts-btn');
+            const candidates = getLegacyFrontCandidates();
+            const confirmMessage = candidates.length > 0
+                ? `Fix ${candidates.length} legacy image front${candidates.length === 1 ? '' : 's'}? This updates the cards in place.`
+                : null;
+            await applyLegacyFrontFixes(candidates, { triggerButton: button, confirmMessage, loadingText: 'Fixing...' });
+        }
+
         function triggerExportDownload(cards, format) {
             if (cards.length === 0) {
                 showNotification("No cards match the selected criteria.", "success");
@@ -2608,6 +3084,15 @@
             if (deletedSummary) deletedSummary.textContent = '';
             const deletedEmptyState = document.getElementById('deleted-empty-state');
             if (deletedEmptyState) deletedEmptyState.classList.add('hidden');
+            const legacyView = document.getElementById('legacy-view');
+            if (legacyView) legacyView.classList.add('hidden');
+            const legacyContainer = document.getElementById('legacy-container');
+            if (legacyContainer) legacyContainer.innerHTML = '';
+            const legacySummary = document.getElementById('legacy-summary');
+            if (legacySummary) legacySummary.textContent = '';
+            const legacyEmptyState = document.getElementById('legacy-empty-state');
+            if (legacyEmptyState) legacyEmptyState.classList.add('hidden');
+            updateLegacyBadge();
             updateDeletedBadge();
         }
 
@@ -2618,6 +3103,7 @@
             document.getElementById('session-counter').textContent = '0';
             showMainAppView();
             updateDuplicateBadge();
+            updateLegacyBadge();
             currentReviewFolderId = ALL_FOLDERS_VALUE;
             currentReviewSessionId = null;
             currentReviewDate = 'all';
@@ -2675,6 +3161,10 @@
                 filterAndRenderCards();
                 updateReviewDateSelector();
                 updateDuplicateBadge();
+                updateLegacyBadge();
+                if (isLegacyViewActive()) {
+                    renderLegacyFrontsView();
+                }
             });
         }
 
@@ -2685,7 +3175,12 @@
             const reader = new FileReader();
             reader.onload = async (e) => {
                 const content = e.target.result;
-                const lines = content.split('\n').filter(line => line.trim() !== '' && !line.trim().startsWith('#'));
+                const lines = content
+                    .split(/\r?\n/)
+                    .filter(line => {
+                        const trimmed = line.trim();
+                        return trimmed !== '' && !trimmed.startsWith('#');
+                    });
                 if (lines.length === 0) {
                     showNotification("The selected file is empty or contains no valid data.");
                     return;
@@ -2699,7 +3194,7 @@
                     const batch = writeBatch(db);
                     const importTimestamp = new Date();
                     lines.forEach((line, index) => {
-                        const fields = line.split('\t');
+                        const fields = parseTsvLine(line);
                         const cardTimestamp = new Date(importTimestamp.getTime() + index);
 
                         const frontField = (fields[0] || '').trim();
@@ -2762,29 +3257,170 @@
             renderCards(filteredCards);
         }
 
+        function populateDeleteDateSelection() {
+            const container = document.getElementById('delete-date-selection');
+            if (!container) return false;
+            container.innerHTML = '';
+            const dates = [...new Set(allCards
+                .map(card => card.createdAt && card.createdAt.split('T')[0])
+                .filter(Boolean))]
+                .sort()
+                .reverse();
+            if (dates.length === 0) {
+                const message = document.createElement('p');
+                message.className = 'text-sm text-gray-500 py-1';
+                message.textContent = 'No dates available.';
+                container.appendChild(message);
+                return false;
+            }
+            dates.forEach(date => {
+                createSelectionCheckbox(container, date, date);
+            });
+            return true;
+        }
+
+        function populateDeleteFolderSelection() {
+            const container = document.getElementById('delete-folder-selection');
+            if (!container) return false;
+            container.innerHTML = '';
+            const counts = getFolderCardCounts();
+            const options = [];
+            const noFolderCount = counts[NO_FOLDER_VALUE] || 0;
+            if (noFolderCount > 0) {
+                options.push({ value: NO_FOLDER_VALUE, label: formatFolderLabel('No Folder', noFolderCount) });
+            }
+            const sortedFolders = [...folders].sort((a, b) => {
+                const createdAtDiff = getCreatedAtTime(b.createdAt) - getCreatedAtTime(a.createdAt);
+                if (createdAtDiff !== 0) {
+                    return createdAtDiff;
+                }
+                const nameA = (a.name || '').toLowerCase();
+                const nameB = (b.name || '').toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+            sortedFolders.forEach(folder => {
+                const count = counts[folder.id] || 0;
+                if (count > 0) {
+                    const baseName = folder.name || 'Untitled Folder';
+                    options.push({ value: folder.id, label: formatFolderLabel(baseName, count) });
+                }
+            });
+            if (options.length === 0) {
+                const message = document.createElement('p');
+                message.className = 'text-sm text-gray-500 py-1';
+                message.textContent = 'No folders with cards available.';
+                container.appendChild(message);
+                return false;
+            }
+            options.forEach(option => {
+                createSelectionCheckbox(container, option.label, option.value);
+            });
+            return true;
+        }
+
+        function toggleDeleteModeSections(mode) {
+            const dateSelection = document.getElementById('delete-date-selection');
+            const folderSelection = document.getElementById('delete-folder-selection');
+            if (!dateSelection || !folderSelection) return;
+            if (mode === 'folder') {
+                dateSelection.classList.add('hidden');
+                folderSelection.classList.remove('hidden');
+            } else {
+                folderSelection.classList.add('hidden');
+                dateSelection.classList.remove('hidden');
+            }
+        }
+
         function openDeleteCardsModal() {
             if (allCards.length === 0) {
                 showNotification("There are no cards to delete.", "success");
                 return;
             }
-            const dates = [...new Set(allCards.map(card => card.createdAt && card.createdAt.split('T')[0]).filter(Boolean))].sort().reverse();
-            const deleteDateSelection = document.getElementById('delete-date-selection');
-            deleteDateSelection.innerHTML = '';
-            if (dates.length > 0) {
-                dates.forEach(date => {
-                    const label = document.createElement('label');
-                    label.className = 'flex items-center space-x-2 text-gray-300 py-1';
-                    label.innerHTML = `<input type="checkbox" value="${date}" class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded"> <span>${date}</span>`;
-                    deleteDateSelection.appendChild(label);
-                });
-            } else {
-                showNotification("No dates available for deletion.", "success");
+            const hasDateOptions = populateDeleteDateSelection();
+            const hasFolderOptions = populateDeleteFolderSelection();
+            if (!hasDateOptions && !hasFolderOptions) {
+                showNotification("No cards available for deletion.", "success");
                 return;
             }
+
+            const deleteDateRadio = document.getElementById('delete-date-radio');
+            const deleteFolderRadio = document.getElementById('delete-folder-radio');
+
+            if (deleteDateRadio) deleteDateRadio.disabled = !hasDateOptions;
+            if (deleteFolderRadio) deleteFolderRadio.disabled = !hasFolderOptions;
+
+            const defaultMode = hasDateOptions ? 'date' : 'folder';
+            if (deleteDateRadio) deleteDateRadio.checked = defaultMode === 'date';
+            if (deleteFolderRadio) deleteFolderRadio.checked = defaultMode === 'folder';
+            toggleDeleteModeSections(defaultMode);
+
             document.getElementById('delete-cards-modal').classList.remove('hidden');
         }
 
+        async function deleteCardsWithArchive(cardsToDelete, { successMessage } = {}) {
+            if (!cardsCollectionRef || !deletedCardsCollectionRef || !userId) {
+                showNotification("You must be logged in to delete cards.", "error");
+                return false;
+            }
+            if (!cardsToDelete || cardsToDelete.length === 0) {
+                if (successMessage) {
+                    showNotification(successMessage, 'success');
+                }
+                return true;
+            }
+            const BATCH_LIMIT = 400;
+            try {
+                for (let index = 0; index < cardsToDelete.length; index += BATCH_LIMIT) {
+                    const slice = cardsToDelete.slice(index, index + BATCH_LIMIT);
+                    const batch = writeBatch(db);
+                    slice.forEach(card => {
+                        const archivedPayload = buildArchivedCardPayload(card);
+                        if (archivedPayload) {
+                            const archiveDocRef = doc(deletedCardsCollectionRef);
+                            batch.set(archiveDocRef, archivedPayload);
+                        }
+                        batch.delete(doc(cardsCollectionRef, card.id));
+                    });
+                    await batch.commit();
+                }
+                if (successMessage) {
+                    showNotification(successMessage, 'success');
+                }
+                return true;
+            } catch (error) {
+                console.error("Delete error: ", error);
+                showNotification("An error occurred during deletion.", "error");
+                return false;
+            }
+        }
+
         async function handleConfirmDeleteCards() {
+            const deleteModeInput = document.querySelector('input[name="delete-mode"]:checked');
+            const deleteMode = deleteModeInput ? deleteModeInput.value : 'date';
+
+            if (deleteMode === 'folder') {
+                const selectedFolderNodes = document.querySelectorAll('#delete-folder-selection input[type="checkbox"]:checked');
+                if (selectedFolderNodes.length === 0) {
+                    showNotification("Please select at least one folder to delete cards from.");
+                    return;
+                }
+                const selectedFolderIds = Array.from(selectedFolderNodes).map(el => el.value);
+                const cardsToDelete = allCards.filter(card => {
+                    const folderIdentifier = (card.folderId && String(card.folderId).trim().length > 0) ? card.folderId : NO_FOLDER_VALUE;
+                    return selectedFolderIds.includes(folderIdentifier);
+                });
+                if (cardsToDelete.length === 0) {
+                    showNotification("No cards found for the selected folders.", "success");
+                    return;
+                }
+                const message = `Moved ${cardsToDelete.length} card${cardsToDelete.length === 1 ? '' : 's'} to Deleted history.`;
+                const success = await deleteCardsWithArchive(cardsToDelete, { successMessage: message });
+                if (success) {
+                    document.getElementById('delete-cards-modal').classList.add('hidden');
+                }
+                return;
+            }
+
             const selectedDateNodes = document.querySelectorAll('#delete-date-selection input[type="checkbox"]:checked');
             if (selectedDateNodes.length === 0) {
                 showNotification("Please select at least one date to delete cards from.");
@@ -2796,24 +3432,58 @@
                 showNotification("No cards found for the selected dates.", "success");
                 return;
             }
-            // Use a custom modal instead of a native confirm dialog
-            // if (!confirm(`Are you sure you want to delete ${cardsToDelete.length} card(s)? This action cannot be undone.`)) return;
-            try {
-                const batch = writeBatch(db);
-                cardsToDelete.forEach(card => {
-                    const archivedPayload = buildArchivedCardPayload(card);
-                    if (archivedPayload && deletedCardsCollectionRef) {
-                        const archiveDocRef = doc(deletedCardsCollectionRef);
-                        batch.set(archiveDocRef, archivedPayload);
-                    }
-                    batch.delete(doc(db, `artifacts/${appId}/users/${userId}/cards`, card.id));
-                });
-                await batch.commit();
-                showNotification(`Successfully deleted ${cardsToDelete.length} cards!`, 'success');
+            const message = `Moved ${cardsToDelete.length} card${cardsToDelete.length === 1 ? '' : 's'} to Deleted history.`;
+            const success = await deleteCardsWithArchive(cardsToDelete, { successMessage: message });
+            if (success) {
                 document.getElementById('delete-cards-modal').classList.add('hidden');
+            }
+        }
+
+        async function handleConfirmDeleteFolder() {
+            if (!pendingFolderDeleteId) {
+                showNotification('No folder selected to delete.', 'error');
+                return;
+            }
+            if (!foldersCollectionRef || !cardsCollectionRef || !deletedCardsCollectionRef || !userId) {
+                showNotification('Not connected.', 'error');
+                return;
+            }
+
+            const folderId = pendingFolderDeleteId;
+            const folderName = pendingFolderDeleteName || 'Untitled Folder';
+            const cardsInFolder = allCards.filter(card => card.folderId === folderId);
+
+            const deleted = await deleteCardsWithArchive(cardsInFolder, { successMessage: null });
+            if (!deleted) {
+                return;
+            }
+
+            try {
+                await deleteDoc(doc(foldersCollectionRef, folderId));
+                if (currentFolderId === folderId) {
+                    updateFolderSelection(NO_FOLDER_VALUE);
+                }
+                if (currentViewFolderId === folderId) {
+                    currentViewFolderId = ALL_FOLDERS_VALUE;
+                    const viewSelector = document.getElementById('view-folder-selector');
+                    if (viewSelector) viewSelector.value = ALL_FOLDERS_VALUE;
+                }
+                if (currentReviewFolderId === folderId) {
+                    currentReviewFolderId = ALL_FOLDERS_VALUE;
+                    const reviewSelector = document.getElementById('review-folder-selector');
+                    if (reviewSelector) reviewSelector.value = ALL_FOLDERS_VALUE;
+                }
+                populateDuplicatesFolderFilter();
+                filterAndRenderCards();
+                updateReviewDateSelector();
+                closeDeleteFolderModal();
+                const cardSuffix = cardsInFolder.length === 0
+                    ? 'No cards were linked to this folder.'
+                    : `${cardsInFolder.length === 1 ? '1 card' : `${cardsInFolder.length} cards`} moved to Deleted.`;
+                showNotification(`Deleted "${folderName}". ${cardSuffix}`, 'success');
             } catch (error) {
-                console.error("Delete error: ", error);
-                showNotification("An error occurred during deletion.");
+                console.error('Failed to delete folder:', error);
+                showNotification('Failed to delete folder.', 'error');
             }
         }
 
@@ -2967,6 +3637,26 @@
                     closeFolderModal();
                 }
             });
+            const deleteFolderBtn = document.getElementById('delete-folder-btn');
+            if (deleteFolderBtn) {
+                deleteFolderBtn.addEventListener('click', openDeleteFolderModal);
+            }
+            const cancelDeleteFolderBtn = document.getElementById('cancel-delete-folder-btn');
+            if (cancelDeleteFolderBtn) {
+                cancelDeleteFolderBtn.addEventListener('click', closeDeleteFolderModal);
+            }
+            const confirmDeleteFolderBtn = document.getElementById('confirm-delete-folder-btn');
+            if (confirmDeleteFolderBtn) {
+                confirmDeleteFolderBtn.addEventListener('click', handleConfirmDeleteFolder);
+            }
+            const deleteFolderModalEl = document.getElementById('delete-folder-modal');
+            if (deleteFolderModalEl) {
+                deleteFolderModalEl.addEventListener('click', (event) => {
+                    if (event.target === event.currentTarget) {
+                        closeDeleteFolderModal();
+                    }
+                });
+            }
             if (folderNameInput) {
                 folderNameInput.addEventListener('keydown', (event) => {
                     if (event.key === 'Enter') {
@@ -3007,6 +3697,35 @@
             if (setDeepLKeyBtn) setDeepLKeyBtn.addEventListener('click', promptForDeepLKey);
             const bulkTranslateBtn = document.getElementById('bulk-translate-btn');
             if (bulkTranslateBtn) bulkTranslateBtn.addEventListener('click', handleBulkTranslateBeispiele);
+            const fixLegacyFrontsBtn = document.getElementById('fix-legacy-fronts-btn');
+            if (fixLegacyFrontsBtn) fixLegacyFrontsBtn.addEventListener('click', handleFixLegacyFronts);
+            const showLegacyBtn = document.getElementById('show-legacy-btn');
+            if (showLegacyBtn) showLegacyBtn.addEventListener('click', showLegacyFrontsView);
+            const legacyBackBtn = document.getElementById('legacy-back-btn');
+            if (legacyBackBtn) legacyBackBtn.addEventListener('click', showMainAppView);
+            const legacyFixAllBtn = document.getElementById('legacy-fix-all-btn');
+            if (legacyFixAllBtn) {
+                legacyFixAllBtn.addEventListener('click', async () => {
+                    if (isFixingLegacyFronts) return;
+                    const candidates = getLegacyFrontCandidates();
+                    const confirmMessage = candidates.length > 0
+                        ? `Fix ${candidates.length} legacy image front${candidates.length === 1 ? '' : 's'}? This updates the cards in place.`
+                        : null;
+                    await applyLegacyFrontFixes(candidates, { triggerButton: legacyFixAllBtn, confirmMessage, loadingText: 'Fixing...' });
+                });
+            }
+            const legacyContainer = document.getElementById('legacy-container');
+            if (legacyContainer) {
+                legacyContainer.addEventListener('click', async (event) => {
+                    const fixBtn = event.target.closest('.legacy-fix-btn');
+                    if (!fixBtn) return;
+                    event.preventDefault();
+                    if (isFixingLegacyFronts) return;
+                    const cardId = fixBtn.dataset.cardId;
+                    const candidates = getLegacyFrontCandidates().filter(item => item.card.id === cardId);
+                    await applyLegacyFrontFixes(candidates, { triggerButton: fixBtn, loadingText: 'Fixing...' });
+                });
+            }
             document.getElementById('review-btn').addEventListener('click', () => {
                 document.getElementById('main-app').classList.add('hidden');
                 document.getElementById('review-modal').classList.remove('hidden');
@@ -3065,6 +3784,18 @@
                     document.getElementById('export-date-selection').classList.add('hidden');
                 }
             });
+            const deleteDateRadio = document.getElementById('delete-date-radio');
+            if (deleteDateRadio) {
+                deleteDateRadio.addEventListener('change', () => {
+                    if (deleteDateRadio.checked) toggleDeleteModeSections('date');
+                });
+            }
+            const deleteFolderRadio = document.getElementById('delete-folder-radio');
+            if (deleteFolderRadio) {
+                deleteFolderRadio.addEventListener('change', () => {
+                    if (deleteFolderRadio.checked) toggleDeleteModeSections('folder');
+                });
+            }
             
             document.getElementById('review-session').addEventListener('click', (e) => {
                 const lineCopyBtn = e.target.closest('.copy-line-btn');
@@ -3135,6 +3866,13 @@
                     }
                     return;
                 }
+                if (isLegacyViewActive()) {
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        showMainAppView();
+                    }
+                    return;
+                }
                 const folderModal = document.getElementById('folder-modal');
                 if (e.key === 'Escape' && folderModal && !folderModal.classList.contains('hidden')) {
                     e.preventDefault();
@@ -3195,6 +3933,8 @@
             });
             renderFolderOptions();
             filterAndRenderCards();
+            updateFolderDeleteButtonState();
+            updateLegacyBadge();
             onAuthStateChanged(auth, user => { if (user) showAppUI(user); else showLoginUI(); });
             document.getElementById('delete-cards-btn').addEventListener('click', openDeleteCardsModal);
             document.getElementById('confirm-delete-cards-btn').addEventListener('click', handleConfirmDeleteCards);
