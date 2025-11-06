@@ -148,7 +148,7 @@
              <p class="text-base font-semibold text-gray-400 flex items-center gap-2">Cards: <span id="session-counter" title="Cards from latest session" class="text-green-400 font-bold">0</span> / <span id="total-counter" title="Total cards" class="text-blue-400 font-bold">0</span></p>
              <div id="default-actions" class="flex flex-col sm:flex-row sm:flex-wrap gap-3 w-full">
                 <button id="import-btn" class="btn btn-secondary w-full sm:w-auto"><i class="fas fa-upload"></i> Import</button>
-                <input type="file" id="import-file-input" class="hidden" accept=".txt, .tsv">
+                <input type="file" id="import-file-input" class="hidden" accept=".txt, .tsv" multiple>
                 <button id="review-btn" class="btn btn-secondary w-full sm:w-auto"><i class="fas fa-eye"></i> Review</button>
                 <button id="bulk-translate-btn" class="btn btn-success w-full sm:w-auto"><i class="fas fa-language"></i> Translate Beispiele</button>
                 <button id="export-btn" class="btn btn-primary w-full sm:w-auto"><i class="fas fa-download"></i> Export</button>
@@ -3183,33 +3183,50 @@
         }
 
         async function importCardsFromFile(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+            const files = Array.from(event.target.files || []);
+            if (files.length === 0) return;
 
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const content = e.target.result;
-                const lines = content
-                    .split(/\r?\n/)
-                    .filter(line => {
-                        const trimmed = line.trim();
-                        return trimmed !== '' && !trimmed.startsWith('#');
-                    });
-                if (lines.length === 0) {
-                    showNotification("The selected file is empty or contains no valid data.");
-                    return;
-                }
-                if (!userId) {
-                    showNotification("You must be logged in to import cards.");
-                    return;
-                }
-                const { id: selectedFolderId, name: selectedFolderName } = getSelectedFolderDetails();
-                try {
-                    const batch = writeBatch(db);
-                    const importTimestamp = new Date();
-                    lines.forEach((line, index) => {
+            const resetInput = () => { event.target.value = ''; };
+
+            if (!userId) {
+                showNotification("You must be logged in to import cards.");
+                resetInput();
+                return;
+            }
+
+            const { id: selectedFolderId, name: selectedFolderName } = getSelectedFolderDetails();
+            const importTimestamp = new Date();
+            let cardCounter = 0;
+            let totalImported = 0;
+
+            try {
+                for (const file of files) {
+                    const content = await file.text();
+                    const lines = content
+                        .split(/\r?\n/)
+                        .filter(line => {
+                            const trimmed = line.trim();
+                            return trimmed !== '' && !trimmed.startsWith('#');
+                        });
+
+                    if (lines.length === 0) {
+                        continue;
+                    }
+
+                    let batch = writeBatch(db);
+                    let operationsInBatch = 0;
+
+                    const commitBatch = async () => {
+                        if (operationsInBatch === 0) return;
+                        await batch.commit();
+                        batch = writeBatch(db);
+                        operationsInBatch = 0;
+                    };
+
+                    for (const line of lines) {
                         const fields = parseTsvLine(line);
-                        const cardTimestamp = new Date(importTimestamp.getTime() + index);
+                        const cardTimestamp = new Date(importTimestamp.getTime() + cardCounter);
+                        cardCounter++;
 
                         const frontField = (fields[0] || '').trim();
                         const backField = (fields[1] || '').trim();
@@ -3236,18 +3253,29 @@
                         };
                         const newCardRef = doc(collection(db, `artifacts/${appId}/users/${userId}/cards`));
                         batch.set(newCardRef, cardData);
-                    });
-                    await batch.commit();
-                    showNotification(`Successfully imported ${lines.length} cards!`, 'success');
-                } catch (error) {
-                    console.error("Import error: ", error);
-                    showNotification("An error occurred during import.");
-                } finally {
-                    event.target.value = '';
+                        operationsInBatch++;
+                        if (operationsInBatch === 450) {
+                            await commitBatch();
+                        }
+                    }
+
+                    await commitBatch();
+                    totalImported += lines.length;
                 }
-            };
-            reader.readAsText(file);
+
+                if (totalImported > 0) {
+                    showNotification(`Successfully imported ${totalImported} cards!`, 'success');
+                } else {
+                    showNotification("The selected files are empty or contain no valid data.");
+                }
+            } catch (error) {
+                console.error("Import error: ", error);
+                showNotification("An error occurred during import.");
+            } finally {
+                resetInput();
+            }
         }
+
         
         function filterAndRenderCards() {
             const searchInput = document.getElementById('search-input');
