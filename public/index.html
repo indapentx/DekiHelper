@@ -66,6 +66,20 @@
         .legacy-code-block { background-color: #111; border: 1px solid #2a2a2a; border-radius: 8px; padding: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 0.85rem; color: #e0e0e0; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
         .legacy-preview-box { background-color: #111; border: 1px dashed #444; border-radius: 8px; padding: 12px; display: inline-flex; align-items: center; justify-content: center; min-height: 80px; }
         .legacy-preview-box img { max-width: 100%; max-height: 160px; object-fit: contain; }
+        @media (max-width: 640px) {
+            #review-modal {
+                align-items: flex-start;
+                overflow-y: auto;
+                overflow-x: hidden;
+                padding-bottom: 3rem;
+                height: 100%;
+            }
+            #review-modal > div {
+                min-height: 100%;
+                width: 100%;
+                max-width: 100%;
+            }
+        }
     </style>
 </head>
 <body class="text-white">
