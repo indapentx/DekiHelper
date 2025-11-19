@@ -173,6 +173,35 @@
              </div>
         </div>
         <hr class="border-gray-700 my-8">
+        <div id="example-match-section" class="mt-10">
+            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-300">Example Finder</h2>
+                    <p class="text-sm text-gray-400 mt-1">Look up vocab files (A1.json etc.) and add their examples to your cards.</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" id="refresh-example-library-btn" class="btn btn-secondary btn-sm whitespace-nowrap">
+                        <i class="fas fa-rotate"></i> Reload Files
+                    </button>
+                    <button type="button" id="find-example-matches-btn" class="btn btn-primary btn-sm whitespace-nowrap">
+                        <i class="fas fa-search"></i> Find Matches
+                    </button>
+                </div>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3 mb-3">
+                <input type="text" id="example-match-filter" class="anki-input flex-1" placeholder="Filter by word or card text...">
+                <select id="example-source-filter" class="anki-input sm:w-60">
+                    <option value="__all__">All sources</option>
+                </select>
+            </div>
+            <p id="example-library-status" class="text-xs text-gray-500 mb-2"></p>
+            <p id="example-match-summary" class="text-sm text-gray-400 mb-3"></p>
+            <div id="example-matches-empty" class="hidden text-gray-500 text-center border border-dashed border-gray-700 rounded-lg p-6">
+                No matches yet. Click "Find Matches" to search your cards in the vocab files.
+            </div>
+            <div id="example-matches-container" class="space-y-3"></div>
+        </div>
+        <hr class="border-gray-700 my-8">
         <div>
             <h2 class="text-2xl font-bold mb-4 text-gray-300">Saved Cards</h2>
             <div class="mb-4 flex flex-col sm:flex-row gap-3">
@@ -499,6 +528,11 @@
         const FIREBASE_FUNCTIONS_REGION = 'us-central1';
         const PRODUCTION_TRANSLATE_ENDPOINT = `https://${FIREBASE_FUNCTIONS_REGION}-${firebaseConfig.projectId}.cloudfunctions.net/translateWithDeepL`;
         const LOCAL_TRANSLATE_ENDPOINT = `http://localhost:5001/${firebaseConfig.projectId}/${FIREBASE_FUNCTIONS_REGION}/translateWithDeepL`;
+        const EXAMPLE_SOURCE_FILES = [
+            { id: 'A1', file: 'A1.json', label: 'A1' },
+            { id: 'A2', file: 'A2.json', label: 'A2' },
+            { id: 'A3', file: 'A3.json', label: 'A3' }
+        ];
 
         
         let app, auth, db, userId, cardsCollectionRef, unsubscribe;
@@ -522,6 +556,11 @@
         let hasRestoredFolderPreference = false;
         let isBulkTranslating = false;
         let isFixingLegacyFronts = false;
+        let exampleWordMap = new Map();
+        let exampleSourcesLoaded = [];
+        let exampleLibraryLoadedAt = null;
+        let isLoadingExampleLibrary = false;
+        let currentExampleMatches = [];
         
         function showNotification(message, level = 'error', duration = 3000) {
             const notification = document.getElementById('notification');
@@ -547,6 +586,15 @@
                 }
                 button.disabled = false;
             }
+        }
+
+        function copyPlainTextToClipboard(text) {
+            const tempInput = document.createElement('textarea');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
         }
 
         function sleep(ms) {
@@ -686,6 +734,295 @@
                 deleteShortcutState.timeoutId = null;
             }
             deleteShortcutState.pending = false;
+        }
+
+        function normalizeWordForLookup(value) {
+            if (!value) return '';
+            return String(value)
+                .toLowerCase()
+                .replace(/<[^>]*>/g, ' ')
+                .replace(/[^\p{L}\p{N}\s-]/gu, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function normalizeWordVariants(value) {
+            const variants = new Set();
+            const base = normalizeWordForLookup(value);
+            if (base) variants.add(base);
+            if (base) {
+                const stripped = base.replace(/^(der|die|das|ein|eine|einen|einem|eines|den|dem|des)\s+/i, '').trim();
+                if (stripped) variants.add(stripped);
+            }
+            return Array.from(variants);
+        }
+
+        function getExampleSourceLabel(sourceId) {
+            const match = EXAMPLE_SOURCE_FILES.find(src => src.id === sourceId);
+            return match ? match.label : sourceId;
+        }
+
+        function setExampleLibraryStatus(message) {
+            const statusEl = document.getElementById('example-library-status');
+            if (statusEl) statusEl.textContent = message || '';
+        }
+
+        function collectExamplesFromEntry(entry) {
+            if (!entry || typeof entry !== 'object') return [];
+            const examples = [];
+            Object.keys(entry).forEach(key => {
+                if (!/^example\d*$/i.test(key)) return;
+                const value = entry[key];
+                if (value && String(value).trim().length > 0) {
+                    examples.push(String(value).trim());
+                }
+            });
+            return examples;
+        }
+
+        async function loadExampleLibrary(forceReload = false) {
+            if (!forceReload && exampleSourcesLoaded.length > 0 && exampleWordMap.size > 0) {
+                return { loaded: true, sources: exampleSourcesLoaded };
+            }
+            if (isLoadingExampleLibrary) return { loaded: false, sources: exampleSourcesLoaded };
+
+            isLoadingExampleLibrary = true;
+            exampleWordMap = new Map();
+            exampleSourcesLoaded = [];
+            const skipped = [];
+            setExampleLibraryStatus('Loading vocab files...');
+
+            for (const source of EXAMPLE_SOURCE_FILES) {
+                try {
+                    const response = await fetch(source.file, { cache: 'no-cache' });
+                    if (!response.ok) {
+                        skipped.push(`${source.file} (${response.status})`);
+                        continue;
+                    }
+                    const payload = await response.json();
+                    if (!Array.isArray(payload)) {
+                        skipped.push(`${source.file} (invalid format)`);
+                        continue;
+                    }
+                    let added = 0;
+                    payload.forEach(entry => {
+                        if (!entry || !entry.word) return;
+                        const variants = normalizeWordVariants(entry.word);
+                        if (!variants.length) return;
+                        const examples = collectExamplesFromEntry(entry);
+                        if (!examples.length) return;
+                        variants.forEach(normalizedWord => {
+                            if (!exampleWordMap.has(normalizedWord)) {
+                                exampleWordMap.set(normalizedWord, []);
+                            }
+                            exampleWordMap.get(normalizedWord).push({
+                                word: entry.word,
+                                sourceId: source.id,
+                                examples: [...examples]
+                            });
+                        });
+                        added += 1;
+                    });
+                    exampleSourcesLoaded.push({ ...source, count: added });
+                } catch (error) {
+                    console.error(`Failed to load ${source.file}`, error);
+                    skipped.push(`${source.file} (error)`);
+                }
+            }
+
+            isLoadingExampleLibrary = false;
+            exampleLibraryLoadedAt = new Date();
+            populateExampleSourceFilter();
+
+            const totalWords = exampleSourcesLoaded.reduce((sum, src) => sum + (src.count || 0), 0);
+            const loadedSources = exampleSourcesLoaded.length
+                ? exampleSourcesLoaded.map(s => `${s.label} (${s.count})`).join(', ')
+                : 'none';
+            const skippedText = skipped.length ? ` | Skipped: ${skipped.join(', ')}` : '';
+            setExampleLibraryStatus(`Loaded ${totalWords} vocab entries from ${exampleSourcesLoaded.length} source(s): ${loadedSources}${skippedText}`);
+
+            return { loaded: exampleSourcesLoaded.length > 0, sources: exampleSourcesLoaded };
+        }
+
+        function populateExampleSourceFilter() {
+            const select = document.getElementById('example-source-filter');
+            if (!select) return;
+            const previousValue = select.value || '__all__';
+            select.innerHTML = '<option value="__all__">All sources</option>';
+            exampleSourcesLoaded.forEach(src => {
+                const option = document.createElement('option');
+                option.value = src.id;
+                option.textContent = `${src.label} (${src.count || 0})`;
+                select.appendChild(option);
+            });
+            const availableValues = Array.from(select.options).map(opt => opt.value);
+            select.value = availableValues.includes(previousValue) ? previousValue : '__all__';
+        }
+
+        function buildExampleMatches({ filterTerm = '', sourceFilter = '__all__' } = {}) {
+            if (!exampleWordMap || exampleWordMap.size === 0) return [];
+            const normalizedFilter = filterTerm.toLowerCase().trim();
+            const matches = [];
+            const seen = new Set();
+
+            allCards.forEach(card => {
+                const candidateSet = new Set([
+                    ...normalizeWordVariants(card.back),
+                    ...normalizeWordVariants(card.front)
+                ].filter(Boolean));
+                const candidates = Array.from(candidateSet);
+
+                candidates.forEach(candidate => {
+                    const entries = exampleWordMap.get(candidate);
+                    if (!entries || entries.length === 0) return;
+                    entries.forEach(entry => {
+                        if (sourceFilter !== '__all__' && entry.sourceId !== sourceFilter) return;
+                        const dedupeKey = `${card.id}__${entry.sourceId}__${entry.word.toLowerCase()}`;
+                        if (seen.has(dedupeKey)) return;
+                        seen.add(dedupeKey);
+                        const matchesFilter = !normalizedFilter || [
+                            card.front || '',
+                            card.back || '',
+                            entry.word || ''
+                        ].some(value => value.toLowerCase().includes(normalizedFilter));
+                        if (!matchesFilter) return;
+                        matches.push({
+                            card,
+                            word: entry.word,
+                            sourceId: entry.sourceId,
+                            examples: [...entry.examples]
+                        });
+                    });
+                });
+            });
+
+            matches.sort((a, b) => getCreatedAtTime(b.card.createdAt) - getCreatedAtTime(a.card.createdAt));
+            return matches;
+        }
+
+        function renderExampleMatches(matches) {
+            currentExampleMatches = matches || [];
+            const container = document.getElementById('example-matches-container');
+            const emptyState = document.getElementById('example-matches-empty');
+            const summary = document.getElementById('example-match-summary');
+            if (!container || !emptyState || !summary) return;
+
+            container.innerHTML = '';
+            if (!matches || matches.length === 0) {
+                emptyState.classList.remove('hidden');
+                summary.textContent = '';
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            const uniqueCards = new Set(matches.map(m => m.card.id)).size;
+            const uniqueSources = new Set(matches.map(m => m.sourceId)).size;
+            summary.textContent = `Found ${matches.length} match${matches.length === 1 ? '' : 'es'} across ${uniqueCards} card${uniqueCards === 1 ? '' : 's'} from ${uniqueSources} source${uniqueSources === 1 ? '' : 's'}.`;
+
+            matches.forEach(match => {
+                const existingSentences = normalizeSentencesFromBeispiel(match.card.beispiel);
+                const existingPreview = existingSentences.length
+                    ? `Existing Beispiel: ${escapeHtml(existingSentences.slice(0, 2).join(' • '))}${existingSentences.length > 2 ? ' ...' : ''}`
+                    : 'No Beispiel on this card yet.';
+                const folderMeta = match.card.folderId ? folders.find(f => f.id === match.card.folderId) : null;
+                const folderLabel = folderMeta && folderMeta.name ? folderMeta.name : 'No Folder';
+                const item = document.createElement('div');
+                item.className = 'bg-[#0f0f0f] border border-gray-800 rounded-lg p-4';
+                item.innerHTML = `
+                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div class="flex-1">
+                            <p class="font-semibold text-lg text-white">${escapeHtml(match.word)}</p>
+                            <p class="text-xs text-gray-500 mt-1">Card: ${escapeHtml(match.card.back || match.card.front || 'No back')} • Source: ${escapeHtml(getExampleSourceLabel(match.sourceId))} • Folder: ${escapeHtml(folderLabel)}</p>
+                            <p class="text-xs text-gray-500 mt-1">${existingPreview}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button class="btn btn-success btn-sm example-apply-btn" data-card-id="${match.card.id}" data-word="${encodeURIComponent(match.word)}" data-source-id="${match.sourceId}">
+                                <i class="fas fa-plus"></i> Add Beispiele
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-3 space-y-1 text-sm text-gray-200">
+                        ${match.examples.map(line => `
+                            <div class="flex items-start gap-2 example-line" data-text="${escapeHtml(line)}">
+                                <button class="example-copy-btn text-gray-400 hover:text-white mt-0.5" title="Copy sentence" data-text="${escapeHtml(line)}"><i class="fas fa-copy"></i></button>
+                                <span class="leading-6 flex-1 example-copyable cursor-pointer" data-text="${escapeHtml(line)}">${escapeHtml(line)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        async function refreshExampleMatches({ forceReloadLibrary = false } = {}) {
+            const filterInput = document.getElementById('example-match-filter');
+            const sourceFilterSelect = document.getElementById('example-source-filter');
+            const filterTerm = filterInput ? filterInput.value : '';
+            const sourceFilter = sourceFilterSelect ? sourceFilterSelect.value : '__all__';
+
+            const { loaded } = await loadExampleLibrary(forceReloadLibrary);
+            if (!loaded) {
+                renderExampleMatches([]);
+                return;
+            }
+
+            const matches = buildExampleMatches({ filterTerm, sourceFilter });
+            renderExampleMatches(matches);
+        }
+
+        async function handleApplyExamplesToCard(cardId, encodedWord, sourceId) {
+            if (!userId || !cardsCollectionRef) {
+                showNotification('Sign in to add Beispiele.', 'error');
+                return;
+            }
+            const decodedWord = decodeURIComponent(encodedWord || '');
+            const normalizedKey = normalizeWordForLookup(decodedWord);
+            if (!normalizedKey) {
+                showNotification('Missing word for Beispiele.', 'error');
+                return;
+            }
+            const card = allCards.find(c => c.id === cardId);
+            if (!card) {
+                showNotification('Card not found.', 'error');
+                return;
+            }
+            const entries = exampleWordMap.get(normalizedKey) || [];
+            const match = entries.find(entry => entry.sourceId === sourceId) || entries[0];
+            if (!match) {
+                showNotification('No Beispiele found for this word.', 'error');
+                return;
+            }
+
+            const existingSentences = normalizeSentencesFromBeispiel(card.beispiel);
+            const incoming = match.examples || [];
+            const combined = [...existingSentences];
+            incoming.forEach(sentence => {
+                const normalized = sentence.trim().toLowerCase();
+                const alreadyExists = combined.some(s => s.trim().toLowerCase() === normalized);
+                if (!alreadyExists) combined.push(sentence);
+            });
+
+            if (combined.length === existingSentences.length) {
+                showNotification('Card already contains these Beispiele.', 'success');
+                return;
+            }
+
+            const newBeispiel = formatMultiLine(combined.join('\n'));
+            const baseForSpeech = card.back || card.front || '';
+            const newBeispielSpeech = resolveBeispielSpeechValue(baseForSpeech, newBeispiel, card.beispielSpeech);
+
+            try {
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/cards`, cardId);
+                await updateDoc(docRef, { beispiel: newBeispiel, beispielSpeech: newBeispielSpeech });
+                card.beispiel = newBeispiel;
+                card.beispielSpeech = newBeispielSpeech;
+                showNotification('Beispiele added to card.', 'success');
+                filterAndRenderCards();
+                refreshExampleMatches({ forceReloadLibrary: false });
+            } catch (error) {
+                console.error('Failed to add Beispiele to card:', error);
+                showNotification('Failed to update card with Beispiele.', 'error');
+            }
         }
 
 
@@ -3167,6 +3504,8 @@
             if (legacyEmptyState) legacyEmptyState.classList.add('hidden');
             updateLegacyBadge();
             updateDeletedBadge();
+            renderExampleMatches([]);
+            setExampleLibraryStatus('Sign in to search matches.');
         }
 
         function showAppUI(user) {
@@ -3181,6 +3520,7 @@
             currentReviewSessionId = null;
             currentReviewDate = 'all';
             currentViewFolderId = ALL_FOLDERS_VALUE;
+            refreshExampleMatches({ forceReloadLibrary: false });
             
             userId = user.uid;
             const collectionPath = `artifacts/${appId}/users/${userId}/cards`;
@@ -3235,6 +3575,7 @@
                 updateReviewDateSelector();
                 updateDuplicateBadge();
                 updateLegacyBadge();
+                refreshExampleMatches();
                 if (isLegacyViewActive()) {
                     renderLegacyFrontsView();
                 }
@@ -3771,6 +4112,14 @@
 
             document.getElementById('generate-img-tag-btn').addEventListener('click', handleGenerateOrCycleImage);
             document.getElementById('search-input').addEventListener('input', filterAndRenderCards);
+            const exampleFilterInput = document.getElementById('example-match-filter');
+            if (exampleFilterInput) exampleFilterInput.addEventListener('input', () => refreshExampleMatches({ forceReloadLibrary: false }));
+            const exampleSourceFilter = document.getElementById('example-source-filter');
+            if (exampleSourceFilter) exampleSourceFilter.addEventListener('change', () => refreshExampleMatches({ forceReloadLibrary: false }));
+            const findExampleMatchesBtn = document.getElementById('find-example-matches-btn');
+            if (findExampleMatchesBtn) findExampleMatchesBtn.addEventListener('click', () => refreshExampleMatches({ forceReloadLibrary: false }));
+            const reloadExampleLibraryBtn = document.getElementById('refresh-example-library-btn');
+            if (reloadExampleLibraryBtn) reloadExampleLibraryBtn.addEventListener('click', () => refreshExampleMatches({ forceReloadLibrary: true }));
             document.getElementById('update-btn').addEventListener('click', handleUpdateCard);
             document.getElementById('cancel-btn').addEventListener('click', () => setEditMode(false));
             document.getElementById('confirm-delete-btn').addEventListener('click', handleDeleteConfirmed);
@@ -3813,6 +4162,33 @@
                     const cardId = fixBtn.dataset.cardId;
                     const candidates = getLegacyFrontCandidates().filter(item => item.card.id === cardId);
                     await applyLegacyFrontFixes(candidates, { triggerButton: fixBtn, loadingText: 'Fixing...' });
+                });
+            }
+            const exampleMatchesContainer = document.getElementById('example-matches-container');
+            if (exampleMatchesContainer) {
+                exampleMatchesContainer.addEventListener('click', async (event) => {
+                    const applyBtn = event.target.closest('.example-apply-btn');
+                    if (!applyBtn) return;
+                    const cardId = applyBtn.dataset.cardId;
+                    const word = applyBtn.dataset.word;
+                    const sourceId = applyBtn.dataset.sourceId;
+                    setButtonLoading(applyBtn, true, 'Adding...');
+                    await handleApplyExamplesToCard(cardId, word, sourceId);
+                    setButtonLoading(applyBtn, false);
+                });
+                exampleMatchesContainer.addEventListener('click', (event) => {
+                    const copyBtn = event.target.closest('.example-copy-btn');
+                    const copyable = copyBtn || event.target.closest('.example-copyable');
+                    if (!copyable) return;
+                    const text = copyable.dataset.text || '';
+                    if (!text.trim()) return;
+                    copyPlainTextToClipboard(text);
+                    const line = copyable.closest('.example-line');
+                    if (line) {
+                        line.classList.add('copy-highlight');
+                        setTimeout(() => line.classList.remove('copy-highlight'), 400);
+                    }
+                    showNotification('Sentence copied.', 'success', 1200);
                 });
             }
             document.getElementById('review-btn').addEventListener('click', () => {
@@ -4024,6 +4400,7 @@
             filterAndRenderCards();
             updateFolderDeleteButtonState();
             updateLegacyBadge();
+            setExampleLibraryStatus('Not loaded yet. Click "Find Matches" to search.');
             onAuthStateChanged(auth, user => { if (user) showAppUI(user); else showLoginUI(); });
             document.getElementById('delete-cards-btn').addEventListener('click', openDeleteCardsModal);
             document.getElementById('confirm-delete-cards-btn').addEventListener('click', handleConfirmDeleteCards);

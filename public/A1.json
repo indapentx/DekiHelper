@@ -1,0 +1,2905 @@
+[
+  {
+    "word": "ab",
+    "example": "Ab morgen muss ich arbeiten."
+  },
+  {
+    "word": "aber",
+    "example": "Ich bin oft im Büro, aber nur für wenige Stunden."
+  },
+  {
+    "word": "abfahren",
+    "example": "Wir fahren um zwölf Uhr ab."
+  },
+  {
+    "word": "die Abfahrt",
+    "example": "Vor der Abfahrt rufe ich an."
+  },
+  {
+    "word": "abgeben",
+    "example": "Ich muss meine Schlüssel abgeben."
+  },
+  {
+    "word": "abholen",
+    "example": "Wann kann ich den Schrank bei dir abholen?",
+    "example2": "Wir müssen noch meinen Bruder abholen."
+  },
+  {
+    "word": "der Absender",
+    "example": "Da ist ein Brief für dich ohne Absender."
+  },
+  {
+    "word": "Achtung",
+    "example": "Achtung! Das dürfen Sie nicht tun."
+  },
+  {
+    "word": "die Adresse",
+    "example": "Können Sie mir seine Adresse sagen?"
+  },
+  {
+    "word": "all-",
+    "example": "Alles Gute!",
+    "example2": "Das ist alles.",
+    "example3": "Sind alle da?",
+    "example4": "Alle Freunde kommen.",
+    "example5": "Hast du alles?"
+  },
+  {
+    "word": "allein",
+    "example": "Er kommt allein."
+  },
+  {
+    "word": "also",
+    "example": "Also, es ist so: ...",
+    "example2": "Er hat Zeit, also muss er uns helfen."
+  },
+  {
+    "word": "alt",
+    "example": "Wie alt sind Sie?",
+    "example2": "Sie sehen aber nicht so alt aus.",
+    "example3": "Mein Auto ist schon sehr alt.",
+    "example4": "Wir wohnen in einem sehr alten Haus.",
+    "example5": "Köln ist eine alte Stadt."
+  },
+  {
+    "word": "das Alter",
+    "example": "Alter: 26 Jahre."
+  },
+  {
+    "word": "an",
+    "example": "Fahren Sie an der nächsten Straße nach rechts.",
+    "example2": "Wir treffen uns am Bahnhof.",
+    "example3": "Am nächsten Montag geht es leider nicht."
+  },
+  {
+    "word": "anbieten",
+    "example": "Was darf ich dir anbieten?"
+  },
+  {
+    "word": "das Angebot",
+    "example": "Heute sind Sportschuhe im Angebot."
+  },
+  {
+    "word": "ander-",
+    "example": "Willst du diese Jacke? – Nein, ich möchte die andere."
+  },
+  {
+    "word": "anfangen",
+    "example": "Hier fängt die Bahnhofstraße an.",
+    "example2": "Der Unterricht fängt gleich an."
+  },
+  {
+    "word": "der Anfang",
+    "example": "Sie wohnt am Anfang der Straße.",
+    "example2": "Wir machen Anfang Juli Urlaub."
+  },
+  {
+    "word": "anklicken",
+    "example": "Da musst du dieses Wort anklicken."
+  },
+  {
+    "word": "ankommen",
+    "example": "Wann kommt dieser Zug in Hamburg an?"
+  },
+  {
+    "word": "die Ankunft",
+    "example": "Auf diesem Plan steht nur die Ankunft(-szeit) der Züge."
+  },
+  {
+    "word": "ankreuzen",
+    "example": "Auf dem Formular müssen Sie an mehreren Stellen etwas ankreuzen."
+  },
+  {
+    "word": "anmachen",
+    "example": "Mach bitte das Licht an!"
+  },
+  {
+    "word": "(sich) anmelden",
+    "example": "Wo kann ich mich anmelden?"
+  },
+  {
+    "word": "die Anmeldung",
+    "example": "Eine Anmeldung für diesen Kurs ist nicht mehr möglich."
+  },
+  {
+    "word": "die Anrede",
+    "example": "Schreiben Sie auch eine Anrede und einen Gruß."
+  },
+  {
+    "word": "anrufen",
+    "example": "Kann man Sie anrufen?",
+    "example2": "Peter ruft kurz seine Freundin an."
+  },
+  {
+    "word": "der Anruf",
+    "example": "Sie bekommt viele Anrufe auf ihrem Handy."
+  },
+  {
+    "word": "der Anrufbeantworter",
+    "example": "Wir sind im Moment nicht da. Sprechen Sie bitte auf den Anrufbeantworter."
+  },
+  {
+    "word": "die Ansage",
+    "example": "Hören Sie die Ansagen."
+  },
+  {
+    "word": "der Anschluss",
+    "example": "In Mannheim haben Sie Anschluss nach Saarbrücken.",
+    "example2": "Ist das die Anmeldung für einen Telefonanschluss?"
+  },
+  {
+    "word": "an sein",
+    "example": "Heute Nacht war das Licht an."
+  },
+  {
+    "word": "antworten",
+    "example": "Er antwortet nicht."
+  },
+  {
+    "word": "die Antwort",
+    "example": "Er gibt leider keine Antwort."
+  },
+  {
+    "word": "die Anzeige",
+    "example": "Ich habe Ihre Anzeige in der Zeitung gelesen."
+  },
+  {
+    "word": "(sich) anziehen",
+    "example": "Ich muss mich noch anziehen."
+  },
+  {
+    "word": "das Apartment",
+    "example": "Wir haben ein Apartment gemietet."
+  },
+  {
+    "word": "der Apfel",
+    "example": "Ein Pfund Äpfel bitte."
+  },
+  {
+    "word": "der Appetit",
+    "example": "Guten Appetit!"
+  },
+  {
+    "word": "arbeiten",
+    "example": "Wo arbeiten Sie?"
+  },
+  {
+    "word": "die Arbeit",
+    "example": "Mein Bruder sucht Arbeit."
+  },
+  {
+    "word": "arbeitslos",
+    "example": "Es gibt bei uns viele Leute, die schon lange arbeitslos sind."
+  },
+  {
+    "word": "der Arbeitsplatz",
+    "example": "An meinem Arbeitsplatz fehlt ein Drucker."
+  },
+  {
+    "word": "der Arm",
+    "example": "Mein Arm tut weh."
+  },
+  {
+    "word": "der Arzt",
+    "example": "Morgen habe ich einen Termin bei meiner Ärztin."
+  },
+  {
+    "word": "auch",
+    "example": "Ich bin auch Spanier."
+  },
+  {
+    "word": "auf",
+    "example": "Die Kinder spielen auf der Straße.",
+    "example2": "Auf Wiedersehen.",
+    "example3": "Wie heißt das auf Deutsch?"
+  },
+  {
+    "word": "die Aufgabe",
+    "example": "Das ist eine schwere Aufgabe."
+  },
+  {
+    "word": "aufhören",
+    "example": "Der Kurs hört in einer Woche auf.",
+    "example2": "Hier hört die Bahnhofstraße auf."
+  },
+  {
+    "word": "auf sein",
+    "example": "Du brauchst den Schlüssel nicht. Die Wohnung ist auf."
+  },
+  {
+    "word": "aufstehen",
+    "example": "Ich muss immer um vier Uhr aufstehen.",
+    "example2": "Soll ich aufstehen?"
+  },
+  {
+    "word": "der Aufzug",
+    "example": "In diesem Haus gibt es keinen Aufzug."
+  },
+  {
+    "word": "das Auge",
+    "example": "Er hat blaue Augen."
+  },
+  {
+    "word": "aus",
+    "example": "Er kommt aus Brasilien."
+  },
+  {
+    "word": "der Ausflug",
+    "example": "Morgen machen wir einen Ausflug nach Heidelberg."
+  },
+  {
+    "word": "ausfüllen",
+    "example": "Füllen Sie bitte dieses Formular aus."
+  },
+  {
+    "word": "der Ausgang",
+    "example": "Wo ist der Ausgang?"
+  },
+  {
+    "word": "die Auskunft",
+    "example": "Können Sie mir eine Auskunft geben?"
+  },
+  {
+    "word": "das Ausland",
+    "example": "Fahren Sie ins Ausland?"
+  },
+  {
+    "word": "der Ausländer",
+    "example": "Sind Sie Ausländerin?"
+  },
+  {
+    "word": "ausländisch",
+    "example": "Leider habe ich nur ausländisches Geld."
+  },
+  {
+    "word": "ausmachen",
+    "example": "Mach bitte das Licht aus!"
+  },
+  {
+    "word": "die Aussage",
+    "example": "Ist die Aussage richtig oder falsch?"
+  },
+  {
+    "word": "aussehen",
+    "example": "Das sieht schön aus."
+  },
+  {
+    "word": "aus sein",
+    "example": "Das Licht ist aus.",
+    "example2": "Die Schule ist aus."
+  },
+  {
+    "word": "aussteigen",
+    "example": "Wo muss ich aussteigen?"
+  },
+  {
+    "word": "der Ausweis",
+    "example": "Hier ist mein Ausweis."
+  },
+  {
+    "word": "(sich) ausziehen",
+    "example": "Zieh die Schuhe aus, bitte!"
+  },
+  {
+    "word": "das Auto",
+    "example": "Er kommt mit dem Auto."
+  },
+  {
+    "word": "die Autobahn",
+    "example": "Wo geht‘s hier bitte zur Autobahn?"
+  },
+  {
+    "word": "der Automat",
+    "example": "Die Fahrkarten gibt es nur am Automaten."
+  },
+  {
+    "word": "automatisch",
+    "example": "Du musst nichts machen. Das geht automatisch."
+  },
+  {
+    "word": "das Baby",
+    "example": "Mein Kind ist noch ein Baby."
+  },
+  {
+    "word": "die Bäckerei",
+    "example": "Ich geh mal schnell zur Bäckerei."
+  },
+  {
+    "word": "das Bad",
+    "example": "Wir haben kein großes Bad."
+  },
+  {
+    "word": "baden",
+    "example": "Ich bade nicht so gern, ich dusche lieber."
+  },
+  {
+    "word": "die Bahn",
+    "example": "Wir fahren lieber mit der Bahn.",
+    "example2": "Ich nehme die nächste Bahn."
+  },
+  {
+    "word": "der Bahnhof",
+    "example": "Komme ich hier zum Bahnhof?"
+  },
+  {
+    "word": "der Bahnsteig",
+    "example": "Auf welchem Bahnsteig fährt der Zug?"
+  },
+  {
+    "word": "bald",
+    "example": "Ich komme bald."
+  },
+  {
+    "word": "der Balkon",
+    "example": "Die Wohnung hat auch einen kleinen Balkon."
+  },
+  {
+    "word": "die Banane",
+    "example": "Drei Bananen, bitte!"
+  },
+  {
+    "word": "die Bank",
+    "example": "Die Bank schließt schon um vier Uhr.",
+    "example2": "Er sitzt im Park auf einer Bank und liest."
+  },
+  {
+    "word": "bar",
+    "example": "Muss ich bar zahlen oder geht‘s auch mit Karte?"
+  },
+  {
+    "word": "der Bauch",
+    "example": "Seit gestern tut mir der Bauch weh."
+  },
+  {
+    "word": "der Baum",
+    "example": "Vorsicht, fahr nicht an den Baum!"
+  },
+  {
+    "word": "der Beamte",
+    "example": "Fragen Sie die Beamtin an Schalter acht!"
+  },
+  {
+    "word": "bedeuten",
+    "example": "Was bedeutet das Wort?"
+  },
+  {
+    "word": "beginnen",
+    "example": "Das Spiel beginnt um 15.30 Uhr."
+  },
+  {
+    "word": "bei",
+    "example": "Offenbach liegt bei Frankfurt.",
+    "example2": "Ich wohne bei meinen Eltern.",
+    "example3": "Bei uns regnet es heute.",
+    "example4": "Er arbeitet bei der Polizei."
+  },
+  {
+    "word": "beide",
+    "example": "Beide Eltern arbeiten.",
+    "example2": "Wir kommen beide."
+  },
+  {
+    "word": "das Bein",
+    "example": "Mein rechtes Bein tut weh."
+  },
+  {
+    "word": "das Beispiel",
+    "example": "Kannst du mir ein Beispiel sagen?"
+  },
+  {
+    "word": "zum Beispiel",
+    "example": "Viele meiner Verwandten, z. B. meine beiden Brüder, arbeiten auch hier."
+  },
+  {
+    "word": "bekannt",
+    "example": "Picasso ist sehr bekannt."
+  },
+  {
+    "word": "der/die Bekannte",
+    "example": "Ein Bekannter von mir heißt Klaus."
+  },
+  {
+    "word": "bekommen",
+    "example": "Haben Sie meinen Brief bekommen?",
+    "example2": "Was bekommen Sie?",
+    "example3": "Dieses Medikament bekommen Sie in der Apotheke."
+  },
+  {
+    "word": "benutzen",
+    "example": "Die Aufzüge bitte nicht benutzen!"
+  },
+  {
+    "word": "der Beruf",
+    "example": "Was sind Sie von Beruf?",
+    "example2": "Was ist Ihr Beruf?"
+  },
+  {
+    "word": "besetzt",
+    "example": "Die Nummer ist immer besetzt.",
+    "example2": "Der Platz ist besetzt."
+  },
+  {
+    "word": "besichtigen",
+    "example": "Ich möchte gern den Dom besichtigen."
+  },
+  {
+    "word": "besser",
+    "example": "Es geht mir schon besser."
+  },
+  {
+    "word": "best-",
+    "example": "Am besten treffen wir uns morgen."
+  },
+  {
+    "word": "bestellen",
+    "example": "Wir möchten bestellen, bitte.",
+    "example2": "Dieses Buch haben wir nicht – sollen wir es für Sie bestellen?"
+  },
+  {
+    "word": "besuchen",
+    "example": "Darf ich dich besuchen?"
+  },
+  {
+    "word": "das Bett",
+    "example": "Wir brauchen noch ein Kinderbett."
+  },
+  {
+    "word": "bezahlen",
+    "example": "Wo muss ich bezahlen?"
+  },
+  {
+    "word": "das Bier",
+    "example": "Noch ein Bier bitte."
+  },
+  {
+    "word": "das Bild",
+    "example": "Hast du ein Bild von deinem Sohn?"
+  },
+  {
+    "word": "billig",
+    "example": "Die Jacke kostet nur 10 Euro! Die ist aber billig!"
+  },
+  {
+    "word": "die Birne",
+    "example": "Ein Kilo Birnen, bitte!"
+  },
+  {
+    "word": "bis",
+    "example": "Ich fahre nur bis Stuttgart.",
+    "example2": "Ich warte bis morgen."
+  },
+  {
+    "word": "bisschen",
+    "example": "Ich spreche Englisch, Französisch und ein bisschen Deutsch."
+  },
+  {
+    "word": "bitte",
+    "example": "Eine Tasse Kaffee, bitte!",
+    "example2": "Sprechen Sie bitte leise!"
+  },
+  {
+    "word": "die Bitte",
+    "example": "Ich habe noch eine Bitte."
+  },
+  {
+    "word": "bitten",
+    "example": "Darf ich Sie um etwas bitten?"
+  },
+  {
+    "word": "bitter",
+    "example": "Der Kaffee schmeckt bitter."
+  },
+  {
+    "word": "bleiben",
+    "example": "Ich bleibe heute zu Hause.",
+    "example2": "Wir bleiben nur bis morgen."
+  },
+  {
+    "word": "der Bleistift",
+    "example": "Hast du einen Bleistift?"
+  },
+  {
+    "word": "der Blick",
+    "example": "Von diesem Hotel hat man einen guten Blick auf den Rhein."
+  },
+  {
+    "word": "die Blume",
+    "example": "Gefallen dir die Blumen?"
+  },
+  {
+    "word": "der Bogen",
+    "example": "Schreiben Sie Ihre Lösungen bitte auf den Antwortbogen."
+  },
+  {
+    "word": "böse",
+    "example": "Sie ist böse auf mich."
+  },
+  {
+    "word": "brauchen",
+    "example": "Brauchst du die Zeitung noch?"
+  },
+  {
+    "word": "breit",
+    "example": "Wie breit ist der Schrank?"
+  },
+  {
+    "word": "der Brief",
+    "example": "Haben Sie einen Brief für mich?"
+  },
+  {
+    "word": "die Briefmarke",
+    "example": "Kaufst du bitte Briefmarken bei der Post."
+  },
+  {
+    "word": "bringen",
+    "example": "Bringen Sie mir bitte noch einen Kaffee!",
+    "example2": "Wir müssen ihn zum Arzt bringen."
+  },
+  {
+    "word": "das Brot",
+    "example": "Haben Sie auch Weißbrot?",
+    "example2": "Nimm noch ein paar Brote für die Fahrt mit."
+  },
+  {
+    "word": "das Brötchen",
+    "example": "Möchtest du Brötchen zum Frühstück?"
+  },
+  {
+    "word": "der Bruder",
+    "example": "Sein Bruder arbeitet auch hier."
+  },
+  {
+    "word": "das Buch",
+    "example": "Gute Bücher sind oft sehr teuer.",
+    "example2": "In diesem Wörterbuch finden Sie mehr als 20.000 Wörter."
+  },
+  {
+    "word": "der Buchstabe",
+    "example": "Diesen Buchstaben gibt es in meiner Sprache nicht."
+  },
+  {
+    "word": "buchstabieren",
+    "example": "Bitte buchstabieren Sie Ihren Namen."
+  },
+  {
+    "word": "der Bus",
+    "example": "Wann kommt der nächste Bus?"
+  },
+  {
+    "word": "die Butter",
+    "example": "Für mich bitte ein Brötchen mit Butter und Käse."
+  },
+  {
+    "word": "das Café",
+    "example": "Sollen wir uns im Café treffen?"
+  },
+  {
+    "word": "die CD",
+    "example": "Bring bitte deine Lieblings-CD mit."
+  },
+  {
+    "word": "der Chef",
+    "example": "Wir haben eine neue Chefin."
+  },
+  {
+    "word": "circa",
+    "example": "Von Mainz nach Frankfurt sind es circa fünfzig Kilometer."
+  },
+  {
+    "word": "der Computer",
+    "example": "Wann bekommst du deinen neuen Computer?"
+  },
+  {
+    "word": "da",
+    "example": "Da hinten ist er ja.",
+    "example2": "Wir sprechen gerade über Paul. Da kommt er ja gerade.",
+    "example3": "Ich nehme das da.",
+    "example4": "Ist Herr Klein schon da?"
+  },
+  {
+    "word": "die Dame",
+    "example": "Damen (an der Toilette)",
+    "example2": "Sehr geehrte Damen und Herren!"
+  },
+  {
+    "word": "daneben",
+    "example": "Du kennst doch die Post. Daneben ist die Bank."
+  },
+  {
+    "word": "danken",
+    "example": "Ich danke Ihnen für die Einladung."
+  },
+  {
+    "word": "der Dank",
+    "example": "Vielen Dank!",
+    "example2": "Herzlichen Dank!"
+  },
+  {
+    "word": "danke",
+    "example": "Soll ich Ihnen helfen? - Nein, danke!"
+  },
+  {
+    "word": "dann",
+    "example": "Ich muss noch schnell zur Post, dann komme ich."
+  },
+  {
+    "word": "das Datum",
+    "example": "Bitte schreiben Sie noch das Datum auf das Formular."
+  },
+  {
+    "word": "dauern",
+    "example": "Wie lange dauert der Film?"
+  },
+  {
+    "word": "dein-",
+    "example": "Ist das dein Auto?",
+    "example2": "Ist das deins?"
+  },
+  {
+    "word": "denn",
+    "example": "Ich kann nicht kommen, denn ich bin krank."
+  },
+  {
+    "word": "der, die, das",
+    "example": "Ich nehme das da.",
+    "example2": "Hier ist der Brief, den du suchst.",
+    "example3": "Die Fahrkarte bekommst du am Bahnhof."
+  },
+  {
+    "word": "dich",
+    "example": "Die Blumen sind für dich."
+  },
+  {
+    "word": "dies-",
+    "example": "Ich nehme lieber diesen Kuchen."
+  },
+  {
+    "word": "dir",
+    "example": "Gefallen dir die Blumen?"
+  },
+  {
+    "word": "die Disco",
+    "example": "Heute abend gehen wir in die Disco tanzen."
+  },
+  {
+    "word": "der Doktor",
+    "example": "Meine Tochter ist krank. Wir gehen zum Doktor."
+  },
+  {
+    "word": "das Doppelzimmer",
+    "example": "Wollen Sie ein Doppelzimmer oder ein Einzelzimmer?"
+  },
+  {
+    "word": "das Dorf",
+    "example": "Meine Familie lebt in einem Dorf."
+  },
+  {
+    "word": "dort, -her, -hin",
+    "example": "Deine Tasche kannst du dorthin stellen.",
+    "example2": "Dort ist unser Haus."
+  },
+  {
+    "word": "draußen",
+    "example": "Wollen wir draußen sitzen?"
+  },
+  {
+    "word": "drucken",
+    "example": "Bitte drucke das Formular für mich."
+  },
+  {
+    "word": "der Drucker",
+    "example": "Mein Drucker ist kaputt."
+  },
+  {
+    "word": "drücken",
+    "example": "Drück hier, dann geht der Computer an."
+  },
+  {
+    "word": "durch",
+    "example": "Am besten gehen Sie durch die Breite Straße."
+  },
+  {
+    "word": "die Durchsage",
+    "example": "Ich habe die Durchsage nicht verstanden."
+  },
+  {
+    "word": "dürfen",
+    "example": "Sie dürfen hier nicht rauchen.",
+    "example2": "Darf ich Sie zu einem Kaffee einladen?",
+    "example3": "Es darf nicht mehr als 15 Euro kosten."
+  },
+  {
+    "word": "der Durst",
+    "example": "Hast du etwas zu trinken? Ich habe großen Durst."
+  },
+  {
+    "word": "(sich) duschen",
+    "example": "Ich bade nicht so gern, ich dusche lieber."
+  },
+  {
+    "word": "die Dusche",
+    "example": "Unsere Wohnung hat nur eine Dusche."
+  },
+  {
+    "word": "die Ecke",
+    "example": "An der nächsten Ecke links."
+  },
+  {
+    "word": "die Ehefrau / der Ehemann",
+    "example": "Das ist mein (Ehe-)Mann/meine (Ehe-)Frau."
+  },
+  {
+    "word": "das Ei",
+    "example": "Möchtest du ein Ei zum Frühstück?"
+  },
+  {
+    "word": "eilig",
+    "example": "Hast du es eilig?"
+  },
+  {
+    "word": "ein-",
+    "example": "Ich nehme ein Bier. Willst du auch eins?",
+    "example2": "Ist hier einer, der das kann?"
+  },
+  {
+    "word": "einfach",
+    "example": "Die Prüfung ist ganz einfach.",
+    "example2": "Hin und zurück? – Nein, bitte nur einfach.",
+    "example3": "Ich brauche nur ein einfaches Zimmer."
+  },
+  {
+    "word": "der Eingang",
+    "example": "Der Eingang ist um die Ecke."
+  },
+  {
+    "word": "einkaufen",
+    "example": "Ich muss noch für morgen einkaufen."
+  },
+  {
+    "word": "einladen",
+    "example": "Darf ich Sie zu einem Kaffee einladen?"
+  },
+  {
+    "word": "die Einladung",
+    "example": "Danke für die Einladung!"
+  },
+  {
+    "word": "einmal",
+    "example": "Diese Prüfung mache ich nicht noch einmal."
+  },
+  {
+    "word": "einsteigen",
+    "example": "Schnell, steig ein, der Zug fährt gleich."
+  },
+  {
+    "word": "der Eintritt",
+    "example": "Der Preis für den Eintritt ist 5 Euro."
+  },
+  {
+    "word": "das Einzelzimmer",
+    "example": "Haben Sie noch ein Einzelzimmer?"
+  },
+  {
+    "word": "die Eltern",
+    "example": "Meine Eltern leben in Spanien."
+  },
+  {
+    "word": "die E-Mail",
+    "example": "Ich habe Ihre E-Mail nicht bekommen."
+  },
+  {
+    "word": "der Empfänger",
+    "example": "Auf dem Brief steht dein Name, also bist du der Empfänger."
+  },
+  {
+    "word": "empfehlen",
+    "example": "Welchen Wein können Sie mir empfehlen?"
+  },
+  {
+    "word": "enden",
+    "example": "Die Straße endet hier."
+  },
+  {
+    "word": "das Ende",
+    "example": "Sie wohnt am Ende der Straße.",
+    "example2": "Er bekommt sein Geld am Ende des Monats."
+  },
+  {
+    "word": "entschuldigen",
+    "example": "Entschuldigen Sie bitte!"
+  },
+  {
+    "word": "die Entschuldigung",
+    "example": "Entschuldigung! – Bitte."
+  },
+  {
+    "word": "er",
+    "example": "Er heißt Ali."
+  },
+  {
+    "word": "das Ergebnis",
+    "example": "Das Ergebnis des Tests bekommen Sie in zwei Wochen."
+  },
+  {
+    "word": "erklären",
+    "example": "Kannst du mir das erklären?"
+  },
+  {
+    "word": "erlauben",
+    "example": "Rauchen ist hier nicht erlaubt."
+  },
+  {
+    "word": "der Erwachsene",
+    "example": "Dieser Film ist nur für Erwachsene."
+  },
+  {
+    "word": "erzählen",
+    "example": "Wir müssen euch etwas erzählen!"
+  },
+  {
+    "word": "es",
+    "example": "Es regnet."
+  },
+  {
+    "word": "essen",
+    "example": "Was gibt es zu essen?"
+  },
+  {
+    "word": "das Essen",
+    "example": "Das Essen ist heute sehr gut."
+  },
+  {
+    "word": "euer",
+    "example": "Euer Kurs beginnt heute."
+  },
+  {
+    "word": "fahren",
+    "example": "Ich fahre mit dem Auto zur Arbeit."
+  },
+  {
+    "word": "der Fahrer",
+    "example": "Bitte nicht mit dem Fahrer sprechen!"
+  },
+  {
+    "word": "die Fahrkarte",
+    "example": "Hast du schon eine Fahrkarte?"
+  },
+  {
+    "word": "das Fahrrad",
+    "example": "Fährst du mit dem Fahrrad oder mit dem Auto?"
+  },
+  {
+    "word": "falsch",
+    "example": "Das ist falsch."
+  },
+  {
+    "word": "die Familie",
+    "example": "Meine Familie lebt in Spanien."
+  },
+  {
+    "word": "der Familienname",
+    "example": "Meine Familiennamen sind García González."
+  },
+  {
+    "word": "der Familienstand",
+    "example": "Bei „Familienstand“ musst du „ledig“ ankreuzen."
+  },
+  {
+    "word": "die Farbe",
+    "example": "Die Farbe gefällt mir gut."
+  },
+  {
+    "word": "das Fax",
+    "example": "Schicken Sie uns einfach ein Fax!"
+  },
+  {
+    "word": "Feier-",
+    "example": "Am Montag ist Feiertag."
+  },
+  {
+    "word": "feiern",
+    "example": "Wir feiern heute meinen Geburtstag."
+  },
+  {
+    "word": "fehlen",
+    "example": "Herr Müller ist nicht da, er fehlt schon seit drei Tagen.",
+    "example2": "Was fehlt Ihnen?"
+  },
+  {
+    "word": "der Fehler",
+    "example": "Diesen Fehler mache ich immer."
+  },
+  {
+    "word": "fernsehen",
+    "example": "Wollen wir heute Abend mal fernsehen?"
+  },
+  {
+    "word": "fertig",
+    "example": "Bist du fertig?",
+    "example2": "Ist mein Auto schon fertig?"
+  },
+  {
+    "word": "das Feuer",
+    "example": "Haben Sie Feuer?"
+  },
+  {
+    "word": "das Fieber",
+    "example": "Mein Mann hat noch immer Fieber."
+  },
+  {
+    "word": "der Film",
+    "example": "Ich möchte gern diesen Film sehen."
+  },
+  {
+    "word": "finden",
+    "example": "Wir müssen den Schlüssel finden."
+  },
+  {
+    "word": "die Firma",
+    "example": "Er arbeitet jetzt bei einer anderen Firma."
+  },
+  {
+    "word": "der Fisch",
+    "example": "Ich esse gern Fisch. Fleisch mag ich nicht."
+  },
+  {
+    "word": "die Flasche",
+    "example": "Eine Flasche Bier, bitte."
+  },
+  {
+    "word": "das Fleisch",
+    "example": "Fleisch mag ich nicht."
+  },
+  {
+    "word": "fliegen",
+    "example": "Ich fliege nicht gern. Deshalb fahre ich mit dem Zug."
+  },
+  {
+    "word": "abfliegen",
+    "example": "Wann fliegst du ab?"
+  },
+  {
+    "word": "der Abflug",
+    "example": "Der Abflug ist um 11.20 Uhr."
+  },
+  {
+    "word": "der Flughafen",
+    "example": "Kannst du mich zum Flughafen bringen?"
+  },
+  {
+    "word": "das Flugzeug",
+    "example": "Das Flugzeug aus Berlin kommt heute später an."
+  },
+  {
+    "word": "das Formular",
+    "example": "Sie müssen dieses Formular ausfüllen."
+  },
+  {
+    "word": "das Foto",
+    "example": "Darf ich ein Foto machen?"
+  },
+  {
+    "word": "fragen",
+    "example": "Er möchte Sie etwas fragen. Wann kommen Sie?"
+  },
+  {
+    "word": "die Frage",
+    "example": "Ich habe eine Frage."
+  },
+  {
+    "word": "die Frau",
+    "example": "Das ist Frau Becker.",
+    "example2": "Guten Tag, Frau Schmitt!",
+    "example3": "Hier arbeiten mehr Frauen als Männer."
+  },
+  {
+    "word": "frei",
+    "example": "Ist der Platz noch frei?"
+  },
+  {
+    "word": "die Freizeit",
+    "example": "In meiner Freizeit spiele ich oft Fußball."
+  }
+  ,
+  {
+    "word": "fremd",
+    "example": "Das weiß ich nicht; ich bin fremd hier."
+  },
+  {
+    "word": "(sich) freuen",
+    "example": "Ich freue mich auf den Urlaub."
+  },
+  {
+    "word": "der Freund",
+    "example": "Das ist ein Freund von mir.",
+    "example2": "Das ist meine Freundin."
+  },
+  {
+    "word": "früher",
+    "example": "Früher waren wir oft zusammen im Kino."
+  },
+  {
+    "word": "frühstücken",
+    "example": "Am Sonntag frühstücke ich gern im Bett."
+  },
+  {
+    "word": "das Frühstück",
+    "example": "Möchtest du ein Ei zum Frühstück?"
+  },
+  {
+    "word": "die Führung",
+    "example": "Die Führung durch das Haus beginnt in 3 Minuten."
+  },
+  {
+    "word": "für",
+    "example": "Das ist für Sie.",
+    "example2": "Das ist der Schlüssel für die Haustür.",
+    "example3": "Das ist das Brot für morgen."
+  },
+  {
+    "word": "der Fuß",
+    "example": "Der linke Fuß tut mir weh."
+  },
+  {
+    "word": "der Fußball",
+    "example": "Spielt ihr gerne Fußball?"
+  },
+  {
+    "word": "der Garten",
+    "example": "Wir haben leider keinen Garten."
+  },
+  {
+    "word": "der Gast",
+    "example": "Am Wochenende haben wir mehrere Gäste."
+  },
+  {
+    "word": "geben",
+    "example": "Kannst du mir bitte deinen Kugelschreiber geben?",
+    "example2": "Es gibt keine Karten mehr."
+  },
+  {
+    "word": "geboren",
+    "example": "Ich bin in Zagreb geboren."
+  },
+  {
+    "word": "das Geburtsjahr",
+    "example": "Das Geburtsjahr Ihres Sohnes, bitte?"
+  },
+  {
+    "word": "der Geburtsort",
+    "example": "Bitte schreiben Sie Ihren Geburtsort auf das Formular."
+  },
+  {
+    "word": "der Geburtstag",
+    "example": "Herzlichen Glückwunsch zum Geburtstag!"
+  },
+  {
+    "word": "gefallen",
+    "example": "Das gefällt mir."
+  },
+  {
+    "word": "gegen",
+    "example": "Fahr nicht gegen den Baum!",
+    "example2": "Ich bin gegen diese Lösung.",
+    "example3": "Wer spielt gegen wen?"
+  },
+  {
+    "word": "gehen",
+    "example": "Ich weiß nicht, wie das geht.",
+    "example2": "Wie geht‘s?",
+    "example3": "Jetzt muss ich (aber) leider gehen.",
+    "example4": "Ich muss zum Arzt gehen.",
+    "example5": "Das geht nicht!"
+  },
+  {
+    "word": "gehören",
+    "example": "Wem gehört das?"
+  },
+  {
+    "word": "das Geld",
+    "example": "Hast du noch Geld?"
+  },
+  {
+    "word": "das Gemüse",
+    "example": "Gemüse brauchen wir auch noch."
+  },
+  {
+    "word": "das Gepäck",
+    "example": "Wollen Sie Ihr Gepäck mitnehmen?"
+  },
+  {
+    "word": "gerade",
+    "example": "Da kommt er ja gerade."
+  },
+  {
+    "word": "geradeaus",
+    "example": "Gehen Sie immer geradeaus!"
+  },
+  {
+    "word": "gern(e)",
+    "example": "Ich gehe gerne einkaufen."
+  },
+  {
+    "word": "das Geschäft",
+    "example": "Die Geschäfte schließen um 18.30 Uhr."
+  },
+  {
+    "word": "das Geschenk",
+    "example": "Danke für das schöne Geschenk."
+  },
+  {
+    "word": "die Geschwister",
+    "example": "Ich habe leider keine Geschwister."
+  },
+  {
+    "word": "das Gespräch",
+    "example": "Das Gespräch mit Frau Kunz ist um 14 Uhr."
+  },
+  {
+    "word": "gestern",
+    "example": "Gestern war ich krank."
+  },
+  {
+    "word": "gestorben",
+    "example": "Meine Frau ist gestern gestorben."
+  },
+  {
+    "word": "das Getränk",
+    "example": "Mein Lieblingsgetränk ist Tomatensaft."
+  },
+  {
+    "word": "das Gewicht",
+    "example": "Bei „Gewicht“ schreibst du: 62 Kilo."
+  },
+  {
+    "word": "gewinnen",
+    "example": "Wer gewinnt das Spiel?"
+  },
+  {
+    "word": "das Glas",
+    "example": "Bitte noch ein Glas Wein!",
+    "example2": "Wir brauchen noch drei Gläser."
+  },
+  {
+    "word": "glauben",
+    "example": "Sie können mir glauben, es ist so.",
+    "example2": "Ich glaube, er kommt gleich."
+  },
+  {
+    "word": "gleich",
+    "example": "Das ist mir gleich.",
+    "example2": "Das ist der gleiche Preis.",
+    "example3": "Ich komme gleich."
+  },
+  {
+    "word": "das Gleis",
+    "example": "Der ICE nach Berlin hält heute an Gleis 12."
+  },
+  {
+    "word": "das Glück",
+    "example": "Viel Glück!"
+  },
+  {
+    "word": "glücklich",
+    "example": "Meine Kinder sind glücklich verheiratet."
+  },
+  {
+    "word": "der Glückwunsch",
+    "example": "Herzlichen Glückwunsch zum Geburtstag."
+  },
+  {
+    "word": "Grad (Celsius)",
+    "example": "Heute haben wir dreißig Grad."
+  },
+  {
+    "word": "gratulieren",
+    "example": "Ich gratuliere dir!"
+  },
+  {
+    "word": "grillen",
+    "example": "Heute grillen wir im Garten."
+  },
+  {
+    "word": "groß",
+    "example": "Mein Bruder und ich sind gleich groß.",
+    "example2": "Frankfurt ist eine große Stadt."
+  },
+  {
+    "word": "die Größe",
+    "example": "Haben Sie das auch in Größe 40?"
+  },
+  {
+    "word": "die Großeltern",
+    "example": "Meine Großeltern leben in Japan."
+  },
+  {
+    "word": "die Großmutter",
+    "example": "Meine Großmutter heißt Eva."
+  },
+  {
+    "word": "der Großvater",
+    "example": "Mein Großvater ist schon 80."
+  },
+  {
+    "word": "die Gruppe",
+    "example": "Die erste Gruppe beginnt um 16 Uhr."
+  },
+  {
+    "word": "der Gruß",
+    "example": "Viele Grüße an Ihre Frau.",
+    "example2": "Mit freundlichen Grüßen"
+  },
+  {
+    "word": "gültig",
+    "example": "Der Pass ist nicht mehr gültig."
+  },
+  {
+    "word": "günstig",
+    "example": "Dort gibt es günstige Angebote."
+  },
+  {
+    "word": "gut",
+    "example": "Das finde ich gut.",
+    "example2": "Ich komme um 13 Uhr. – Gut!",
+    "example3": "Guten Morgen!",
+    "example4": "Ein gutes neues Jahr!",
+    "example5": "Guten Appetit!"
+  },
+  {
+    "word": "das Haar",
+    "example": "Sie hat lange Haare."
+  },
+  {
+    "word": "haben",
+    "example": "Ich habe ein neues Auto."
+  },
+  {
+    "word": "das Hähnchen",
+    "example": "Ein Hähnchen mit Pommes bitte!"
+  },
+  {
+    "word": "die Halbpension",
+    "example": "Möchten Sie Vollpension oder Halbpension?"
+  },
+  {
+    "word": "die Halle",
+    "example": "Wir treffen uns in Halle B."
+  },
+  {
+    "word": "hallo",
+    "example": "Hallo Inge! Wie geht’s?"
+  },
+  {
+    "word": "halten",
+    "example": "Dieser Zug hält nicht in Rüdesheim."
+  },
+  {
+    "word": "die Haltestelle",
+    "example": "An der nächsten Haltestelle müssen Sie aussteigen."
+  },
+  {
+    "word": "die Hand",
+    "example": "Er gibt mir die Hand."
+  },
+  {
+    "word": "das Handy",
+    "example": "In der Schule bitte die Handys ausmachen!"
+  },
+  {
+    "word": "das Haus",
+    "example": "In welchem Haus wohnst du?",
+    "example2": "Ich gehe jetzt nach Hause.",
+    "example3": "Paul ist nicht zu Hause."
+  },
+  {
+    "word": "die Hausaufgabe",
+    "example": "Kannst du mir bei den Hausaufgaben helfen?"
+  },
+  {
+    "word": "die Hausfrau / der Hausmann",
+    "example": "Die Hausfrau/der Hausmann wäscht, kocht und kauft ein."
+  },
+  {
+    "word": "die Heimat",
+    "example": "Ich komme aus der Schweiz. Das ist meine Heimat."
+  },
+  {
+    "word": "heiraten",
+    "example": "Meine Schwester heiratet einen Japaner."
+  },
+  {
+    "word": "heißen",
+    "example": "Ich heiße Charlotte Meier.",
+    "example2": "Wie heißt das auf Deutsch?"
+  },
+  {
+    "word": "helfen",
+    "example": "Können Sie mir helfen, bitte?"
+  },
+  {
+    "word": "hell",
+    "example": "Im Sommer ist es bis 21 Uhr hell."
+  },
+  {
+    "word": "der Herd",
+    "example": "In der neuen Küche fehlt noch der Herd."
+  },
+  {
+    "word": "der Herr",
+    "example": "Guten Tag, Herr Sommer!"
+  },
+  {
+    "word": "herzlich",
+    "example": "Herzlichen Glückwunsch!"
+  },
+  {
+    "word": "heute",
+    "example": "Heute ist ein schöner Tag."
+  },
+  {
+    "word": "hier",
+    "example": "Hier ist 06131-553221, Pamela Linke.",
+    "example2": "Hier wohne ich."
+  },
+  {
+    "word": "die Hilfe",
+    "example": "Hilfe! Bitte helfen Sie mir!",
+    "example2": "Brauchen Sie meine Hilfe?"
+  },
+  {
+    "word": "hinten",
+    "example": "Die Tür zum Aussteigen ist hinten."
+  },
+  {
+    "word": "das Hobby",
+    "example": "Meine Hobbys sind Wandern und Schwimmen."
+  },
+  {
+    "word": "hoch",
+    "example": "Der Mount Everest ist 8.880 Meter hoch."
+  },
+  {
+    "word": "die Hochzeit",
+    "example": "Zur dieser Hochzeit kommen mehr als fünfzig Gäste."
+  },
+  {
+    "word": "holen",
+    "example": "Ich hole zwei Flaschen Wasser aus der Küche."
+  },
+  {
+    "word": "hören",
+    "example": "Hör mal! Was ist das?",
+    "example2": "Ich habe das Lied schon mal gehört."
+  },
+  {
+    "word": "das Hotel",
+    "example": "Im Urlaub sind wir in einem Hotel am Meer."
+  },
+  {
+    "word": "der Hund",
+    "example": "Der Hund ist noch jung."
+  },
+  {
+    "word": "der Hunger",
+    "example": "Ich habe Hunger! Wann ist das Essen fertig?"
+  },
+  {
+    "word": "ich",
+    "example": "Ich heiße Veronika."
+  },
+  {
+    "word": "ihr/ihm/ihn",
+    "example": "Gib ihr/ihm bitte das Buch.",
+    "example2": "Ruf ihn bitte an."
+  },
+  {
+    "word": "immer",
+    "example": "Frau Bast kommt immer zu spät."
+  },
+  {
+    "word": "in",
+    "example": "Ich wohne in Wiesbaden.",
+    "example2": "Der Zug kommt in fünf Minuten.",
+    "example3": "Frau Rausch arbeitet in einem Geschäft.",
+    "example4": "Komm, wir gehen ins Kino."
+  },
+  {
+    "word": "die Information",
+    "example": "Wenn Sie Fragen haben, gehen Sie zur Information.",
+    "example2": "Wir haben hier wichtige Informationen für Sie."
+  },
+  {
+    "word": "international",
+    "example": "Unser Deutschkurs ist international: Silvana kommt aus Italien, Conchi aus Spanien, Yin aus China ..."
+  },
+  {
+    "word": "das Internet",
+    "example": "Das findest du im Internet."
+  },
+  {
+    "word": "ja",
+    "example": "Sind Sie Herr Watanabe? – Ja."
+  },
+  {
+    "word": "die Jacke",
+    "example": "Zieh dir eine Jacke an. Es ist kalt."
+  },
+  {
+    "word": "jed-",
+    "example": "Blumen kannst du in jedem Bahnhof kaufen."
+  },
+  {
+    "word": "jetzt",
+    "example": "Jetzt machen wir eine Pause."
+  },
+  {
+    "word": "der Job",
+    "example": "Jenny hat einen neuen Job bei der Post."
+  },
+  {
+    "word": "der Jugendliche",
+    "example": "Viele Jugendliche kaufen gern ein."
+  },
+  {
+    "word": "jung",
+    "example": "Claudia ist 21. – Was? Noch so jung?"
+  },
+  {
+    "word": "der Junge",
+    "example": "Ich habe zwei Kinder. Einen Jungen und ein Mädchen."
+  },
+  {
+    "word": "der Kaffee",
+    "example": "Zum Frühstück trinke ich immer Kaffee."
+  },
+  {
+    "word": "kaputt",
+    "example": "Das Glas war teuer. Es geht sehr leicht kaputt."
+  },
+  {
+    "word": "die Karte",
+    "example": "Ich schreibe meinen Bekannten eine Karte aus dem Urlaub.",
+    "example2": "Wollen wir Karten spielen?",
+    "example3": "Ich möchte auch etwas essen. Bringen Sie mir die Karte, bitte."
+  },
+  {
+    "word": "(Kredit)-Karte",
+    "example": "Kann ich auch mit Karte (be-)zahlen?"
+  },
+  {
+    "word": "die Kartoffel",
+    "example": "Für Pommes frites braucht man Kartoffeln."
+  },
+  {
+    "word": "die Kasse",
+    "example": "Zahlen Sie bitte an der Kasse."
+  },
+  {
+    "word": "kaufen",
+    "example": "Tim kauft sich ein neues Auto."
+  },
+  {
+    "word": "kein",
+    "example": "Es gibt keine Eintrittskarten mehr."
+  },
+  {
+    "word": "kennen",
+    "example": "Kennen Sie diese Frau? – Nein, leider nicht."
+  },
+  {
+    "word": "kennenlernen",
+    "example": "Wir sind neu hier. Wir möchten Sie kennenlernen."
+  },
+  {
+    "word": "das Kind",
+    "example": "Wie viele Kinder haben Sie?"
+  },
+  {
+    "word": "der Kindergarten",
+    "example": "Die kleine Laura geht schon in den Kindergarten."
+  },
+  {
+    "word": "das Kino",
+    "example": "Wir sehen heute Abend im Kino einen schönen Film."
+  },
+  {
+    "word": "der Kiosk",
+    "example": "Am Kiosk bekommen Sie Getränke, Zigaretten und Zeitungen."
+  },
+  {
+    "word": "klar",
+    "example": "Kommst du mit? – Klar!"
+  },
+  {
+    "word": "die Klasse",
+    "example": "In unserer Klasse sind fünfundzwanzig Schüler.",
+    "example2": "Im Zug fahre ich immer 2. Klasse."
+  },
+  {
+    "word": "die Kleidung",
+    "example": "Wo finde ich Kleidung? – Jacken im ersten, Jeans im zweiten Stock."
+  },
+  {
+    "word": "klein",
+    "example": "Eltville ist eine kleine Stadt am Rhein."
+  },
+  {
+    "word": "kochen",
+    "example": "Herr Georgi kann gut kochen."
+  },
+  {
+    "word": "der Koffer",
+    "example": "Ist das Ihr Koffer?"
+  },
+  {
+    "word": "der Kollege",
+    "example": "Wie heißt die neue Kollegin?"
+  },
+  {
+    "word": "kommen",
+    "example": "Woher kommen Sie? – Aus Frankreich.",
+    "example2": "Kommst du mit ins Schwimmbad?"
+  },
+  {
+    "word": "können",
+    "example": "Ich kann Deutsch und Russisch.",
+    "example2": "Können Sie mir helfen?"
+  },
+  {
+    "word": "das Konto",
+    "example": "Das Geld überweisen wir am ersten März auf Ihr Konto."
+  },
+  {
+    "word": "der Kopf",
+    "example": "Mein Kopf tut weh!"
+  },
+  {
+    "word": "kosten",
+    "example": "Wie viel kostet das? – 10 Euro."
+  },
+  {
+    "word": "krank",
+    "example": "Ich kann heute nicht zur Arbeit kommen, ich bin krank und liege im Bett."
+  },
+  {
+    "word": "kriegen",
+    "example": "Ich kriege 15 Euro in der Stunde für meine Arbeit."
+  },
+  {
+    "word": "die Küche",
+    "example": "Der neue Herd kommt in die Küche."
+  },
+  {
+    "word": "der Kuchen",
+    "example": "Ich nehme ein Stück Kuchen."
+  },
+  {
+    "word": "der Kugelschreiber",
+    "example": "Hast du einen Kugelschreiber für mich?"
+  },
+  {
+    "word": "der Kühlschrank",
+    "example": "Haben wir noch Milch? – Ja, im Kühlschrank."
+  },
+  {
+    "word": "kulturell",
+    "example": "Ich bin kulturell interessiert. Ich gehe oft ins Museum."
+  },
+  {
+    "word": "sich kümmern",
+    "example": "Jede Mutter kümmert sich um ihre kleinen Kinder."
+  },
+  {
+    "word": "der Kunde",
+    "example": "Einen Moment, bitte. Ich habe eine Kundin."
+  },
+  {
+    "word": "der Kurs",
+    "example": "Der Deutschkurs geht bis zum Sommer."
+  },
+  {
+    "word": "kurz",
+    "example": "Ricardo hat kurzes Haar."
+  },
+  {
+    "word": "lachen",
+    "example": "Die Kinder lachen viel."
+  },
+  {
+    "word": "der Laden",
+    "example": "Im Buchladen können Sie Bücher kaufen."
+  },
+  {
+    "word": "das Land",
+    "example": "Italien ist ein schönes Land."
+  },
+  {
+    "word": "lang",
+    "example": "Die Jeans ist zu lang."
+  },
+  {
+    "word": "lange",
+    "example": "Wie lange fährt der Zug von Hamburg nach Berlin?"
+  },
+  {
+    "word": "langsam",
+    "example": "Könnten Sie bitte etwas langsamer sprechen?"
+  },
+  {
+    "word": "laufen",
+    "example": "Ich möchte nicht Auto fahren, ich möchte laufen."
+  },
+  {
+    "word": "laut",
+    "example": "Nicht so laut! Das Baby schläft."
+  },
+  {
+    "word": "leben",
+    "example": "Sie lebt bei ihrer Schwester.",
+    "example2": "Ihre Eltern leben nicht mehr."
+  },
+  {
+    "word": "das Leben",
+    "example": "Das Leben in diesem Land ist teuer."
+  },
+  {
+    "word": "die Lebensmittel",
+    "example": "Lebensmittel bekommen Sie im Supermarkt."
+  },
+  {
+    "word": "ledig",
+    "example": "Sind Sie verheiratet? – Nein. Ledig."
+  },
+  {
+    "word": "legen",
+    "example": "Legen Sie das Buch auf den Tisch."
+  },
+  {
+    "word": "der Lehrer",
+    "example": "Unsere Deutschlehrerin heißt Frau Müller."
+  },
+  {
+    "word": "leicht",
+    "example": "Der Koffer ist leicht.",
+    "example2": "Deutsch ist nicht leicht."
+  },
+  {
+    "word": "leider",
+    "example": "Leider kann ich nicht kommen. Ich muss zum Arzt."
+  },
+  {
+    "word": "leise",
+    "example": "Seid leise. Die anderen schlafen schon."
+  },
+  {
+    "word": "lernen",
+    "example": "Wie lange lernen Sie schon Deutsch?"
+  },
+  {
+    "word": "lesen",
+    "example": "Ich lese ein Buch von García Márquez."
+  },
+  {
+    "word": "letzt-",
+    "example": "Morgen ist der letzte Kurstag."
+  },
+  {
+    "word": "die Leute",
+    "example": "In der Disko sind viele Leute."
+  },
+  {
+    "word": "das Licht",
+    "example": "Wo macht man hier das Licht an?"
+  },
+  {
+    "word": "lieb-",
+    "example": "Liebe Susanne, lieber Hans,"
+  },
+  {
+    "word": "lieben",
+    "example": "Ich liebe dich!"
+  },
+  {
+    "word": "lieber",
+    "example": "Sie fährt lieber mit der Bahn."
+  },
+  {
+    "word": "Lieblings-",
+    "example": "Mein Lieblingsfilm ist „Schwarze Augen“."
+  },
+  {
+    "word": "das Lied",
+    "example": "Welches ist dein Lieblingslied?"
+  },
+  {
+    "word": "liegen",
+    "example": "Um neun Uhr liegt Judith noch im Bett.",
+    "example2": "Frankfurt liegt am Main."
+  },
+  {
+    "word": "links",
+    "example": "Gehen Sie die nächste Straße links."
+  },
+  {
+    "word": "der Lkw",
+    "example": "Dieser Lastkraftwagen ist sehr groß."
+  },
+  {
+    "word": "das Lokal",
+    "example": "In unserer Straße gibt es ein neues Lokal."
+  },
+  {
+    "word": "die Lösung",
+    "example": "Die Lösung ist ganz einfach."
+  },
+  {
+    "word": "lustig",
+    "example": "Frau Mertens ist lustig. Sie lacht immer."
+  },
+  {
+    "word": "machen",
+    "example": "Was machst du heute Abend?",
+    "example2": "Ich muss jetzt das Essen machen."
+  },
+  {
+    "word": "machen",
+    "example": "Das macht 5 Euro 95.",
+    "example2": "Das macht nichts."
+  },
+  {
+    "word": "das Mädchen",
+    "example": "Familie Kurz bekommt ein Baby. – Junge oder Mädchen?"
+  },
+  {
+    "word": "man",
+    "example": "Hier darf man nicht rauchen."
+  },
+  {
+    "word": "der Mann",
+    "example": "Mein Mann arbeitet bei der Polizei."
+  },
+  {
+    "word": "männlich",
+    "example": "Kreuzen Sie bitte an: „weiblich“ oder „männlich“."
+  },
+  {
+    "word": "die Maschine",
+    "example": "Die Waschmaschine ist günstig."
+  },
+  {
+    "word": "das Meer",
+    "example": "Wir machen Urlaub am Meer."
+  },
+  {
+    "word": "mehr",
+    "example": "Dieses Auto kostet 1.000 Euro mehr als das andere."
+  },
+  {
+    "word": "mein",
+    "example": "Mein Vater ist Arzt."
+  },
+  {
+    "word": "meist-",
+    "example": "Die meisten Norddeutschen sind sehr groß."
+  },
+  {
+    "word": "der Mensch",
+    "example": "Die Menschen sind hier anders als bei uns."
+  },
+  {
+    "word": "mieten",
+    "example": "Ich möchte ein Auto mieten."
+  },
+  {
+    "word": "die Miete",
+    "example": "Die Miete für diese Wohnung ist 600 Euro."
+  },
+  {
+    "word": "die Milch",
+    "example": "Die Milch steht im Kühlschrank."
+  },
+  {
+    "word": "mit",
+    "example": "Trinken Sie den Kaffee mit Milch?"
+  },
+  {
+    "word": "mitbringen",
+    "example": "Ich gehe einkaufen. Soll ich dir was mitbringen?"
+  },
+  {
+    "word": "mitkommen",
+    "example": "Ich gehe ins Kino. Kommst du mit?"
+  },
+  {
+    "word": "mitmachen",
+    "example": "Warum macht ihr nicht mit?"
+  },
+  {
+    "word": "mitnehmen",
+    "example": "Nehmen wir meine Schwester ins Kino mit?"
+  },
+  {
+    "word": "die Mitte",
+    "example": "Der Lehrer steht in der Mitte des Klassenzimmers."
+  },
+  {
+    "word": "die Möbel",
+    "example": "Sind die Möbel neu?"
+  },
+  {
+    "word": "möchten",
+    "example": "Was möchten Sie trinken?"
+  },
+  {
+    "word": "mögen",
+    "example": "Magst du Kaffee oder Tee?"
+  },
+  {
+    "word": "möglich",
+    "example": "Mit dieser Fahrkarte ist die Fahrt ab 9 Uhr möglich."
+  },
+  {
+    "word": "der Moment",
+    "example": "Moment mal bitte!",
+    "example2": "Einen Moment bitte."
+  },
+  {
+    "word": "morgen",
+    "example": "Morgen beginnt die Schule um 10 Uhr."
+  },
+  {
+    "word": "müde",
+    "example": "Ich bin müde. Ich gehe schlafen."
+  },
+  {
+    "word": "der Mund",
+    "example": "Öffnen Sie den Mund."
+  },
+  {
+    "word": "müssen",
+    "example": "Ich muss jeden Tag von 8 Uhr bis 18 Uhr arbeiten."
+  },
+  {
+    "word": "die Mutter",
+    "example": "Frau Berghäuser ist die Mutter von Michaela."
+  },
+  {
+    "word": "nach",
+    "example": "Ich gehe jetzt nach Hause.",
+    "example2": "Ich fliege nach München.",
+    "example3": "Es ist schon 5 nach 12."
+  },
+  {
+    "word": "nächst-",
+    "example": "Sehen wir uns nächste Woche?"
+  },
+  {
+    "word": "der Name",
+    "example": "Mein Name ist Thomas Schmidt.",
+    "example2": "Mein Vorname ist Thomas; Schmidt ist der Familienname."
+  },
+  {
+    "word": "nehmen",
+    "example": "Heute gibt es Hähnchen. Das nehme ich.",
+    "example2": "Ich nehme den Bus."
+  },
+  {
+    "word": "nein",
+    "example": "Fährst du auch nach München? – Nein, ich habe keine Zeit."
+  },
+  {
+    "word": "neu",
+    "example": "Ich bin der neue Kollege.",
+    "example2": "Wir haben eine neue Wohnung."
+  },
+  {
+    "word": "nicht",
+    "example": "Das stimmt nicht.",
+    "example2": "Das ist doch schön, nicht?"
+  },
+  {
+    "word": "nichts",
+    "example": "Das macht nichts.",
+    "example2": "Hier kaufe ich nichts. Der Laden gefällt mir nicht."
+  },
+  {
+    "word": "nie",
+    "example": "Er kommt nie pünktlich."
+  },
+  {
+    "word": "noch",
+    "example": "Vielleicht kommt er noch.",
+    "example2": "Wir warten noch fünf Minuten.",
+    "example3": "Ich habe noch 20 Euro."
+  },
+  {
+    "word": "normal",
+    "example": "75 kg. Sein Gewicht ist normal."
+  },
+  {
+    "word": "die Nummer",
+    "example": "Sie haben Zimmer Nummer zwölf.",
+    "example2": "Welche Hausnummer haben Sie?",
+    "example3": "Können Sie mir Ihre Nummer geben?"
+  },
+  {
+    "word": "nur",
+    "example": "Ich möchte nur ein Glas Wasser."
+  },
+  {
+    "word": "oben",
+    "example": "Ich wohne oben."
+  },
+  {
+    "word": "das Obst",
+    "example": "Im Sommer ist das Obst billig."
+  },
+  {
+    "word": "oder",
+    "example": "Wann können Sie kommen – heute oder morgen?"
+  },
+  {
+    "word": "öffnen",
+    "example": "Ich öffne die Tür."
+  },
+  {
+    "word": "geöffnet",
+    "example": "Der Laden ist samstags bis 16.00 Uhr geöffnet."
+  },
+  {
+    "word": "oft",
+    "example": "Petra treffe ich oft."
+  },
+  {
+    "word": "ohne",
+    "example": "Ohne Geld kann er nichts kaufen."
+  },
+  {
+    "word": "das Öl",
+    "example": "Den Salat machen wir ohne Öl."
+  },
+  {
+    "word": "die Oma",
+    "example": "Meine Oma ist schon tot."
+  },
+  {
+    "word": "der Opa",
+    "example": "Mein Opa heißt Hans."
+  },
+  {
+    "word": "die Ordnung",
+    "example": "Das ist in Ordnung."
+  },
+  {
+    "word": "der Ort",
+    "example": "Der Ort liegt am Meer."
+  },
+  {
+    "word": "das Papier",
+    "example": "Hier sind Papier und Bleistift."
+  },
+  {
+    "word": "die Papiere",
+    "example": "Haben Sie Ihre Papiere dabei?"
+  },
+  {
+    "word": "der Partner / die Partnerin",
+    "example": "Sie ist meine Partnerin."
+  },
+  {
+    "word": "die Party",
+    "example": "Heute Abend machen wir eine Party."
+  },
+  {
+    "word": "der Pass",
+    "example": "Im Hotel brauchst du deinen Pass."
+  },
+  {
+    "word": "die Pause",
+    "example": "Von 12.00 bis 12.30 Uhr haben wir Mittagspause."
+  },
+  {
+    "word": "der Plan",
+    "example": "Ich kaufe mir einen Stadtplan."
+  },
+  {
+    "word": "der Platz",
+    "example": "Tut mir leid, der Platz ist besetzt.",
+    "example2": "Bitte nehmen Sie Platz!",
+    "example3": "Ich wohne Messeplatz 5."
+  },
+  {
+    "word": "die Polizei",
+    "example": "Holen Sie die Polizei!"
+  },
+  {
+    "word": "die Pommes frites",
+    "example": "Die Kinder essen Hähnchen mit Pommes frites."
+  },
+  {
+    "word": "die Post",
+    "example": "Wo ist die Post, bitte?",
+    "example2": "Ist Post da?"
+  },
+  {
+    "word": "die Postleitzahl",
+    "example": "Wie ist Ihre Postleitzahl?"
+  },
+  {
+    "word": "das Praktikum",
+    "example": "Ich mache ein Praktikum bei Siemens."
+  },
+  {
+    "word": "die Praxis",
+    "example": "Die Praxis ist ab acht Uhr geöffnet."
+  },
+  {
+    "word": "der Preis",
+    "example": "Die Preise sind hoch."
+  },
+  {
+    "word": "das Problem",
+    "example": "Mein Problem ist die Sprache."
+  },
+  {
+    "word": "der Prospekt",
+    "example": "Bitte schicken Sie mir einen Prospekt von Ihrem Hotel."
+  },
+  {
+    "word": "die Prüfung",
+    "example": "Die Prüfung ist am Montag um 8.00 Uhr."
+  },
+  {
+    "word": "pünktlich",
+    "example": "Der Bus fährt pünktlich um acht Uhr.",
+    "example2": "Herr Müller ist immer pünktlich."
+  },
+  {
+    "word": "Rad fahren",
+    "example": "Das Kind kann schon Rad fahren."
+  },
+  {
+    "word": "rauchen",
+    "example": "Ich rauche nicht."
+  },
+  {
+    "word": "der Raum",
+    "example": "Der Unterricht ist in Raum 332."
+  },
+  {
+    "word": "die Rechnung",
+    "example": "Die Rechnung, bitte."
+  },
+  {
+    "word": "rechts",
+    "example": "Die Schillerstraße ist hier rechts."
+  },
+  {
+    "word": "regnen",
+    "example": "Heute regnet es."
+  },
+  {
+    "word": "der Regen",
+    "example": "Bei diesem Regen gehe ich nicht raus."
+  },
+  {
+    "word": "der Reis",
+    "example": "Ich esse gern Reis."
+  },
+  {
+    "word": "reisen",
+    "example": "Ich reise gern."
+  },
+  {
+    "word": "die Reise",
+    "example": "Wir machen eine Reise nach Österreich."
+  },
+  {
+    "word": "das Reisebüro",
+    "example": "Mein Mann arbeitet im Reisebüro."
+  },
+  {
+    "word": "der Reiseführer",
+    "example": "Ich kaufe mir einen Reiseführer von Berlin.",
+    "example2": "Unser Reiseführer heißt Peter."
+  },
+  {
+    "word": "reparieren",
+    "example": "Er hat das Fahrrad repariert."
+  },
+  {
+    "word": "die Reparatur",
+    "example": "Die Reparatur ist sehr teuer."
+  },
+  {
+    "word": "das Restaurant",
+    "example": "Wir essen heute in einem Restaurant."
+  },
+  {
+    "word": "die Rezeption",
+    "example": "Fragen Sie bitte im Hotel an der Rezeption."
+  },
+  {
+    "word": "richtig",
+    "example": "Habe ich das richtig verstanden?",
+    "example2": "Das ist richtig."
+  },
+  {
+    "word": "riechen",
+    "example": "Dieser Wein riecht gut."
+  },
+  {
+    "word": "ruhig",
+    "example": "Ich möchte ein ruhiges Zimmer."
+  },
+  {
+    "word": "der Saft",
+    "example": "Möchtest du einen Apfelsaft?"
+  },
+  {
+    "word": "sagen",
+    "example": "Sag mal, wie geht es dir denn?"
+  },
+  {
+    "word": "der Salat",
+    "example": "Wie schmeckt dir der Salat?"
+  },
+  {
+    "word": "das Salz",
+    "example": "Herr Ober, kann ich bitte Salz haben?"
+  },
+  {
+    "word": "der Satz",
+    "example": "Dieser Satz ist sehr einfach."
+  },
+  {
+    "word": "die S-Bahn",
+    "example": "Ich nehme lieber die S-Bahn."
+  },
+  {
+    "word": "der Schalter",
+    "example": "Gehen Sie bitte zum Schalter drei!"
+  },
+  {
+    "word": "scheinen",
+    "example": "Die Sonne scheint."
+  },
+  {
+    "word": "schicken",
+    "example": "Bitte schicken Sie mir eine E-Mail."
+  },
+  {
+    "word": "das Schild",
+    "example": "Haben Sie nicht das Schild gesehen?"
+  },
+  {
+    "word": "der Schinken",
+    "example": "Ich möchte gern ein Schinkenbrot."
+  },
+  {
+    "word": "schlafen",
+    "example": "Ich schlafe meistens acht Stunden."
+  },
+  {
+    "word": "schlecht",
+    "example": "Mir ist schlecht!",
+    "example2": "Sie sehen schlecht aus.",
+    "example3": "Wir haben schlechtes Wetter."
+  },
+  {
+    "word": "schließen",
+    "example": "Bitte, schließen Sie die Tür."
+  },
+  {
+    "word": "geschlossen",
+    "example": "Die Bank hat am Samstag geschlossen."
+  },
+  {
+    "word": "der Schluss",
+    "example": "Ich muss jetzt Schluss machen.",
+    "example2": "Zum Schluss gibt er uns allen die Hand."
+  },
+  {
+    "word": "der Schlüssel",
+    "example": "Ich gebe Ihnen noch den Zimmerschlüssel."
+  },
+  {
+    "word": "schmecken",
+    "example": "Schmeckt das gut?"
+  },
+  {
+    "word": "schnell",
+    "example": "Er fährt schnell."
+  },
+  {
+    "word": "schon",
+    "example": "Ist das Essen schon fertig?"
+  },
+  {
+    "word": "schön",
+    "example": "Schönen Urlaub!",
+    "example2": "Das ist sehr schön."
+  },
+  {
+    "word": "der Schrank",
+    "example": "Die Gläser stehen im Schrank."
+  },
+  {
+    "word": "schreiben",
+    "example": "Er schreibt jeden Tag fünfzig E-Mails."
+  },
+  {
+    "word": "der Schuh",
+    "example": "Zieh die Schuhe aus!"
+  },
+  {
+    "word": "die Schule",
+    "example": "Meine Tochter geht schon in die Schule.",
+    "example2": "Die Schule ist gleich hier um die Ecke."
+  },
+  {
+    "word": "der Schüler",
+    "example": "In meinem Kurs sind acht Schülerinnen und fünf Schüler."
+  },
+  {
+    "word": "schwer",
+    "example": "Ist Ihr Gepäck sehr schwer?",
+    "example2": "Das ist eine schwere Arbeit."
+  },
+  {
+    "word": "die Schwester",
+    "example": "Meine Schwester kommt am Dienstag."
+  },
+  {
+    "word": "schwimmen",
+    "example": "Ich schwimme jeden Tag einen Kilometer."
+  },
+  {
+    "word": "das Schwimmbad",
+    "example": "Kommst du mit ins Schwimmbad?"
+  },
+  {
+    "word": "der See",
+    "example": "Komm, wir fahren zum Starnberger See."
+  },
+  {
+    "word": "sehen",
+    "example": "Ich kann dich nicht sehen.",
+    "example2": "Ich habe diesen Jungen schon einmal gesehen."
+  },
+  {
+    "word": "die Sehenswürdigkeit",
+    "example": "Welche Sehenswürdigkeiten gibt es in Frankfurt?"
+  },
+  {
+    "word": "sehr",
+    "example": "Danke sehr!",
+    "example2": "Das ist sehr schwer."
+  },
+  {
+    "word": "sein",
+    "example": "Herr Müller ist in seinem Zimmer.",
+    "example2": "Mir ist kalt.",
+    "example3": "Ich bin dreiundzwanzig."
+  },
+  {
+    "word": "an sein",
+    "example": "Das Licht ist noch an."
+  },
+  {
+    "word": "auf sein",
+    "example": "Das Fenster ist noch auf."
+  },
+  {
+    "word": "weg sein",
+    "example": "Herr Meier ist schon weg."
+  },
+  {
+    "word": "zu sein",
+    "example": "Die Tür ist zu."
+  },
+  {
+    "word": "seit",
+    "example": "Ich wohne seit drei Jahren in Köln."
+  },
+  {
+    "word": "selbstständig",
+    "example": "Er ist selbstständig."
+  },
+  {
+    "word": "sich",
+    "example": "Sie müssen sich erst anmelden."
+  },
+  {
+    "word": "sie",
+    "example": "Wie heißt sie?"
+  },
+  {
+    "word": "Sie",
+    "example": "Wie heißen Sie, bitte?"
+  },
+  {
+    "word": "sitzen",
+    "example": "Wo sitzen Sie?"
+  },
+  {
+    "word": "so",
+    "example": "Sie müssen das so machen!",
+    "example2": "Fahren Sie bitte nicht so schnell!",
+    "example3": "Meine Frau ist so groß wie ich.",
+    "example4": "So, das war‘s/wär‘s!"
+  },
+  {
+    "word": "das Sofa",
+    "example": "Das Sofa ist neu."
+  },
+  {
+    "word": "sofort",
+    "example": "Bitte antworten Sie sofort."
+  },
+  {
+    "word": "der Sohn",
+    "example": "Das ist Hans, mein Sohn."
+  },
+  {
+    "word": "sollen",
+    "example": "Soll ich kommen?",
+    "example2": "Was soll ich mitbringen?"
+  },
+  {
+    "word": "die Sonne",
+    "example": "Die Sonne scheint."
+  },
+  {
+    "word": "spät",
+    "example": "Es ist schon spät, ich muss gehen."
+  },
+  {
+    "word": "später",
+    "example": "Das können wir später machen."
+  },
+  {
+    "word": "die Speisekarte",
+    "example": "Bringen Sie mir die Speisekarte, bitte."
+  },
+  {
+    "word": "spielen",
+    "example": "Die Kinder spielen draußen.",
+    "example2": "Spielen Sie Karten?"
+  },
+  {
+    "word": "der Sport",
+    "example": "Ich mache viel Sport."
+  },
+  {
+    "word": "die Sprache",
+    "example": "Welche Sprachen sprichst du?"
+  },
+  {
+    "word": "sprechen",
+    "example": "Kann ich (mit) Herrn Klein sprechen?"
+  },
+  {
+    "word": "die Stadt",
+    "example": "Heidelberg ist eine alte Stadt."
+  },
+  {
+    "word": "stehen",
+    "example": "Ich glaube es nicht, aber es steht in der Zeitung.",
+    "example2": "Der Bus steht schon an der Haltestelle."
+  },
+  {
+    "word": "die Stelle",
+    "example": "Ich habe eine neue Stelle."
+  },
+  {
+    "word": "stellen",
+    "example": "Stell die Tasche rechts in die Ecke!"
+  },
+  {
+    "word": "der Stock",
+    "example": "Unsere Wohnung liegt im ersten Stock."
+  },
+  {
+    "word": "die Straße",
+    "example": "In welcher Straße wohnen Sie?"
+  },
+  {
+    "word": "die Straßenbahn",
+    "example": "Wo fährt die Straßenbahn ab?"
+  },
+  {
+    "word": "studieren",
+    "example": "Ich studiere in Mainz."
+  },
+  {
+    "word": "das Studium",
+    "example": "Das Studium beginnt im Oktober."
+  },
+  {
+    "word": "der Student",
+    "example": "Ich bin Studentin."
+  },
+  {
+    "word": "die Stunde",
+    "example": "Ich bin in einer Stunde zurück."
+  },
+  {
+    "word": "suchen",
+    "example": "Suchst du etwas?"
+  },
+  {
+    "word": "tanzen",
+    "example": "Tanzen Sie gern?"
+  },
+  {
+    "word": "die Tasche",
+    "example": "Ich habe die Schlüssel in der Tasche."
+  },
+  {
+    "word": "das Taxi",
+    "example": "Es gibt heute keinen Bus mehr. Er fährt mit dem Taxi."
+  },
+  {
+    "word": "der Tee",
+    "example": "Ich trinke morgens immer Tee."
+  },
+  {
+    "word": "der Teil",
+    "example": "Lies bitte auch den zweiten Teil."
+  },
+  {
+    "word": "telefonieren",
+    "example": "Darf ich mal telefonieren?"
+  },
+  {
+    "word": "das Telefon",
+    "example": "Haben Sie Telefon?"
+  },
+  {
+    "word": "der Termin",
+    "example": "Am besten machen wir sofort einen Termin."
+  },
+  {
+    "word": "der Test",
+    "example": "Der Test war einfach."
+  },
+  {
+    "word": "teuer",
+    "example": "Das ist mir zu teuer."
+  },
+  {
+    "word": "der Text",
+    "example": "Lesen Sie bitte diesen Text."
+  },
+  {
+    "word": "das Thema",
+    "example": "Wir sprechen heute über das Thema „Essen und Trinken“."
+  },
+  {
+    "word": "das Ticket",
+    "example": "Wie viel kostet das Ticket?"
+  },
+  {
+    "word": "der Tisch",
+    "example": "Die Fotos liegen auf dem Tisch."
+  },
+  {
+    "word": "die Tochter",
+    "example": "Das ist meine Tochter Katharina."
+  },
+  {
+    "word": "die Toilette",
+    "example": "Wo ist die Toilette, bitte?"
+  },
+  {
+    "word": "die Tomate",
+    "example": "Die Tomate ist noch grün."
+  },
+  {
+    "word": "tot",
+    "example": "Sein Vater ist schon lange tot."
+  },
+  {
+    "word": "(sich) treffen",
+    "example": "Ich treffe in der Stadt einen Kollegen.",
+    "example2": "Wir treffen uns immer freitags."
+  },
+  {
+    "word": "die Treppe",
+    "example": "Die Toilette? Die Treppe hoch und dann links."
+  },
+  {
+    "word": "trinken",
+    "example": "Möchtest du etwas trinken?"
+  },
+  {
+    "word": "tschüss",
+    "example": "Junge Leute sagen meistens „tschüss!“ und nicht „auf Wiedersehen“."
+  },
+  {
+    "word": "tun",
+    "example": "Ich habe noch etwas zu tun.",
+    "example2": "Was tut Ihr Mann?"
+  },
+  {
+    "word": "über",
+    "example": "Gehen Sie hier über die Straße.",
+    "example2": "Er wohnt im zweiten Stock über Familie Meier.",
+    "example3": "Sind Sie über 18?"
+  },
+  {
+    "word": "übernachten",
+    "example": "Du kannst bei mir übernachten."
+  },
+  {
+    "word": "überweisen",
+    "example": "Sie können das Geld auch überweisen."
+  },
+  {
+    "word": "die Uhr",
+    "example": "Es ist vier Uhr."
+  },
+  {
+    "word": "um",
+    "example": "Er kommt um sieben Uhr.",
+    "example2": "Da kommt er gerade um die Ecke."
+  },
+  {
+    "word": "umziehen",
+    "example": "Nächsten Monat ziehen wir um."
+  },
+  {
+    "word": "und",
+    "example": "Peter und Helmut sind meine Söhne."
+  },
+  {
+    "word": "unser-",
+    "example": "Das ist unsere Lehrerin."
+  },
+  {
+    "word": "unten",
+    "example": "Er wohnt ganz unten im Haus."
+  },
+  {
+    "word": "unter",
+    "example": "Unter uns wohnt eine Familie mit drei Kindern."
+  },
+  {
+    "word": "der Unterricht",
+    "example": "Wir haben Unterricht von 8.00 bis 12.00 Uhr."
+  },
+  {
+    "word": "unterschreiben",
+    "example": "Wo muss ich unterschreiben?"
+  },
+  {
+    "word": "die Unterschrift",
+    "example": "Hier fehlt noch Ihre Unterschrift."
+  },
+  {
+    "word": "der Urlaub",
+    "example": "Ich nehme im September Urlaub."
+  },
+  {
+    "word": "der Vater",
+    "example": "Mein Vater ist Arbeiter."
+  },
+  {
+    "word": "verboten",
+    "example": "Hier ist Rauchen verboten."
+  },
+  {
+    "word": "verdienen",
+    "example": "Ich verdiene 1.500 Euro im Monat."
+  },
+  {
+    "word": "der Verein",
+    "example": "Es gibt einen neuen Sportverein in der Stadt."
+  },
+  {
+    "word": "verheiratet",
+    "example": "Ich bin verheiratet und habe drei Kinder."
+  },
+  {
+    "word": "verkaufen",
+    "example": "Er verkauft sein altes Auto."
+  },
+  {
+    "word": "der Verkäufer",
+    "example": "Meine Mutter ist Verkäuferin im Kaufhaus."
+  },
+  {
+    "word": "vermieten",
+    "example": "Die Wohnung ist schon vermietet."
+  },
+  {
+    "word": "der Vermieter",
+    "example": "Unser Vermieter heißt Huber. Er wohnt auch hier."
+  },
+  {
+    "word": "verstehen",
+    "example": "Können Sie mich verstehen?"
+  },
+  {
+    "word": "der Verwandte",
+    "example": "Peter besucht seine Verwandten in Polen."
+  },
+  {
+    "word": "viel",
+    "example": "Hier regnet es viel."
+  },
+  {
+    "word": "vielleicht",
+    "example": "Ich komme vielleicht mit dem Bus."
+  },
+  {
+    "word": "von",
+    "example": "Das Auto von Felix ist kaputt.",
+    "example2": "Er kommt gerade von Köln/von zu Hause."
+  },
+  {
+    "word": "vor",
+    "example": "Der Termin war vor einer Stunde.",
+    "example2": "Das Auto steht vor der Tür."
+  },
+  {
+    "word": "der Vorname",
+    "example": "Ich heiße Müller, mein Vorname ist Eva."
+  },
+  {
+    "word": "die Vorsicht",
+    "example": "Vorsicht! Da kommt ein Auto."
+  },
+  {
+    "word": "(sich) vorstellen",
+    "example": "Wir wollen uns kennenlernen. Können Sie sich bitte vorstellen?"
+  },
+  {
+    "word": "die Vorwahl",
+    "example": "Wie ist die Vorwahl von München?"
+  },
+  {
+    "word": "wandern",
+    "example": "Wir wandern um den Chiemsee."
+  },
+  {
+    "word": "wann",
+    "example": "Wann bist du fertig?",
+    "example2": "Wann kann ich Sie anrufen?",
+    "example3": "Wann sind Sie geboren?"
+  },
+  {
+    "word": "warten",
+    "example": "Können Sie ein paar Minuten warten?",
+    "example2": "Auf wen warten Sie?"
+  },
+  {
+    "word": "warum",
+    "example": "Warum kommt er nicht?"
+  },
+  {
+    "word": "was",
+    "example": "Was ist das?",
+    "example2": "Was möchten Sie?"
+  },
+  {
+    "word": "was für ein",
+    "example": "Was für eine Farbe möchten Sie?"
+  },
+  {
+    "word": "(sich) waschen",
+    "example": "Wo kann ich mir die Hände waschen?",
+    "example2": "Ich muss morgen waschen."
+  },
+  {
+    "word": "das Wasser",
+    "example": "Ein Glas Wasser, bitte."
+  },
+  {
+    "word": "weh tun",
+    "example": "Ich muss zum Arzt. Mein Bein tut weh."
+  },
+  {
+    "word": "weiblich",
+    "example": "Kreuzen Sie bitte an: „weiblich“ oder „männlich“."
+  },
+  {
+    "word": "der Wein",
+    "example": "Nein danke, ich möchte keinen Wein."
+  },
+  {
+    "word": "weit",
+    "example": "Zum Bahnhof ist es nicht weit."
+  },
+  {
+    "word": "weiter",
+    "example": "Der Bus fährt nicht weiter."
+  },
+  {
+    "word": "welch-",
+    "example": "Welches Buch möchtest du?"
+  },
+  {
+    "word": "die Welt",
+    "example": "Es gibt viele Probleme auf der Welt."
+  },
+  {
+    "word": "wenig",
+    "example": "Ich habe leider nur wenig verstanden.",
+    "example2": "Er verdient wenig."
+  },
+  {
+    "word": "wer",
+    "example": "Wer ist das?"
+  },
+  {
+    "word": "werden",
+    "example": "Mein Sohn will Arzt werden."
+  },
+  {
+    "word": "das Wetter",
+    "example": "Wir hatten schlechtes Wetter."
+  },
+  {
+    "word": "wichtig",
+    "example": "Dieses Formular ist sehr wichtig."
+  },
+  {
+    "word": "wie",
+    "example": "Wie heißt du?",
+    "example2": "Er schreibt wie ein Kind.",
+    "example3": "Meine Frau ist so groß wie ich.",
+    "example4": "Wie soll ich das machen?",
+    "example5": "Wie groß ist die Wohnung?",
+    "example6": "Wie bitte?",
+    "example7": "Wie lange bist du schon hier?"
+  },
+  {
+    "word": "wiederholen",
+    "example": "Können Sie das bitte wiederholen?"
+  },
+  {
+    "word": "das Wiederhören",
+    "example": "Wir müssen jetzt Schluss machen. Also auf Wiederhören!"
+  },
+  {
+    "word": "das Wiedersehen",
+    "example": "Auf Wiedersehen!"
+  },
+  {
+    "word": "wie viel",
+    "example": "Wie viel Milch nehmen Sie?"
+  },
+  {
+    "word": "willkommen",
+    "example": "Herzlich willkommen!"
+  },
+  {
+    "word": "der Wind",
+    "example": "Der Wind kommt aus Osten."
+  },
+  {
+    "word": "wir",
+    "example": "Wir lernen Deutsch."
+  },
+  {
+    "word": "wissen",
+    "example": "Weißt du, wie er heißt?"
+  },
+  {
+    "word": "wo",
+    "example": "Wo waren Sie im Urlaub?",
+    "example2": "Wo ist die Post?",
+    "example3": "Wo sind Sie geboren?"
+  },
+  {
+    "word": "woher",
+    "example": "Woher kommen Sie?"
+  },
+  {
+    "word": "wohin",
+    "example": "Wohin fährt dieser Bus?",
+    "example2": "Wohin wollen Sie am Wochenende?"
+  },
+  {
+    "word": "wohnen",
+    "example": "Ich wohne in München."
+  },
+  {
+    "word": "die Wohnung",
+    "example": "Seit wann haben Sie diese Wohnung?"
+  },
+  {
+    "word": "wollen",
+    "example": "Wollen Sie einen Kaffee trinken?"
+  },
+  {
+    "word": "das Wort",
+    "example": "Ich kenne das Wort nicht."
+  },
+  {
+    "word": "wunderbar",
+    "example": "Das Essen schmeckt wunderbar."
+  },
+  {
+    "word": "zahlen",
+    "example": "Zahlen, bitte!"
+  },
+  {
+    "word": "die Zeit",
+    "example": "Ich habe heute keine Zeit."
+  },
+  {
+    "word": "zurzeit",
+    "example": "Zurzeit habe ich sehr viel zu tun."
+  },
+  {
+    "word": "die Zeitung",
+    "example": "Ich lese gern Zeitung."
+  },
+  {
+    "word": "die Zigarette",
+    "example": "Wie teuer sind die Zigaretten?"
+  },
+  {
+    "word": "das Zimmer",
+    "example": "Das Zimmer ist groß.",
+    "example2": "Öffne im Schlafzimmer das Fenster, bitte!",
+    "example3": "Die Wohnung hat drei Zimmer.",
+    "example4": "Ich habe ein Zimmer bestellt."
+  },
+  {
+    "word": "der Zoll",
+    "example": "Wir müssen noch durch den Zoll."
+  },
+  {
+    "word": "zu",
+    "example": "Der Bus fährt zum Bahnhof.",
+    "example2": "Ich gehe zu Fuß.",
+    "example3": "Ich bin zu Hause."
+  },
+  {
+    "word": "zufrieden",
+    "example": "Ich bin mit der Wohnung zufrieden."
+  },
+  {
+    "word": "der Zug",
+    "example": "Ich fahre gern mit dem Zug."
+  },
+  {
+    "word": "zurück",
+    "example": "Einmal Frankfurt und zurück.",
+    "example2": "Wann kommst du zurück?"
+  },
+  {
+    "word": "zusammen",
+    "example": "Sollen wir zusammen essen gehen?",
+    "example2": "Das macht zusammen 2 Euro 80."
+  },
+  {
+    "word": "zwischen",
+    "example": "Heidelberg liegt zwischen Frankfurt und Stuttgart.",
+    "example2": "Zwischen 8 und 10 Uhr bin ich zu Hause."
+  }
+]
