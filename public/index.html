@@ -148,7 +148,7 @@
              <p class="text-base font-semibold text-gray-400 flex items-center gap-2">Cards: <span id="session-counter" title="Cards from latest session" class="text-green-400 font-bold">0</span> / <span id="total-counter" title="Total cards" class="text-blue-400 font-bold">0</span></p>
              <div id="default-actions" class="flex flex-col sm:flex-row sm:flex-wrap gap-3 w-full">
                 <button id="import-btn" class="btn btn-secondary w-full sm:w-auto"><i class="fas fa-upload"></i> Import</button>
-                <input type="file" id="import-file-input" class="hidden" accept=".txt, .tsv" multiple>
+                <input type="file" id="import-file-input" class="hidden" accept=".txt, .tsv, .zip" multiple>
                 <button id="review-btn" class="btn btn-secondary w-full sm:w-auto"><i class="fas fa-eye"></i> Review</button>
                 <button id="bulk-translate-btn" class="btn btn-success w-full sm:w-auto"><i class="fas fa-language"></i> Translate Beispiele</button>
                 <button id="export-btn" class="btn btn-primary w-full sm:w-auto"><i class="fas fa-download"></i> Export</button>
@@ -403,6 +403,10 @@
                             <span>JSON</span>
                         </label>
                         <label class="flex items-center space-x-2">
+                            <input type="radio" name="export-format" value="category-zip" class="form-radio">
+                            <span>Category Folder (.zip)</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
                             <input type="radio" name="export-format" value="clipboard" class="form-radio">
                             <span>Copy to Clipboard (Back & Front)</span>
                         </label>
@@ -514,6 +518,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, getDocs, query, doc, deleteDoc, setDoc, writeBatch, updateDoc, getDoc, orderBy, limit, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import JSZip from "https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm";
 
         const firebaseConfig = { apiKey: "AIzaSyD6zpZUM_ABNngOX-RKFxwNoTqePDivrGE", authDomain: "deki-helper.firebaseapp.com", projectId: "deki-helper", storageBucket: "deki-helper.appspot.com", messagingSenderId: "612229919023", appId: "1:612229919023:web:c6507af0e5a2ddd84731da" };
         const appId = 'anki-card-generator-default';
@@ -1645,6 +1650,24 @@
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#39;');
         }
+
+        function sanitizeFileName(name, fallback = 'folder') {
+            const base = (name || '').toString().trim().replace(/[\\/:*?"<>|]/g, '_');
+            const cleaned = base.replace(/\s+/g, ' ').trim();
+            return cleaned || fallback;
+        }
+
+        function ensureUniqueName(baseName, usedSet) {
+            const used = usedSet || new Set();
+            let candidate = baseName;
+            let counter = 2;
+            while (used.has(candidate)) {
+                candidate = `${baseName}-${counter}`;
+                counter += 1;
+            }
+            used.add(candidate);
+            return candidate;
+        }
         
         function formatMultiLine(text) {
             if (!text) return '';
@@ -2578,6 +2601,40 @@
             URL.revokeObjectURL(url);
         }
 
+        function triggerBlobDownload(blob, fileName) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function buildTsvFromCards(cards) {
+            const sortedCards = [...cards].sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt));
+            return sortedCards.map(data => {
+                const soundTagBase = prepareForSoundTag(data.back);
+                const speechValue = !isBlank(data.speech) ? data.speech : (soundTagBase ? `[sound:${soundTagBase}.mp3]` : '');
+                const sanitizedBack = sanitizeForExport(data.back);
+                const resolvedBeispielSpeech = resolveBeispielSpeechValue(data.back, data.beispiel, data.beispielSpeech);
+                const fields = [
+                    sanitizeForExport(data.front, sanitizedBack),
+                    sanitizedBack,
+                    sanitizeForExport(speechValue),
+                    sanitizeForExport(data.beispiel),
+                    sanitizeForExport(resolvedBeispielSpeech, '', {
+                        preserveLeadingBr: true,
+                        preserveSpacingAroundBr: true,
+                        keepOuterWhitespace: true
+                    }),
+                    sanitizeForExport(data.translation)
+                ];
+                return fields.join('\t');
+            }).join('\n');
+        }
+
         function updateReviewDateSelector() {
             const reviewDateSelector = document.getElementById('review-date-selector');
             const reviewBtn = document.getElementById('review-btn');
@@ -3211,48 +3268,75 @@
                 showNotification("No cards match the selected criteria.", "success");
                 return;
             }
-            cards.sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt));
             const today = new Date().toISOString().split('T')[0];
             let content, fileName, mimeType;
 
             if (format === 'json') {
-                const jsonData = cards.map(data => ({ back: data.back || '', beispiel: data.beispiel || '' }));
+                const sortedCards = [...cards].sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt));
+                const jsonData = sortedCards.map(data => ({ back: data.back || '', beispiel: data.beispiel || '' }));
                 content = JSON.stringify(jsonData, null, 2);
                 fileName = `${today}.json`;
                 mimeType = 'application/json';
             } else { // txt format
-                content = cards.map(data => {
-                    const soundTagBase = prepareForSoundTag(data.back);
-                    const speechValue = !isBlank(data.speech) ? data.speech : (soundTagBase ? `[sound:${soundTagBase}.mp3]` : '');
-                    const sanitizedBack = sanitizeForExport(data.back);
-                    const resolvedBeispielSpeech = resolveBeispielSpeechValue(data.back, data.beispiel, data.beispielSpeech);
-                    const fields = [
-                        sanitizeForExport(data.front, sanitizedBack),
-                        sanitizedBack,
-                        sanitizeForExport(speechValue),
-                        sanitizeForExport(data.beispiel),
-                        sanitizeForExport(resolvedBeispielSpeech, '', {
-                            preserveLeadingBr: true,
-                            preserveSpacingAroundBr: true,
-                            keepOuterWhitespace: true
-                        }),
-                        sanitizeForExport(data.translation)
-                    ];
-                    return fields.join('\t');
-                }).join('\n');
-                
+                content = buildTsvFromCards(cards);
                 fileName = `${today}.txt`;
                 mimeType = 'text/plain;charset=utf-8';
             }
             triggerDownload(content, fileName, mimeType);
         }
 
-        function handleConfirmExport() {
+        async function exportFoldersAsPackages(folderIds) {
+            const ids = Array.isArray(folderIds) ? folderIds : [];
+            if (ids.length === 0) {
+                showNotification("Select at least one folder to export.", 'error');
+                return;
+            }
+
+            const zip = new JSZip();
+            let totalCards = 0;
+            let exportedFolders = 0;
+            const usedNames = new Set();
+
+            ids.forEach(folderId => {
+                const cards = allCards.filter(card => folderId === NO_FOLDER_VALUE ? !card.folderId : card.folderId === folderId);
+                if (cards.length === 0) return;
+
+                const folderMeta = folders.find(f => f.id === folderId);
+                const fallbackName = folderId === NO_FOLDER_VALUE ? 'No Folder' : (cards[0]?.folderName || 'Untitled Folder');
+                const folderName = folderMeta && folderMeta.name ? folderMeta.name : fallbackName;
+                const sanitizedFolderName = ensureUniqueName(sanitizeFileName(folderName, 'folder'), usedNames);
+                const folderZip = zip.folder(sanitizedFolderName);
+                if (!folderZip) return;
+
+                folderZip.file('cards.txt', buildTsvFromCards(cards));
+                folderZip.file('metadata.json', JSON.stringify({
+                    name: folderName,
+                    exportedAt: new Date().toISOString(),
+                    cardCount: cards.length
+                }, null, 2));
+
+                totalCards += cards.length;
+                exportedFolders += 1;
+            });
+
+            if (totalCards === 0 || exportedFolders === 0) {
+                showNotification("Selected folder(s) have no cards to export.", 'error');
+                return;
+            }
+
+            const today = new Date().toISOString().split('T')[0];
+            const blob = await zip.generateAsync({ type: 'blob' });
+            triggerBlobDownload(blob, `deki-categories-${today}.zip`);
+            showNotification(`Exported ${totalCards} card${totalCards === 1 ? '' : 's'} from ${exportedFolders} categor${exportedFolders === 1 ? 'y' : 'ies'}.`, 'success');
+        }
+
+        async function handleConfirmExport() {
             const format = document.querySelector('input[name="export-format"]:checked').value;
             const range = document.querySelector('input[name="export-range"]:checked').value;
             const clipboardOutputContainer = document.getElementById('clipboard-output-container');
             const clipboardOutput = document.getElementById('clipboard-output');
             let cardsToExport = [];
+            let selectedFolders = [];
 
             clipboardOutputContainer.classList.add('hidden');
 
@@ -3272,13 +3356,23 @@
                     showNotification("Please select at least one folder to export.");
                     return;
                 }
-                const selectedFolders = Array.from(selectedFolderNodes).map(el => el.value);
+                selectedFolders = Array.from(selectedFolderNodes).map(el => el.value);
                 cardsToExport = allCards.filter(card => {
                     if (!card.folderId) {
                         return selectedFolders.includes(NO_FOLDER_VALUE);
                     }
                     return selectedFolders.includes(card.folderId);
                 });
+            }
+
+            if (format === 'category-zip') {
+                if (range !== 'folder') {
+                    showNotification("Select one or more folders to export as categories.");
+                    return;
+                }
+                await exportFoldersAsPackages(selectedFolders);
+                document.getElementById('export-modal').classList.add('hidden');
+                return;
             }
 
             if (cardsToExport.length === 0) {
@@ -3376,6 +3470,13 @@
                     checkbox.innerHTML = `<input type="checkbox" value="${value}" class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded"> <span>${label}</span>`;
                     exportFolderSelection.appendChild(checkbox);
                 });
+
+            const defaultFolderValue = currentFolderId != null ? currentFolderId : NO_FOLDER_VALUE;
+            Array.from(exportFolderSelection.querySelectorAll('input[type="checkbox"]')).forEach(input => {
+                if (input.value === defaultFolderValue) {
+                    input.checked = true;
+                }
+            });
 
             document.getElementById('export-modal').classList.remove('hidden');
         }
@@ -3582,6 +3683,166 @@
             });
         }
 
+        function buildCardDataFromFields(fields, { createdAt, folderId, folderName }) {
+            const frontField = (fields[0] || '').trim();
+            const backField = (fields[1] || '').trim();
+            const speechField = (fields[2] || '').trim();
+            const beispielText = (fields[3] || '').split(/\s{2,}/).join('\n');
+            const beispielSpeechField = (fields[4] || '').trim();
+            const translationText = (fields[5] || '').split(/\s{2,}/).join('\n');
+
+            const formattedBeispiel = formatMultiLine(beispielText);
+            const backTagBase = prepareForSoundTag(backField);
+            const computedSpeech = speechField || (backTagBase ? `[sound:${backTagBase}.mp3]` : '');
+            const computedBeispielSpeech = resolveBeispielSpeechValue(backField, beispielText, beispielSpeechField);
+
+            return {
+                front: frontField,
+                back: backField,
+                speech: computedSpeech,
+                beispiel: formattedBeispiel,
+                beispielSpeech: computedBeispielSpeech,
+                translation: formatMultiLine(translationText),
+                folderId,
+                folderName,
+                createdAt: createdAt.toISOString()
+            };
+        }
+
+        async function importCardLines(lines, { folderId, folderName, importTimestamp, cardCounterRef }) {
+            if (!cardsCollectionRef || !userId) {
+                throw new Error('Not connected.');
+            }
+            const counterRef = cardCounterRef || { value: 0 };
+            let batch = writeBatch(db);
+            let operationsInBatch = 0;
+            let importedCount = 0;
+
+            for (const line of lines) {
+                const fields = parseTsvLine(line);
+                const cardTimestamp = new Date(importTimestamp.getTime() + counterRef.value);
+                counterRef.value += 1;
+
+                const cardData = buildCardDataFromFields(fields, {
+                    createdAt: cardTimestamp,
+                    folderId,
+                    folderName
+                });
+                const newCardRef = doc(collection(db, `artifacts/${appId}/users/${userId}/cards`));
+                batch.set(newCardRef, cardData);
+                operationsInBatch++;
+                importedCount++;
+                if (operationsInBatch === 450) {
+                    await batch.commit();
+                    batch = writeBatch(db);
+                    operationsInBatch = 0;
+                }
+            }
+
+            if (operationsInBatch > 0) {
+                await batch.commit();
+            }
+
+            return importedCount;
+        }
+
+        function generateUniqueFolderName(baseName, reservedNames) {
+            const cleanedBase = (baseName || '').trim() || 'Imported Category';
+            const existingNames = reservedNames || new Set(folders.map(folder => (folder.name || '').toLowerCase()));
+            let candidate = cleanedBase;
+            let counter = 2;
+            while (existingNames.has(candidate.toLowerCase())) {
+                candidate = `${cleanedBase} (${counter})`;
+                counter += 1;
+            }
+            existingNames.add(candidate.toLowerCase());
+            return candidate;
+        }
+
+        async function createFolderForImport(baseName, { reservedNames = null } = {}) {
+            if (!foldersCollectionRef) {
+                throw new Error('Folder collection not ready.');
+            }
+            const uniqueName = generateUniqueFolderName(baseName, reservedNames);
+            const docRef = await addDoc(foldersCollectionRef, {
+                name: uniqueName,
+                createdAt: new Date().toISOString()
+            });
+            return { id: docRef.id, name: uniqueName };
+        }
+
+        async function importCategoryArchive(file, importTimestamp, cardCounterRef) {
+            const defaultFolderName = (file.name || 'Imported Category').replace(/\.zip$/i, '') || 'Imported Category';
+            const zip = await JSZip.loadAsync(file);
+            const folderGroups = new Map();
+            const reservedNames = new Set(folders.map(folder => (folder.name || '').toLowerCase()));
+
+            zip.forEach((relativePath, entry) => {
+                if (!relativePath || entry.dir || relativePath.startsWith('__MACOSX/')) return;
+                const parts = relativePath.split('/');
+                const fileName = parts.pop();
+                const folderKey = parts.length ? parts[0] : defaultFolderName;
+
+                if (!folderGroups.has(folderKey)) {
+                    folderGroups.set(folderKey, { files: [], metadata: null, rawName: folderKey });
+                }
+                const group = folderGroups.get(folderKey);
+                if (!fileName) return;
+                const lowerName = fileName.toLowerCase();
+                if (lowerName === 'metadata.json') {
+                    group.metadata = entry;
+                } else if (lowerName.endsWith('.txt') || lowerName.endsWith('.tsv')) {
+                    group.files.push(entry);
+                }
+            });
+
+            let imported = 0;
+            let categoriesCreated = 0;
+
+            for (const [, group] of folderGroups.entries()) {
+                if (!group.files.length) continue;
+
+                let desiredName = group.rawName;
+                if (group.metadata) {
+                    try {
+                        const metadataContent = await group.metadata.async('string');
+                        const parsed = JSON.parse(metadataContent);
+                        if (parsed && parsed.name) desiredName = parsed.name;
+                    } catch (error) {
+                        console.warn('Failed to read import metadata:', error);
+                    }
+                }
+
+                let folderInfo;
+                try {
+                    folderInfo = await createFolderForImport(desiredName, { reservedNames });
+                    categoriesCreated += 1;
+                } catch (error) {
+                    console.error('Could not create folder for import:', error);
+                    continue;
+                }
+
+                for (const entry of group.files) {
+                    const content = await entry.async('string');
+                    const lines = content
+                        .split(/\r?\n/)
+                        .filter(line => {
+                            const trimmed = line.trim();
+                            return trimmed !== '' && !trimmed.startsWith('#');
+                        });
+                    if (lines.length === 0) continue;
+                    imported += await importCardLines(lines, {
+                        folderId: folderInfo.id,
+                        folderName: folderInfo.name,
+                        importTimestamp,
+                        cardCounterRef
+                    });
+                }
+            }
+
+            return { imported, categoriesCreated };
+        }
+
         async function importCardsFromFile(event) {
             const files = Array.from(event.target.files || []);
             if (files.length === 0) return;
@@ -3596,11 +3857,20 @@
 
             const { id: selectedFolderId, name: selectedFolderName } = getSelectedFolderDetails();
             const importTimestamp = new Date();
-            let cardCounter = 0;
             let totalImported = 0;
+            let categoriesCreated = 0;
+            const cardCounterRef = { value: 0 };
 
             try {
                 for (const file of files) {
+                    const lowerName = (file.name || '').toLowerCase();
+                    if (lowerName.endsWith('.zip')) {
+                        const { imported, categoriesCreated: importedCategories } = await importCategoryArchive(file, importTimestamp, cardCounterRef);
+                        totalImported += imported;
+                        categoriesCreated += importedCategories;
+                        continue;
+                    }
+
                     const content = await file.text();
                     const lines = content
                         .split(/\r?\n/)
@@ -3613,58 +3883,19 @@
                         continue;
                     }
 
-                    let batch = writeBatch(db);
-                    let operationsInBatch = 0;
-
-                    const commitBatch = async () => {
-                        if (operationsInBatch === 0) return;
-                        await batch.commit();
-                        batch = writeBatch(db);
-                        operationsInBatch = 0;
-                    };
-
-                    for (const line of lines) {
-                        const fields = parseTsvLine(line);
-                        const cardTimestamp = new Date(importTimestamp.getTime() + cardCounter);
-                        cardCounter++;
-
-                        const frontField = (fields[0] || '').trim();
-                        const backField = (fields[1] || '').trim();
-                        const speechField = (fields[2] || '').trim();
-                        const beispielText = (fields[3] || '').split(/\s{2,}/).join('\n');
-                        const beispielSpeechField = (fields[4] || '').trim();
-                        const translationText = (fields[5] || '').split(/\s{2,}/).join('\n');
-
-                        const formattedBeispiel = formatMultiLine(beispielText);
-                        const backTagBase = prepareForSoundTag(backField);
-                        const computedSpeech = speechField || (backTagBase ? `[sound:${backTagBase}.mp3]` : '');
-                        const computedBeispielSpeech = resolveBeispielSpeechValue(backField, beispielText, beispielSpeechField);
-
-                        const cardData = {
-                            front: frontField,
-                            back: backField,
-                            speech: computedSpeech,
-                            beispiel: formattedBeispiel,
-                            beispielSpeech: computedBeispielSpeech,
-                            translation: formatMultiLine(translationText),
-                            folderId: selectedFolderId,
-                            folderName: selectedFolderName,
-                            createdAt: cardTimestamp.toISOString()
-                        };
-                        const newCardRef = doc(collection(db, `artifacts/${appId}/users/${userId}/cards`));
-                        batch.set(newCardRef, cardData);
-                        operationsInBatch++;
-                        if (operationsInBatch === 450) {
-                            await commitBatch();
-                        }
-                    }
-
-                    await commitBatch();
-                    totalImported += lines.length;
+                    totalImported += await importCardLines(lines, {
+                        folderId: selectedFolderId,
+                        folderName: selectedFolderName,
+                        importTimestamp,
+                        cardCounterRef
+                    });
                 }
 
                 if (totalImported > 0) {
-                    showNotification(`Successfully imported ${totalImported} cards!`, 'success');
+                    const categorySuffix = categoriesCreated > 0
+                        ? ` and created ${categoriesCreated} categor${categoriesCreated === 1 ? 'y' : 'ies'}`
+                        : '';
+                    showNotification(`Successfully imported ${totalImported} cards${categorySuffix}!`, 'success');
                 } else {
                     showNotification("The selected files are empty or contain no valid data.");
                 }
@@ -4228,6 +4459,13 @@
                 radio.addEventListener('change', () => {
                     if (!radio.value.startsWith('clipboard')) {
                         document.getElementById('clipboard-output-container').classList.add('hidden');
+                    }
+                    if (radio.checked && radio.value === 'category-zip') {
+                        const folderRadio = document.getElementById('export-folder-radio');
+                        if (folderRadio) {
+                            folderRadio.checked = true;
+                            folderRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
                     }
                 });
             });
