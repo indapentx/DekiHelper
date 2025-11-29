@@ -3,6 +3,7 @@ const functions = require('firebase-functions');
 const DEFAULT_ALLOWED_ORIGINS = [
   'https://deki-helper.web.app',
   'https://deki-helper.firebaseapp.com',
+  'https://indapentx.github.io',
   'http://localhost:5000',
   'http://localhost:5001',
   'http://localhost:5173',
