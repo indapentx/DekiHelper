@@ -4221,7 +4221,6 @@
                 document.body.removeChild(tempInput);
                 showNotification("Copied to clipboard!", "success");
             });
-            updateDeepLKeyStatus();
             document.querySelectorAll('input[name="export-format"]').forEach(radio => {
                 radio.addEventListener('change', () => {
                     if (!radio.value.startsWith('clipboard')) {
