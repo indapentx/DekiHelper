@@ -186,7 +186,10 @@
                 </select>
             </div>
             <p id="example-library-status" class="text-xs text-gray-500 mb-2"></p>
-            <p id="example-match-summary" class="text-sm text-gray-400 mb-3"></p>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                <p id="example-match-summary" class="text-sm text-gray-400"></p>
+                <button id="example-match-show-more" class="btn btn-secondary btn-sm whitespace-nowrap hidden">Show more</button>
+            </div>
             <div id="example-matches-empty" class="hidden text-gray-500 text-center border border-dashed border-gray-700 rounded-lg p-6">
                 No matches yet. Click "Find Matches" to search your cards in the vocab files.
             </div>
@@ -522,6 +525,7 @@
             { id: 'A2', file: 'A2.json', label: 'A2' },
             { id: 'B1', file: 'B1.json', label: 'B1' }
         ];
+        const EXAMPLE_MATCH_PAGE_SIZE = 10;
 
         
         let app, auth, db, userId, cardsCollectionRef, unsubscribe;
@@ -550,6 +554,7 @@
         let exampleLibraryLoadedAt = null;
         let isLoadingExampleLibrary = false;
         let currentExampleMatches = [];
+        let exampleMatchesVisibleCount = EXAMPLE_MATCH_PAGE_SIZE;
         
         function showNotification(message, level = 'error', duration = 3000) {
             const notification = document.getElementById('notification');
@@ -782,26 +787,39 @@
             return matches;
         }
 
-        function renderExampleMatches(matches) {
+        function renderExampleMatches(matches, { resetVisibleCount = true } = {}) {
             currentExampleMatches = matches || [];
             const container = document.getElementById('example-matches-container');
             const emptyState = document.getElementById('example-matches-empty');
             const summary = document.getElementById('example-match-summary');
+            const showMoreBtn = document.getElementById('example-match-show-more');
             if (!container || !emptyState || !summary) return;
 
+            if (resetVisibleCount) {
+                exampleMatchesVisibleCount = EXAMPLE_MATCH_PAGE_SIZE;
+            }
+
             container.innerHTML = '';
-            if (!matches || matches.length === 0) {
+            if (!currentExampleMatches || currentExampleMatches.length === 0) {
                 emptyState.classList.remove('hidden');
                 summary.textContent = '';
+                if (showMoreBtn) showMoreBtn.classList.add('hidden');
                 return;
             }
 
             emptyState.classList.add('hidden');
-            const uniqueCards = new Set(matches.map(m => m.card.id)).size;
-            const uniqueSources = new Set(matches.map(m => m.sourceId)).size;
-            summary.textContent = `Found ${matches.length} match${matches.length === 1 ? '' : 'es'} across ${uniqueCards} card${uniqueCards === 1 ? '' : 's'} from ${uniqueSources} source${uniqueSources === 1 ? '' : 's'}.`;
+            const totalMatches = currentExampleMatches.length;
+            exampleMatchesVisibleCount = Math.min(exampleMatchesVisibleCount, totalMatches);
+            const visibleMatches = currentExampleMatches.slice(0, exampleMatchesVisibleCount);
+            const uniqueCards = new Set(currentExampleMatches.map(m => m.card.id)).size;
+            const uniqueSources = new Set(currentExampleMatches.map(m => m.sourceId)).size;
+            const hiddenCount = Math.max(totalMatches - visibleMatches.length, 0);
+            summary.textContent = `Found ${totalMatches} match${totalMatches === 1 ? '' : 'es'} across ${uniqueCards} card${uniqueCards === 1 ? '' : 's'} from ${uniqueSources} source${uniqueSources === 1 ? '' : 's'}.`;
+            if (hiddenCount > 0) {
+                summary.textContent += ` Showing ${visibleMatches.length} of ${totalMatches}.`;
+            }
 
-            matches.forEach(match => {
+            visibleMatches.forEach(match => {
                 const existingSentences = normalizeSentencesFromBeispiel(match.card.beispiel);
                 const existingPreview = existingSentences.length
                     ? `Existing Beispiel: ${escapeHtml(existingSentences.slice(0, 2).join(' • '))}${existingSentences.length > 2 ? ' ...' : ''}`
@@ -834,6 +852,25 @@
                 `;
                 container.appendChild(item);
             });
+
+            if (showMoreBtn) {
+                if (hiddenCount > 0) {
+                    showMoreBtn.textContent = `Show more (${hiddenCount} left)`;
+                    showMoreBtn.classList.remove('hidden');
+                    showMoreBtn.disabled = false;
+                } else {
+                    showMoreBtn.classList.add('hidden');
+                }
+            }
+        }
+
+        function handleShowMoreExampleMatches() {
+            if (!currentExampleMatches || currentExampleMatches.length === 0) return;
+            exampleMatchesVisibleCount = Math.min(
+                currentExampleMatches.length,
+                exampleMatchesVisibleCount + EXAMPLE_MATCH_PAGE_SIZE
+            );
+            renderExampleMatches(currentExampleMatches, { resetVisibleCount: false });
         }
 
         async function refreshExampleMatches({ forceReloadLibrary = false } = {}) {
@@ -4125,6 +4162,8 @@
             if (findExampleMatchesBtn) findExampleMatchesBtn.addEventListener('click', () => refreshExampleMatches({ forceReloadLibrary: false }));
             const reloadExampleLibraryBtn = document.getElementById('refresh-example-library-btn');
             if (reloadExampleLibraryBtn) reloadExampleLibraryBtn.addEventListener('click', () => refreshExampleMatches({ forceReloadLibrary: true }));
+            const showMoreExampleMatchesBtn = document.getElementById('example-match-show-more');
+            if (showMoreExampleMatchesBtn) showMoreExampleMatchesBtn.addEventListener('click', handleShowMoreExampleMatches);
             document.getElementById('update-btn').addEventListener('click', handleUpdateCard);
             document.getElementById('cancel-btn').addEventListener('click', () => setEditMode(false));
             document.getElementById('confirm-delete-btn').addEventListener('click', handleDeleteConfirmed);
