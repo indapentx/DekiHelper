@@ -762,12 +762,6 @@
     "example2": "Ist hier einer, der das kann?"
   },
   {
-    "word": "einfach",
-    "example": "Die Prüfung ist ganz einfach.",
-    "example2": "Hin und zurück? – Nein, bitte nur einfach.",
-    "example3": "Ich brauche nur ein einfaches Zimmer."
-  },
-  {
     "word": "der Eingang",
     "example": "Der Eingang ist um die Ecke."
   },
@@ -2407,10 +2401,6 @@
     "word": "stehen",
     "example": "Ich glaube es nicht, aber es steht in der Zeitung.",
     "example2": "Der Bus steht schon an der Haltestelle."
-  },
-  {
-    "word": "die Stelle",
-    "example": "Ich habe eine neue Stelle."
   },
   {
     "word": "stellen",

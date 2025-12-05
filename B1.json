@@ -416,12 +416,6 @@
     "example": "Es gibt eine Programmänderung."
   },
   {
-    "word": "anders",
-    "example": "Anders geht das leider nicht.",
-    "example2": "Oliver ist anders als seine Freunde.",
-    "example3": "Ich würde das anders machen."
-  },
-  {
     "word": "anerkennen",
     "example": "Meine Ausbildung wird hier nicht anerkannt."
   },
@@ -1342,10 +1336,6 @@
     "example": "Wir müssen uns beeilen. Sonst verpassen wir den Zug."
   },
   {
-    "word": "beenden",
-    "example": "Du musst deine Ausbildung auf jeden Fall beenden."
-  },
-  {
     "word": "sich befinden",
     "example": "Das Bord-Bistro befindet sich in der Mitte des Zuges."
   },
@@ -1858,14 +1848,6 @@
   {
     "word": "die Breite",
     "example": "Welche Maße hat der Tisch? – Länge: 1 m, Breite: 80 cm, Höhe: 1,20 m."
-  },
-  {
-    "word": "bremsen",
-    "example": "Der Mann ist ganz plötzlich über die Straße gegangen. Ich musste stark bremsen."
-  },
-  {
-    "word": "die Bremse",
-    "example": "Du musst unbedingt die Bremsen kontrollieren lassen."
   },
   {
     "word": "brennen",
@@ -2521,12 +2503,6 @@
     "example": "Einerseits möchte ich die Reise gern machen, andererseits ist sie zu teuer."
   },
   {
-    "word": "einfach",
-    "example": "Hin und zurück? – Nein, bitte nur einfach.",
-    "example2": "Ich verstehe das nicht. Kannst du das bitte einfacher sagen?",
-    "example3": "Wir haben am Wochenende einen Ausflug gemacht. Es war einfach toll."
-  },
-  {
     "word": "die Einfahrt",
     "example": "Da parkt wieder jemand vor unserer Einfahrt.",
     "example2": "Können Sie nicht lesen: Einfahrt freihalten!"
@@ -2612,12 +2588,6 @@
     "word": "eigen",
     "example": "Fast jedes Kind hat ein eigenes Zimmer.",
     "example2": "Manche Leute haben keine eigene Meinung."
-  },
-  {
-    "word": "eigentlich",
-    "example": "Wir wollten eigentlich Freunde besuchen, aber dann sind wir doch zu Hause geblieben.",
-    "example2": "Die Sängerin nennt sich Arabella. Aber eigentlich heißt sie Uschi Müller.",
-    "example3": "Was willst du eigentlich von mir?"
   },
   {
     "word": "sich eignen",
@@ -3599,10 +3569,6 @@
   {
     "word": "die Fleischhauerin",
     "example": "Dieser Fleischhauer macht sehr gute Wurst."
-  },
-  {
-    "word": "fleißig",
-    "example": "Pamela ist wirklich fleißig. Sie macht immer ihre Hausaufgaben."
   },
   {
     "word": "die Ferien",
@@ -4818,13 +4784,6 @@
     "word": "hängen",
     "example": "Das Bild hängt schief.",
     "example2": "Hast du den Anzug wieder in den Schrank gehängt?"
-  },
-  {
-    "word": "hart",
-    "example": "Das Bett im Hotel war mir zu hart.",
-    "example2": "Die Brötchen sind ja ganz hart.",
-    "example3": "Ich habe eine harte Woche vor mir. Ich muss jeden Tag Überstunden machen.",
-    "example4": "Wir haben hart gearbeitet, um die Wohnung zu bezahlen."
   },
   {
     "word": "hassen",
@@ -6806,10 +6765,6 @@
     "example2": "Deine Hose hat ein Loch. – Ich weiß, sie ist schon alt."
   },
   {
-    "word": "locker",
-    "example": "Lassen Sie bitte die Arme ganz locker und atmen Sie tief ein."
-  },
-  {
     "word": "der Löffel",
     "example": "Bitte, bringen Sie mir einen Löffel."
   },
@@ -8145,14 +8100,6 @@
     "example4": "Die Post ist auf dem Platz, direkt am Markt."
   },
   {
-    "word": "plötzlich",
-    "example": "Es war zuerst so schön. Plötzlich hat es angefangen zu regnen."
-  },
-  {
-    "word": "der Patient",
-    "example": "Ich bin Patientin bei Dr. Hausner. Ich möchte bitte einen Termin."
-  },
-  {
     "word": "pauschal",
     "example": "Sie haben die Reise pauschal gebucht."
   },
@@ -8555,12 +8502,6 @@
   {
     "word": "das Regal",
     "example": "Das Buch steht im Regal oben rechts."
-  },
-  {
-    "word": "die Regel",
-    "example": "Im Straßenverkehr sind viele Regeln zu beachten.",
-    "example2": "Wie geht dieses Spiel? Kennst du die Regeln?",
-    "example3": "In der Regel geht sie um sieben Uhr aus dem Haus."
   },
   {
     "word": "regelmäßig",
@@ -9779,13 +9720,6 @@
     "example2": "Bitte setzen Sie sich, wohin Sie wollen!"
   },
   {
-    "word": "sicher",
-    "example": "Dieses Auto ist besonders sicher.",
-    "example2": "Bist du sicher, dass die Bank heute geöffnet ist?",
-    "example3": "Das weiß ich ganz sicher.",
-    "example4": "Du bist jetzt sicher müde."
-  },
-  {
     "word": "die Sicherheit",
     "example": "Sicherheit ist für mich sehr wichtig."
   },
@@ -10137,13 +10071,6 @@
   {
     "word": "der Stein",
     "example": "Die Kinder werfen Steine ins Wasser."
-  },
-  {
-    "word": "die Stelle",
-    "example": "Wir treffen uns hier an dieser Stelle.",
-    "example2": "Ich habe eine neue Stelle.",
-    "example3": "Diese Stelle in seinem Brief ist mir nicht ganz klar.",
-    "example4": "An Ihrer Stelle würde ich den Vertrag nicht unterschreiben."
   },
   {
     "word": "stellen",
@@ -10855,16 +10782,6 @@
     "example": "Was kostet der Transport?"
   },
   {
-    "word": "träumen",
-    "example": "Ich habe schlecht geträumt.",
-    "example2": "Ich träume von einem großen Haus mit Garten."
-  },
-  {
-    "word": "der Traum",
-    "example": "Mein Traum ist ein eigenes Geschäft.",
-    "example2": "Mein Traumberuf ist Feuerwehrmann."
-  },
-  {
     "word": "traurig",
     "example": "Ich bin traurig. Ich darf nicht mitfahren.",
     "example2": "Das war ein sehr trauriger Film."
@@ -11527,10 +11444,6 @@
   {
     "word": "die Unterstützung",
     "example": "Ich nehme Ihre Unterstützung gern an."
-  },
-  {
-    "word": "untersuchen",
-    "example": "Sie sollten sich vom Arzt untersuchen lassen."
   },
   {
     "word": "die Untersuchung",
@@ -12712,12 +12625,6 @@
     "word": "sich wundern",
     "example": "Es hat mich gewundert, dass das Essen hier so günstig ist.",
     "example2": "Ich wundere mich, dass du schon so früh aus der Schule kommst. Was ist los?"
-  },
-  {
-    "word": "sich wünschen",
-    "example": "Ich wünsche Ihnen alles Gute.",
-    "example2": "Was wünschst du dir zum Geburtstag?",
-    "example3": "Wünsch mir Glück!"
   },
   {
     "word": "der Wunsch",

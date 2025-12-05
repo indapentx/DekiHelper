@@ -403,10 +403,6 @@
     "example2": "Mein rechtes Auge tut seit Sonntag weh."
   },
   {
-    "word": "beenden",
-    "example": "Du musst deine Ausbildung auf jeden Fall beenden."
-  },
-  {
     "word": "beginnen",
     "example": "Das Spiel beginnt um 15.30 Uhr."
   },
@@ -1229,19 +1225,8 @@
     "example": "Nicht alle Kinder haben ein eigenes Zimmer."
   },
   {
-    "word": "eigentlich",
-    "example": "Wir wollten eigentlich Freunde besuchen, aber dann sind wir doch zu Hause geblieben.",
-    "example2": "Kennst du eigentlich Susanne?"
-  },
-  {
     "word": "eilig",
     "example": "Hast du es eilig?"
-  },
-  {
-    "word": "einfach",
-    "example": "Die Prüfung ist ganz einfach.",
-    "example2": "Ich verstehe das nicht. Kannst du es bitte einfacher sagen?",
-    "example3": "Hin und zurück? – Nein, bitte nur eine einfache Fahrt nach Berlin."
   },
   {
     "word": "der Eingang",
@@ -1594,10 +1579,6 @@
   {
     "word": "das Fleisch",
     "example": "Fleisch mag ich nicht."
-  },
-  {
-    "word": "fleißig",
-    "example": "Ibrahim ist sehr fleißig. Er macht immer seine Hausaufgaben."
   },
   {
     "word": "(ab)fliegen",
@@ -2108,11 +2089,6 @@
     "example": "Im Museum hängen moderne Bilder.",
     "example2": "Warum hast du das Bild noch nicht an die Wand gehängt?",
     "example3": "Das Bild von meiner Tochter hat im Wohnzimmer gehangen."
-  },
-  {
-    "word": "hart",
-    "example": "Ich finde das Bett zu hart.",
-    "example2": "Die Brötchen sind ja ganz hart."
   },
   {
     "word": "hässlich",
@@ -3167,11 +3143,6 @@
     "example2": "Ich brauche ein Paar Schuhe."
   },
   {
-    "word": "ein paar",
-    "example": "Wir fahren ein paar Tage ans Meer.",
-    "example2": "Hast du ein paar Minuten Zeit?"
-  },
-  {
     "word": "packen",
     "example": "Ich muss noch meinen Koffer packen."
   },
@@ -3495,10 +3466,6 @@
     "example2": "Bitte nehmen Sie Platz!",
     "example3": "Ich wohne am Messeplatz 5.",
     "example4": "Ich finde keinen Parkplatz."
-  },
-  {
-    "word": "plötzlich",
-    "example": "Plötzlich war das Licht aus."
   },
   {
     "word": "die Polizei",
@@ -4107,11 +4074,6 @@
     "example3": "Was steht heute in der Zeitung?"
   },
   {
-    "word": "die Stelle",
-    "example": "Ich habe eine neue Stelle. Ich arbeite jetzt bei Mercedes.",
-    "example2": "Wir treffen uns hier an dieser Stelle."
-  },
-  {
     "word": "stellen",
     "example": "Stell die Milch bitte in den Kühlschrank!"
   },
@@ -4158,12 +4120,6 @@
   {
     "word": "streiten (sich)",
     "example": "Die Kinder streiten (sich) oft."
-  },
-  {
-    "word": "sicher",
-    "example": "Dieses Auto ist besonders sicher.",
-    "example2": "Ich bin ganz sicher, dass er kommt.",
-    "example3": "Er ist sicher gleich da."
   },
   {
     "word": "singen",
@@ -4394,15 +4350,6 @@
     "example2": "Ich gehe jede Woche zum Training."
   },
   {
-    "word": "der Traum",
-    "example": "Ich möchte eine eigene Firma, das ist mein Traum."
-  },
-  {
-    "word": "träumen",
-    "example": "Ich habe schlecht geträumt.",
-    "example2": "Ich träume von einem großen Haus mit Garten."
-  },
-  {
     "word": "traurig",
     "example": "Ich bin sehr traurig. Meine Katze ist weggelaufen."
   },
@@ -4589,11 +4536,6 @@
   {
     "word": "die Unterschrift",
     "example": "Hier fehlt noch Ihre Unterschrift."
-  },
-  {
-    "word": "untersuchen",
-    "example": "Der Arzt hat mich untersucht.",
-    "example2": "Der Arzt muss dein Bein untersuchen."
   },
   {
     "word": "unterwegs sein",

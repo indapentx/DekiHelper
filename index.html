@@ -831,7 +831,10 @@
                 item.innerHTML = `
                     <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                         <div class="flex-1">
-                            <p class="font-semibold text-lg text-white">${escapeHtml(match.word)}</p>
+                            <div class="flex items-center gap-2 example-word-row">
+                                <span class="font-semibold text-lg text-white example-copyable cursor-pointer" data-text="${escapeHtml(match.word)}" data-copy-type="word">${escapeHtml(match.word)}</span>
+                                <button class="example-copy-btn text-gray-400 hover:text-white mt-0.5" title="Copy word" data-text="${escapeHtml(match.word)}" data-copy-type="word"><i class="fas fa-copy"></i></button>
+                            </div>
                             <p class="text-xs text-gray-400 mt-1">Front: ${escapeHtml(frontLabel)}</p>
                             <p class="text-xs text-gray-500 mt-1">Back: ${escapeHtml(backLabel)} • Source: ${escapeHtml(getExampleSourceLabel(match.sourceId))} • Folder: ${escapeHtml(folderLabel)}</p>
                             <p class="text-xs text-gray-500 mt-1">${existingPreview}</p>
@@ -4222,12 +4225,14 @@
                     const text = copyable.dataset.text || '';
                     if (!text.trim()) return;
                     copyPlainTextToClipboard(text);
-                    const line = copyable.closest('.example-line');
-                    if (line) {
-                        line.classList.add('copy-highlight');
-                        setTimeout(() => line.classList.remove('copy-highlight'), 400);
+                    const highlightTarget = copyable.closest('.example-line') || copyable.closest('.example-word-row');
+                    if (highlightTarget) {
+                        highlightTarget.classList.add('copy-highlight');
+                        setTimeout(() => highlightTarget.classList.remove('copy-highlight'), 400);
                     }
-                    showNotification('Sentence copied.', 'success', 1200);
+                    const copyType = (copyable.dataset.copyType || 'sentence').toLowerCase();
+                    const label = copyType === 'word' ? 'Word' : 'Sentence';
+                    showNotification(`${label} copied.`, 'success', 1200);
                 });
             }
             document.getElementById('review-btn').addEventListener('click', () => {
