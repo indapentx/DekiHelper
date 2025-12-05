@@ -636,11 +636,7 @@
         function normalizeWordVariants(value) {
             const variants = new Set();
             const base = normalizeWordForLookup(value);
-            if (base) variants.add(base);
-            if (base) {
-                const stripped = base.replace(/^(der|die|das|ein|eine|einen|einem|eines|den|dem|des)\s+/i, '').trim();
-                if (stripped) variants.add(stripped);
-            }
+            if (base) variants.add(base); // exact-only: no article stripping
             return Array.from(variants);
         }
 
@@ -826,13 +822,18 @@
                     : 'No Beispiel on this card yet.';
                 const folderMeta = match.card.folderId ? folders.find(f => f.id === match.card.folderId) : null;
                 const folderLabel = folderMeta && folderMeta.name ? folderMeta.name : 'No Folder';
+                const frontPreview = formatDuplicateDisplayValue(match.card.front);
+                const backPreview = formatDuplicateDisplayValue(match.card.back);
+                const frontLabel = frontPreview !== '—' ? frontPreview : 'No front';
+                const backLabel = backPreview !== '—' ? backPreview : 'No back';
                 const item = document.createElement('div');
                 item.className = 'bg-[#0f0f0f] border border-gray-800 rounded-lg p-4';
                 item.innerHTML = `
                     <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                         <div class="flex-1">
                             <p class="font-semibold text-lg text-white">${escapeHtml(match.word)}</p>
-                            <p class="text-xs text-gray-500 mt-1">Card: ${escapeHtml(match.card.back || match.card.front || 'No back')} • Source: ${escapeHtml(getExampleSourceLabel(match.sourceId))} • Folder: ${escapeHtml(folderLabel)}</p>
+                            <p class="text-xs text-gray-400 mt-1">Front: ${escapeHtml(frontLabel)}</p>
+                            <p class="text-xs text-gray-500 mt-1">Back: ${escapeHtml(backLabel)} • Source: ${escapeHtml(getExampleSourceLabel(match.sourceId))} • Folder: ${escapeHtml(folderLabel)}</p>
                             <p class="text-xs text-gray-500 mt-1">${existingPreview}</p>
                         </div>
                         <div class="flex items-center gap-2">
