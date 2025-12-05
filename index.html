@@ -939,7 +939,11 @@
                 await updateDoc(docRef, { beispiel: newBeispiel, beispielSpeech: newBeispielSpeech });
                 card.beispiel = newBeispiel;
                 card.beispielSpeech = newBeispielSpeech;
-                showNotification('Beispiele added to card.', 'success');
+                const wordToCopy = match.word || decodedWord || '';
+                if (wordToCopy) {
+                    copyPlainTextToClipboard(wordToCopy);
+                }
+                showNotification('Beispiele added to card. Word copied.', 'success');
                 filterAndRenderCards();
                 refreshExampleMatches({ forceReloadLibrary: false });
             } catch (error) {
