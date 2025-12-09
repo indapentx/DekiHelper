@@ -179,10 +179,13 @@
                     </button>
                 </div>
             </div>
-            <div class="flex flex-col sm:flex-row gap-3 mb-3">
+            <div class="flex flex-col sm:flex-row sm:flex-wrap gap-3 mb-3">
                 <input type="text" id="example-match-filter" class="anki-input flex-1" placeholder="Filter by word or card text...">
                 <select id="example-source-filter" class="anki-input sm:w-60">
                     <option value="__all__">All sources</option>
+                </select>
+                <select id="example-folder-filter" class="anki-input sm:w-60">
+                    <option value="__all_folders__">All folders</option>
                 </select>
             </div>
             <p id="example-library-status" class="text-xs text-gray-500 mb-2"></p>
@@ -520,11 +523,7 @@
         const ALL_FOLDERS_VALUE = '__all_folders__';
         const FOLDER_STORAGE_KEY = 'deki-helper-current-folder';
         const FIREBASE_FUNCTIONS_REGION = 'us-central1';
-        const EXAMPLE_SOURCE_FILES = [
-            { id: 'A1', file: 'A1.json', label: 'A1' },
-            { id: 'A2', file: 'A2.json', label: 'A2' },
-            { id: 'B1', file: 'B1.json', label: 'B1' }
-        ];
+        const EXAMPLE_LIBRARY_STORAGE_KEY = 'deki-helper-example-library-v1';
         const EXAMPLE_MATCH_PAGE_SIZE = 10;
 
         
@@ -542,6 +541,7 @@
         let currentReviewFolderId = ALL_FOLDERS_VALUE;
         let currentReviewSessionId = null;
         let currentViewFolderId = ALL_FOLDERS_VALUE;
+        let currentExampleFolderId = ALL_FOLDERS_VALUE;
         let isSignUpMode = false;
         let isReviewEditing = false;
         let currentReviewDate = "all";
@@ -550,6 +550,7 @@
         let isBulkTranslating = false;
         let isFixingLegacyFronts = false;
         let exampleWordMap = new Map();
+        let exampleLibrarySources = [];
         let exampleSourcesLoaded = [];
         let exampleLibraryLoadedAt = null;
         let isLoadingExampleLibrary = false;
@@ -742,13 +743,14 @@
             select.value = availableValues.includes(previousValue) ? previousValue : '__all__';
         }
 
-        function buildExampleMatches({ filterTerm = '', sourceFilter = '__all__' } = {}) {
+        function buildExampleMatches({ filterTerm = '', sourceFilter = '__all__', folderFilter = ALL_FOLDERS_VALUE } = {}) {
             if (!exampleWordMap || exampleWordMap.size === 0) return [];
             const normalizedFilter = filterTerm.toLowerCase().trim();
             const matches = [];
             const seen = new Set();
 
             allCards.forEach(card => {
+                if (!cardMatchesFolder(card, folderFilter)) return;
                 const candidateSet = new Set([
                     ...normalizeWordVariants(card.back),
                     ...normalizeWordVariants(card.front)
@@ -880,8 +882,12 @@
         async function refreshExampleMatches({ forceReloadLibrary = false } = {}) {
             const filterInput = document.getElementById('example-match-filter');
             const sourceFilterSelect = document.getElementById('example-source-filter');
+            const folderFilterSelect = document.getElementById('example-folder-filter');
             const filterTerm = filterInput ? filterInput.value : '';
             const sourceFilter = sourceFilterSelect ? sourceFilterSelect.value : '__all__';
+            const folderFilterRaw = folderFilterSelect ? folderFilterSelect.value : currentExampleFolderId;
+            const folderFilter = folderFilterRaw || ALL_FOLDERS_VALUE;
+            currentExampleFolderId = folderFilter;
 
             const { loaded } = await loadExampleLibrary(forceReloadLibrary);
             if (!loaded) {
@@ -889,7 +895,7 @@
                 return;
             }
 
-            const matches = buildExampleMatches({ filterTerm, sourceFilter });
+            const matches = buildExampleMatches({ filterTerm, sourceFilter, folderFilter });
             renderExampleMatches(matches);
         }
 
@@ -926,7 +932,11 @@
             });
 
             if (combined.length === existingSentences.length) {
-                showNotification('Card already contains these Beispiele.', 'success');
+                const wordToCopy = match.word || decodedWord || '';
+                if (wordToCopy) {
+                    copyPlainTextToClipboard(wordToCopy);
+                }
+                showNotification('Card already contains these Beispiele. Word copied.', 'success');
                 return;
             }
 
@@ -1138,10 +1148,15 @@
 
             folderSelect.value = (currentFolderId != null ? currentFolderId : NO_FOLDER_VALUE);
             const previousViewFolder = currentViewFolderId;
+            const previousExampleFolder = currentExampleFolderId;
             renderViewFolderOptions();
             renderReviewFolderOptions();
+            renderExampleFolderOptions();
             if (currentViewFolderId !== previousViewFolder) {
                 filterAndRenderCards();
+            }
+            if (currentExampleFolderId !== previousExampleFolder) {
+                refreshExampleMatches({ forceReloadLibrary: false });
             }
             updateReviewDateSelector();
             populateDuplicatesFolderFilter();
@@ -1299,6 +1314,11 @@
         function renderViewFolderOptions() {
             const selector = document.getElementById('view-folder-selector');
             currentViewFolderId = populateFolderSelect(selector, currentViewFolderId);
+        }
+
+        function renderExampleFolderOptions() {
+            const selector = document.getElementById('example-folder-filter');
+            currentExampleFolderId = populateFolderSelect(selector, currentExampleFolderId);
         }
 
         function buildReviewSessionId(selectedDate, folderValue) {
@@ -3387,6 +3407,7 @@
             currentReviewSessionId = null;
             currentReviewDate = 'all';
             currentViewFolderId = ALL_FOLDERS_VALUE;
+            currentExampleFolderId = ALL_FOLDERS_VALUE;
             updateFolderSelection(NO_FOLDER_VALUE, { persist: false, updateSelect: false });
             renderFolderOptions();
             const cardListEl = document.getElementById('card-list');
@@ -3440,6 +3461,7 @@
             currentReviewSessionId = null;
             currentReviewDate = 'all';
             currentViewFolderId = ALL_FOLDERS_VALUE;
+            currentExampleFolderId = ALL_FOLDERS_VALUE;
             refreshExampleMatches({ forceReloadLibrary: false });
             
             userId = user.uid;
@@ -4166,6 +4188,11 @@
             if (exampleFilterInput) exampleFilterInput.addEventListener('input', () => refreshExampleMatches({ forceReloadLibrary: false }));
             const exampleSourceFilter = document.getElementById('example-source-filter');
             if (exampleSourceFilter) exampleSourceFilter.addEventListener('change', () => refreshExampleMatches({ forceReloadLibrary: false }));
+            const exampleFolderFilter = document.getElementById('example-folder-filter');
+            if (exampleFolderFilter) exampleFolderFilter.addEventListener('change', () => {
+                currentExampleFolderId = exampleFolderFilter.value || ALL_FOLDERS_VALUE;
+                refreshExampleMatches({ forceReloadLibrary: false });
+            });
             const findExampleMatchesBtn = document.getElementById('find-example-matches-btn');
             if (findExampleMatchesBtn) findExampleMatchesBtn.addEventListener('click', () => refreshExampleMatches({ forceReloadLibrary: false }));
             const reloadExampleLibraryBtn = document.getElementById('refresh-example-library-btn');
