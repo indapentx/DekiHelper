@@ -403,10 +403,6 @@
     "example2": "Mein rechtes Auge tut seit Sonntag weh."
   },
   {
-    "word": "beginnen",
-    "example": "Das Spiel beginnt um 15.30 Uhr."
-  },
-  {
     "word": "begründen",
     "example": "Bitte begründen Sie Ihre Meinung."
   },
@@ -506,10 +502,6 @@
   {
     "word": "das Baby",
     "example": "Wir haben ein Baby. Es ist sechs Wochen alt."
-  },
-  {
-    "word": "der Babysitter",
-    "example": "Meine Tochter arbeitet als Babysitter bei einer Familie mit vier Kindern."
   },
   {
     "word": "backen",
@@ -2383,10 +2375,6 @@
     "example": "Diese Zeitschrift kostet nichts. Sie ist kostenlos."
   },
   {
-    "word": "krank",
-    "example": "Ich kann heute nicht zur Arbeit kommen, ich bin krank und liege im Bett."
-  },
-  {
     "word": "das Krankenhaus",
     "example": "Meine Tante ist im Krankenhaus.",
     "example2": "Er hat sich verletzt und muss ins Krankenhaus."
@@ -2860,10 +2848,6 @@
     "example": "Einen Moment, bitte.",
     "example2": "Warten Sie bitte einen Moment.",
     "example3": "Ich habe im Moment sehr viel zu tun."
-  },
-  {
-    "word": "morgen",
-    "example": "Morgen beginnt die Schule erst um zehn Uhr."
   },
   {
     "word": "der Motor",
@@ -4239,11 +4223,6 @@
     "example": "Steffi spielt sehr gut Tennis."
   },
   {
-    "word": "der Termin",
-    "example": "Am besten machen wir sofort einen Termin.",
-    "example2": "Ich habe heute einen Termin bei meiner Zahnärztin."
-  },
-  {
     "word": "teuer",
     "example": "Das ist mir zu teuer."
   },
@@ -4333,15 +4312,6 @@
   {
     "word": "trainieren",
     "example": "Wir trainieren einmal pro Woche im Sportverein."
-  },
-  {
-    "word": "das Training",
-    "example": "Das Training ist immer dienstags.",
-    "example2": "Ich gehe jede Woche zum Training."
-  },
-  {
-    "word": "traurig",
-    "example": "Ich bin sehr traurig. Meine Katze ist weggelaufen."
   },
   {
     "word": "treffen (sich)",
@@ -4646,11 +4616,6 @@
     "example2": "Geht deine Uhr richtig?"
   },
   {
-    "word": "um",
-    "example": "Er kommt um sieben Uhr.",
-    "example2": "Die Apotheke ist gleich um die Ecke."
-  },
-  {
     "word": "umsteigen",
     "example": "Sie müssen in Mannheim umsteigen."
   },
@@ -4758,11 +4723,6 @@
   {
     "word": "wandern",
     "example": "Wir gehen oft wandern."
-  },
-  {
-    "word": "wann",
-    "example": "Wann bist du fertig?",
-    "example2": "Wann kann ich Sie anrufen?"
   },
   {
     "word": "warm",

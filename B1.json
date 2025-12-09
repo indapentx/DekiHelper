@@ -565,12 +565,6 @@
     "example": "Es gibt eine Programmänderung."
   },
   {
-    "word": "anders",
-    "example": "Anders geht das leider nicht.",
-    "example2": "Oliver ist anders als seine Freunde.",
-    "example3": "Ich würde das anders machen."
-  },
-  {
     "word": "anerkennen",
     "example": "Meine Ausbildung wird hier nicht anerkannt."
   },
@@ -723,16 +717,6 @@
     "word": "der Artikel",
     "example": "Ich habe einen interessanten Artikel gelesen.",
     "example2": "Im Deutschen gibt es drei Artikel: der, die, das."
-  },
-  {
-    "word": "der Arzt",
-    "example": "Ich muss heute zum Arzt.",
-    "example2": "Wann warst du beim Zahnarzt?"
-  },
-  {
-    "word": "die Ärztin",
-    "example": "Ich muss heute zum Arzt.",
-    "example2": "Wann warst du beim Zahnarzt?"
   },
   {
     "word": "das Asyl",
@@ -1354,10 +1338,6 @@
   {
     "word": "begeistert",
     "example": "Es war ein tolles Konzert. Ich bin begeistert."
-  },
-  {
-    "word": "beginnen",
-    "example": "In zwei Wochen beginnen die Sommerferien."
   },
   {
     "word": "der Beginn",
@@ -4820,13 +4800,6 @@
     "example": "Zum Mittagessen gibt es Hühnchen mit Reis."
   },
   {
-    "word": "halb",
-    "example": "Treffen wir uns um halb neun?",
-    "example2": "Bei dieser Firma habe ich ein halbes Jahr gearbeitet.",
-    "example3": "Ich gebe Ihnen die Tomaten zum halben Preis.",
-    "example4": "Die Flasche ist ja noch halb voll."
-  },
-  {
     "word": "die Halbpension",
     "example": "Wir möchten ein Hotel mit Halbpension."
   },
@@ -5007,10 +4980,6 @@
   {
     "word": "heimlich",
     "example": "Gestern habe ich gehört, dass mein Sohn heimlich raucht."
-  },
-  {
-    "word": "das Heimweh",
-    "example": "Ich habe oft Heimweh nach meiner Familie."
   },
   {
     "word": "heiraten",
@@ -5337,10 +5306,6 @@
   {
     "word": "irgendein",
     "example": "Was für einen Saft möchten Sie? – Ganz egal, irgendeinen."
-  },
-  {
-    "word": "irgendwann",
-    "example": "Ich habe Sie irgendwann schon mal gesehen."
   },
   {
     "word": "sich irren",
@@ -6184,11 +6149,6 @@
     "example": "Die Menschen protestieren gegen das Kraftwerk."
   },
   {
-    "word": "krank",
-    "example": "Ich war zwei Wochen krank.",
-    "example2": "Ich muss mich um meine kranke Großmutter kümmern."
-  },
-  {
     "word": "der Kranke / die Kranke",
     "example": "Kranke brauchen viel Ruhe."
   },
@@ -6645,11 +6605,6 @@
   {
     "word": "lernen",
     "example": "Wie lange lernen Sie schon Deutsch?"
-  },
-  {
-    "word": "die Lösung",
-    "example": "Wir fahren alle zusammen mit dem Zug. Das ist die beste Lösung.",
-    "example2": "Die Aufgabe ist nicht schwer. Die Lösung ist ganz einfach."
   },
   {
     "word": "die Luft",
@@ -10572,10 +10527,6 @@
     "example2": "Habt ihr in eurer neuen Wohnung Teppich oder einen Holzfußboden?"
   },
   {
-    "word": "der Termin",
-    "example": "Als Termin schlage ich den 3. Mai vor."
-  },
-  {
     "word": "der Terminkalender",
     "example": "Hast du unser Treffen schon in deinen Terminkalender eingetragen?"
   },
@@ -10747,11 +10698,6 @@
     "example": "Ich finde unseren Trainer sehr nett."
   },
   {
-    "word": "das Training",
-    "example": "Jeden Dienstag ist Training.",
-    "example2": "Ich gehe jede Woche zum Training."
-  },
-  {
     "word": "das Tram",
     "example": "Fahren wir mit dem Tram oder dem Bus?"
   },
@@ -10766,11 +10712,6 @@
   {
     "word": "der Transport",
     "example": "Was kostet der Transport?"
-  },
-  {
-    "word": "traurig",
-    "example": "Ich bin traurig. Ich darf nicht mitfahren.",
-    "example2": "Das war ein sehr trauriger Film."
   },
   {
     "word": "treffen",
@@ -11067,12 +11008,6 @@
     "example2": "Es ist vier Uhr.",
     "example3": "Um wie viel Uhr müssen wir gehen?",
     "example4": "Meine Uhr ist stehen geblieben."
-  },
-  {
-    "word": "um",
-    "example": "Wir treffen uns um 8 Uhr.",
-    "example2": "Die Apotheke ist gleich um die Ecke.",
-    "example3": "Die Benzinpreise sind schon wieder um 3 % gestiegen."
   },
   {
     "word": "umarmen",
@@ -11757,10 +11692,6 @@
     "example": "Mit der Vermietung von Wohnungen kann man viel Geld verdienen."
   },
   {
-    "word": "vermissen",
-    "example": "Ich vermisse meine Familie."
-  },
-  {
     "word": "die Vermittlung",
     "example": "Du suchst ein Zimmer? Dann frag bei der Vermittlung am Bahnhof nach.",
     "example2": "Rufen Sie die Vermittlung an und fragen Sie nach der Telefonnummer von Herrn Fischer."
@@ -12100,13 +12031,6 @@
   {
     "word": "vorkommen",
     "example": "Kein Problem. Das kann vorkommen."
-  },
-  {
-    "word": "wann",
-    "example": "Wann kommst du?",
-    "example2": "Wissen Sie, wann der Kurs beginnt?",
-    "example3": "Bis wann muss ich mich anmelden?",
-    "example4": "Ab wann haben Sie geöffnet?"
   },
   {
     "word": "die Ware",

@@ -200,10 +200,6 @@
     "example": "Mein Arm tut weh."
   },
   {
-    "word": "der Arzt",
-    "example": "Morgen habe ich einen Termin bei meiner Ärztin."
-  },
-  {
     "word": "auch",
     "example": "Ich bin auch Spanier."
   },
@@ -381,10 +377,6 @@
   {
     "word": "bedeuten",
     "example": "Was bedeutet das Wort?"
-  },
-  {
-    "word": "beginnen",
-    "example": "Das Spiel beginnt um 15.30 Uhr."
   },
   {
     "word": "bei",
@@ -1568,10 +1560,6 @@
     "example": "Wie viel kostet das? – 10 Euro."
   },
   {
-    "word": "krank",
-    "example": "Ich kann heute nicht zur Arbeit kommen, ich bin krank und liege im Bett."
-  },
-  {
     "word": "kriegen",
     "example": "Ich kriege 15 Euro in der Stunde für meine Arbeit."
   },
@@ -1739,10 +1727,6 @@
     "example": "In unserer Straße gibt es ein neues Lokal."
   },
   {
-    "word": "die Lösung",
-    "example": "Die Lösung ist ganz einfach."
-  },
-  {
     "word": "lustig",
     "example": "Frau Mertens ist lustig. Sie lacht immer."
   },
@@ -1853,10 +1837,7 @@
     "example": "Moment mal bitte!",
     "example2": "Einen Moment bitte."
   },
-  {
-    "word": "morgen",
-    "example": "Morgen beginnt die Schule um 10 Uhr."
-  },
+
   {
     "word": "müde",
     "example": "Ich bin müde. Ich gehe schlafen."
@@ -2463,10 +2444,6 @@
     "example": "Haben Sie Telefon?"
   },
   {
-    "word": "der Termin",
-    "example": "Am besten machen wir sofort einen Termin."
-  },
-  {
     "word": "der Test",
     "example": "Der Test war einfach."
   },
@@ -2545,11 +2522,6 @@
   {
     "word": "die Uhr",
     "example": "Es ist vier Uhr."
-  },
-  {
-    "word": "um",
-    "example": "Er kommt um sieben Uhr.",
-    "example2": "Da kommt er gerade um die Ecke."
   },
   {
     "word": "umziehen",
@@ -2668,12 +2640,6 @@
   {
     "word": "wandern",
     "example": "Wir wandern um den Chiemsee."
-  },
-  {
-    "word": "wann",
-    "example": "Wann bist du fertig?",
-    "example2": "Wann kann ich Sie anrufen?",
-    "example3": "Wann sind Sie geboren?"
   },
   {
     "word": "warten",
