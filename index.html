@@ -168,15 +168,40 @@
             <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
                 <div>
                     <h2 class="text-2xl font-bold text-gray-300">Example Finder</h2>
-                    <p class="text-sm text-gray-400 mt-1">Look up vocab files (A1.json etc.) and add their examples to your cards.</p>
+                    <p class="text-sm text-gray-400 mt-1">Upload vocab JSON for A1, A2, and B1 separately and add their examples to your cards.</p>
                 </div>
-                <div class="flex flex-wrap gap-2">
-                    <button type="button" id="refresh-example-library-btn" class="btn btn-secondary btn-sm whitespace-nowrap">
-                        <i class="fas fa-rotate"></i> Reload Files
-                    </button>
-                    <button type="button" id="find-example-matches-btn" class="btn btn-primary btn-sm whitespace-nowrap">
-                        <i class="fas fa-search"></i> Find Matches
-                    </button>
+                <div class="flex flex-col gap-2">
+                    <div class="flex flex-wrap gap-2">
+                        <input type="file" id="example-upload-input-A1" class="hidden" accept=".json">
+                        <button type="button" id="example-upload-btn-A1" class="btn btn-secondary btn-sm whitespace-nowrap" title="Upload A1 vocab JSON">
+                            <i class="fas fa-upload"></i> Upload A1
+                        </button>
+                        <input type="file" id="example-upload-input-A2" class="hidden" accept=".json">
+                        <button type="button" id="example-upload-btn-A2" class="btn btn-secondary btn-sm whitespace-nowrap" title="Upload A2 vocab JSON">
+                            <i class="fas fa-upload"></i> Upload A2
+                        </button>
+                        <input type="file" id="example-upload-input-B1" class="hidden" accept=".json">
+                        <button type="button" id="example-upload-btn-B1" class="btn btn-secondary btn-sm whitespace-nowrap" title="Upload B1 vocab JSON">
+                            <i class="fas fa-upload"></i> Upload B1
+                        </button>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" id="example-download-btn-A1" class="btn btn-secondary btn-sm whitespace-nowrap" title="Download the latest A1 vocab JSON">
+                            <i class="fas fa-download"></i> Download A1
+                        </button>
+                        <button type="button" id="example-download-btn-A2" class="btn btn-secondary btn-sm whitespace-nowrap" title="Download the latest A2 vocab JSON">
+                            <i class="fas fa-download"></i> Download A2
+                        </button>
+                        <button type="button" id="example-download-btn-B1" class="btn btn-secondary btn-sm whitespace-nowrap" title="Download the latest B1 vocab JSON">
+                            <i class="fas fa-download"></i> Download B1
+                        </button>
+                        <button type="button" id="refresh-example-library-btn" class="btn btn-secondary btn-sm whitespace-nowrap">
+                            <i class="fas fa-rotate"></i> Reload Library
+                        </button>
+                        <button type="button" id="find-example-matches-btn" class="btn btn-primary btn-sm whitespace-nowrap">
+                            <i class="fas fa-search"></i> Find Matches
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="flex flex-col sm:flex-row sm:flex-wrap gap-3 mb-3">
@@ -194,7 +219,7 @@
                 <button id="example-match-show-more" class="btn btn-secondary btn-sm whitespace-nowrap hidden">Show more</button>
             </div>
             <div id="example-matches-empty" class="hidden text-gray-500 text-center border border-dashed border-gray-700 rounded-lg p-6">
-                No matches yet. Click "Find Matches" to search your cards in the vocab files.
+                No matches yet. Upload A1/A2/B1 JSON and click "Find Matches" to search your cards.
             </div>
             <div id="example-matches-container" class="space-y-3"></div>
         </div>
@@ -523,7 +548,11 @@
         const ALL_FOLDERS_VALUE = '__all_folders__';
         const FOLDER_STORAGE_KEY = 'deki-helper-current-folder';
         const FIREBASE_FUNCTIONS_REGION = 'us-central1';
-        const EXAMPLE_LIBRARY_STORAGE_KEY = 'deki-helper-example-library-v1';
+        const EXAMPLE_SOURCE_SLOTS = [
+            { id: 'A1', label: 'A1', defaultFileName: 'A1.json' },
+            { id: 'A2', label: 'A2', defaultFileName: 'A2.json' },
+            { id: 'B1', label: 'B1', defaultFileName: 'B1.json' }
+        ];
         const EXAMPLE_MATCH_PAGE_SIZE = 10;
 
         
@@ -552,6 +581,8 @@
         let exampleWordMap = new Map();
         let exampleLibrarySources = [];
         let exampleSourcesLoaded = [];
+        let exampleLibraryDocRef = null;
+        let exampleLibraryUnsubscribe = null;
         let exampleLibraryLoadedAt = null;
         let isLoadingExampleLibrary = false;
         let currentExampleMatches = [];
@@ -624,6 +655,11 @@
             deleteShortcutState.pending = false;
         }
 
+        function getSourceSlotMeta(sourceId) {
+            if (!sourceId) return null;
+            return EXAMPLE_SOURCE_SLOTS.find(slot => slot.id === sourceId) || null;
+        }
+
         function normalizeWordForLookup(value) {
             if (!value) return '';
             return String(value)
@@ -641,9 +677,92 @@
             return Array.from(variants);
         }
 
+        function resolveSourceLabel(source) {
+            if (!source) return 'Unknown source';
+            const sourceId = typeof source === 'string' ? source : (source.id || '');
+            const slotMeta = getSourceSlotMeta(sourceId);
+            const slotLabel = slotMeta ? slotMeta.label : null;
+            if (typeof source === 'string') return slotLabel || source;
+            return source.label || slotLabel || source.fileName || source.id || 'Unknown source';
+        }
+
+        function generateExampleSourceId(fileName) {
+            const base = (fileName || 'source').replace(/\.[^.]+$/, '').trim();
+            const slug = base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'source';
+            const existing = new Set(exampleLibrarySources.map(src => src.id));
+            let candidate = slug || 'source';
+            let counter = 1;
+            while (existing.has(candidate)) {
+                candidate = `${slug}-${counter}`;
+                counter += 1;
+            }
+            return candidate;
+        }
+
+        function decorateExampleEntries(entries, sourceId) {
+            if (!Array.isArray(entries)) return [];
+            return entries.map((entry, index) => {
+                const clone = entry && typeof entry === 'object' ? { ...entry } : {};
+                const metaId = `${sourceId || 'src'}__${index}__${Date.now()}__${Math.random().toString(16).slice(2)}`;
+                Object.defineProperty(clone, '__metaId', { value: metaId, enumerable: false, writable: true });
+                return clone;
+            });
+        }
+
+        function stripExampleMetadata(entry) {
+            if (!entry || typeof entry !== 'object') return entry;
+            const clone = {};
+            Object.keys(entry).forEach(key => {
+                clone[key] = entry[key];
+            });
+            return clone;
+        }
+
+        function normalizeExampleSources(rawSources = []) {
+            if (!Array.isArray(rawSources)) return [];
+            return rawSources.map((src, index) => {
+                const id = src.id || generateExampleSourceId(`upload-${index + 1}`);
+                const slot = getSourceSlotMeta(id);
+                const label = src.label || (slot ? slot.label : (src.fileName ? src.fileName.replace(/\.json$/i, '') : id));
+                const fileName = src.fileName || (slot ? slot.defaultFileName : `${label}.json`);
+                const entries = decorateExampleEntries(src.entries || [], id);
+                return { id, label, fileName, entries };
+            });
+        }
+
+        async function persistExampleLibrary() {
+            const payload = {
+                sources: exampleLibrarySources.map(src => ({
+                    id: src.id,
+                    label: src.label,
+                    fileName: src.fileName,
+                    entries: (src.entries || []).map(stripExampleMetadata)
+                }))
+            };
+            if (!userId || !db || !exampleLibraryDocRef) return;
+            try {
+                await setDoc(exampleLibraryDocRef, payload, { merge: true });
+            } catch (error) {
+                console.warn('Failed to persist example library to Firestore', error);
+            }
+        }
+
+        function applyRemoteExampleLibrary(sources = []) {
+            exampleLibrarySources = normalizeExampleSources(sources);
+            exampleWordMap = new Map();
+            exampleSourcesLoaded = [];
+            populateExampleSourceFilter();
+            refreshExampleMatches({ forceReloadLibrary: true });
+            const count = exampleLibrarySources.length;
+            setExampleLibraryStatus(count > 0
+                ? `Loaded ${count} source${count === 1 ? '' : 's'} from cloud. Click Find Matches to search.`
+                : 'Upload A1/A2/B1 JSON to search for Beispiele. Files sync to your account.');
+        }
+
         function getExampleSourceLabel(sourceId) {
-            const match = EXAMPLE_SOURCE_FILES.find(src => src.id === sourceId);
-            return match ? match.label : sourceId;
+            if (!sourceId) return 'Unknown source';
+            const match = exampleSourcesLoaded.find(src => src.id === sourceId) || exampleLibrarySources.find(src => src.id === sourceId);
+            return resolveSourceLabel(match) || sourceId;
         }
 
         function setExampleLibraryStatus(message) {
@@ -670,49 +789,47 @@
             }
             if (isLoadingExampleLibrary) return { loaded: false, sources: exampleSourcesLoaded };
 
+            if (!exampleLibrarySources.length) {
+                exampleWordMap = new Map();
+                exampleSourcesLoaded = [];
+                populateExampleSourceFilter();
+                setExampleLibraryStatus('Upload A1/A2/B1 JSON to search for Beispiele. Files sync to your account.');
+                return { loaded: false, sources: [] };
+            }
+
             isLoadingExampleLibrary = true;
             exampleWordMap = new Map();
             exampleSourcesLoaded = [];
-            const skipped = [];
-            setExampleLibraryStatus('Loading vocab files...');
+            setExampleLibraryStatus('Indexing uploaded vocab files...');
 
-            for (const source of EXAMPLE_SOURCE_FILES) {
-                try {
-                    const response = await fetch(source.file, { cache: 'no-cache' });
-                    if (!response.ok) {
-                        skipped.push(`${source.file} (${response.status})`);
-                        continue;
+            exampleLibrarySources.forEach((source, sourceIndex) => {
+                const entries = Array.isArray(source.entries) ? source.entries : [];
+                let added = 0;
+                entries.forEach((entry, entryIndex) => {
+                    if (!entry || !entry.word) return;
+                    if (!entry.__metaId) {
+                        const metaId = `${source.id || sourceIndex}__${entryIndex}__${Date.now()}__${Math.random().toString(16).slice(2)}`;
+                        Object.defineProperty(entry, '__metaId', { value: metaId, enumerable: false, writable: true });
                     }
-                    const payload = await response.json();
-                    if (!Array.isArray(payload)) {
-                        skipped.push(`${source.file} (invalid format)`);
-                        continue;
-                    }
-                    let added = 0;
-                    payload.forEach(entry => {
-                        if (!entry || !entry.word) return;
-                        const variants = normalizeWordVariants(entry.word);
-                        if (!variants.length) return;
-                        const examples = collectExamplesFromEntry(entry);
-                        if (!examples.length) return;
-                        variants.forEach(normalizedWord => {
-                            if (!exampleWordMap.has(normalizedWord)) {
-                                exampleWordMap.set(normalizedWord, []);
-                            }
-                            exampleWordMap.get(normalizedWord).push({
-                                word: entry.word,
-                                sourceId: source.id,
-                                examples: [...examples]
-                            });
+                    const variants = normalizeWordVariants(entry.word);
+                    if (!variants.length) return;
+                    const examples = collectExamplesFromEntry(entry);
+                    if (!examples.length) return;
+                    variants.forEach(normalizedWord => {
+                        if (!exampleWordMap.has(normalizedWord)) {
+                            exampleWordMap.set(normalizedWord, []);
+                        }
+                        exampleWordMap.get(normalizedWord).push({
+                            word: entry.word,
+                            sourceId: source.id,
+                            examples: [...examples],
+                            entryId: entry.__metaId
                         });
-                        added += 1;
                     });
-                    exampleSourcesLoaded.push({ ...source, count: added });
-                } catch (error) {
-                    console.error(`Failed to load ${source.file}`, error);
-                    skipped.push(`${source.file} (error)`);
-                }
-            }
+                    added += 1;
+                });
+                exampleSourcesLoaded.push({ ...source, count: added });
+            });
 
             isLoadingExampleLibrary = false;
             exampleLibraryLoadedAt = new Date();
@@ -720,12 +837,11 @@
 
             const totalWords = exampleSourcesLoaded.reduce((sum, src) => sum + (src.count || 0), 0);
             const loadedSources = exampleSourcesLoaded.length
-                ? exampleSourcesLoaded.map(s => `${s.label} (${s.count})`).join(', ')
+                ? exampleSourcesLoaded.map(s => `${resolveSourceLabel(s)} (${s.count || 0})`).join(', ')
                 : 'none';
-            const skippedText = skipped.length ? ` | Skipped: ${skipped.join(', ')}` : '';
-            setExampleLibraryStatus(`Loaded ${totalWords} vocab entries from ${exampleSourcesLoaded.length} source(s): ${loadedSources}${skippedText}`);
+            setExampleLibraryStatus(`Loaded ${totalWords} vocab entries from ${exampleSourcesLoaded.length} uploaded source${exampleSourcesLoaded.length === 1 ? '' : 's'}: ${loadedSources}`);
 
-            return { loaded: exampleSourcesLoaded.length > 0, sources: exampleSourcesLoaded };
+            return { loaded: totalWords > 0, sources: exampleSourcesLoaded };
         }
 
         function populateExampleSourceFilter() {
@@ -736,7 +852,7 @@
             exampleSourcesLoaded.forEach(src => {
                 const option = document.createElement('option');
                 option.value = src.id;
-                option.textContent = `${src.label} (${src.count || 0})`;
+                option.textContent = `${resolveSourceLabel(src)} (${src.count || 0})`;
                 select.appendChild(option);
             });
             const availableValues = Array.from(select.options).map(opt => opt.value);
@@ -762,7 +878,8 @@
                     if (!entries || entries.length === 0) return;
                     entries.forEach(entry => {
                         if (sourceFilter !== '__all__' && entry.sourceId !== sourceFilter) return;
-                        const dedupeKey = `${card.id}__${entry.sourceId}__${entry.word.toLowerCase()}`;
+                        const wordKey = entry.word ? entry.word.toLowerCase() : '';
+                        const dedupeKey = `${card.id}__${entry.sourceId}__${entry.entryId || wordKey}`;
                         if (seen.has(dedupeKey)) return;
                         seen.add(dedupeKey);
                         const matchesFilter = !normalizedFilter || [
@@ -775,6 +892,7 @@
                             card,
                             word: entry.word,
                             sourceId: entry.sourceId,
+                            entryId: entry.entryId,
                             examples: [...entry.examples]
                         });
                     });
@@ -842,7 +960,7 @@
                             <p class="text-xs text-gray-500 mt-1">${existingPreview}</p>
                         </div>
                         <div class="flex items-center gap-2">
-                            <button class="btn btn-success btn-sm example-apply-btn" data-card-id="${match.card.id}" data-word="${encodeURIComponent(match.word)}" data-source-id="${match.sourceId}">
+                            <button class="btn btn-success btn-sm example-apply-btn" data-card-id="${match.card.id}" data-word="${encodeURIComponent(match.word)}" data-source-id="${match.sourceId}" data-entry-id="${escapeHtml(match.entryId || '')}">
                                 <i class="fas fa-plus"></i> Add Beispiele
                             </button>
                         </div>
@@ -899,7 +1017,7 @@
             renderExampleMatches(matches);
         }
 
-        async function handleApplyExamplesToCard(cardId, encodedWord, sourceId) {
+        async function handleApplyExamplesToCard(cardId, encodedWord, sourceId, entryId = null) {
             if (!userId || !cardsCollectionRef) {
                 showNotification('Sign in to add Beispiele.', 'error');
                 return;
@@ -916,7 +1034,7 @@
                 return;
             }
             const entries = exampleWordMap.get(normalizedKey) || [];
-            const match = entries.find(entry => entry.sourceId === sourceId) || entries[0];
+            const match = entries.find(entry => entry.entryId === entryId) || entries.find(entry => entry.sourceId === sourceId) || entries[0];
             if (!match) {
                 showNotification('No Beispiele found for this word.', 'error');
                 return;
@@ -953,13 +1071,154 @@
                 if (wordToCopy) {
                     copyPlainTextToClipboard(wordToCopy);
                 }
-                showNotification('Beispiele added to card. Word copied.', 'success');
+                showNotification('Beispiele added to card and removed from library. Word copied.', 'success');
+                await consumeExamplesFromLibrary({ sourceId, entryId: match.entryId, word: match.word }, incoming);
+                await removeWordFromAllExampleSources(normalizedKey);
                 filterAndRenderCards();
-                refreshExampleMatches({ forceReloadLibrary: false });
+                await refreshExampleMatches({ forceReloadLibrary: true });
             } catch (error) {
                 console.error('Failed to add Beispiele to card:', error);
                 showNotification('Failed to update card with Beispiele.', 'error');
             }
+        }
+
+        async function consumeExamplesFromLibrary(matchMeta, usedExamples = []) {
+            if (!matchMeta || !matchMeta.sourceId) return;
+            const source = exampleLibrarySources.find(src => src.id === matchMeta.sourceId);
+            if (!source || !Array.isArray(source.entries)) return;
+            const normalizedUsed = new Set((usedExamples || []).map(val => String(val).trim().toLowerCase()));
+            const targetIndex = source.entries.findIndex(entry => {
+                if (!entry) return false;
+                if (entry.__metaId && matchMeta.entryId && entry.__metaId === matchMeta.entryId) return true;
+                if (matchMeta.entryId) return false;
+                return (entry.word || '').trim().toLowerCase() === (matchMeta.word || '').trim().toLowerCase();
+            });
+            if (targetIndex === -1) return;
+            const target = source.entries[targetIndex];
+            const preservedKeys = Object.keys(target).filter(key => !/^example\d*$/i.test(key));
+            const remainingExamples = collectExamplesFromEntry(target).filter(sentence => !normalizedUsed.has(sentence.trim().toLowerCase()));
+            const metaId = target.__metaId;
+            const rebuilt = {};
+            preservedKeys.forEach(key => {
+                rebuilt[key] = target[key];
+            });
+            remainingExamples.forEach((sentence, idx) => {
+                const field = idx === 0 ? 'example' : `example${idx + 1}`;
+                rebuilt[field] = sentence;
+            });
+            Object.keys(target).forEach(key => { delete target[key]; });
+            Object.assign(target, rebuilt);
+            if (metaId) {
+                Object.defineProperty(target, '__metaId', { value: metaId, enumerable: false, writable: true });
+            }
+            if (remainingExamples.length === 0) {
+                source.entries.splice(targetIndex, 1);
+            }
+            await persistExampleLibrary();
+        }
+
+        async function removeWordFromAllExampleSources(normalizedWord) {
+            if (!normalizedWord) return;
+            let changed = false;
+            exampleLibrarySources.forEach(source => {
+                if (!Array.isArray(source.entries)) return;
+                const filtered = source.entries.filter(entry => normalizeWordForLookup(entry.word) !== normalizedWord);
+                if (filtered.length !== source.entries.length) {
+                    source.entries = filtered;
+                    changed = true;
+                }
+            });
+            if (changed) {
+                await persistExampleLibrary();
+            }
+        }
+
+        async function handleExampleUpload(event, sourceId) {
+            const input = event?.target;
+            const file = (input?.files || [])[0];
+            if (!file) return;
+            if (!userId || !db || !exampleLibraryDocRef) {
+                showNotification('Sign in to upload vocab JSON to your account.', 'error', 3000);
+                if (input) input.value = '';
+                return;
+            }
+            const slot = getSourceSlotMeta(sourceId);
+            const label = slot ? slot.label : (sourceId || 'vocab');
+            const id = sourceId || generateExampleSourceId(file.name);
+
+            setExampleLibraryStatus(`Reading ${label} JSON...`);
+
+            try {
+                const text = await file.text();
+                const payload = JSON.parse(text);
+                if (!Array.isArray(payload)) {
+                    showNotification(`${file.name} is not a JSON array.`, 'error', 4000);
+                    setExampleLibraryStatus(`Upload failed for ${label}. File must be a JSON array.`);
+                    if (input) input.value = '';
+                    return;
+                }
+                const entries = decorateExampleEntries(payload, id);
+                const fileName = file.name || (slot ? slot.defaultFileName : `${label}.json`);
+                const newSource = { id, label, fileName, entries };
+                const existingIndex = exampleLibrarySources.findIndex(item => item.id === id);
+                if (existingIndex > -1) {
+                    exampleLibrarySources[existingIndex] = newSource;
+                } else {
+                    exampleLibrarySources.push(newSource);
+                }
+                await persistExampleLibrary();
+                await loadExampleLibrary(true);
+                await refreshExampleMatches({ forceReloadLibrary: false });
+                showNotification(`Loaded ${label} vocab JSON.`, 'success', 2000);
+                setExampleLibraryStatus(`Loaded ${label}. Click Find Matches to search.`);
+            } catch (error) {
+                console.error(`Failed to read ${file.name}`, error);
+                showNotification(`Could not read ${file.name}.`, 'error', 3500);
+                setExampleLibraryStatus(`Upload failed for ${label}.`);
+            } finally {
+                if (input) input.value = '';
+            }
+        }
+
+        async function handleDownloadExampleLibrary(sourceId = null) {
+            const sourcesToDownload = sourceId
+                ? exampleLibrarySources.filter(src => src.id === sourceId)
+                : exampleLibrarySources;
+            if (!sourcesToDownload.length) {
+                const label = sourceId ? resolveSourceLabel(sourceId) : 'vocab';
+                showNotification(`Upload ${label} JSON first.`, 'error', 2200);
+                return;
+            }
+            const sources = sourcesToDownload.map(src => {
+                const baseName = resolveSourceLabel(src) || 'examples';
+                const safeBase = baseName.replace(/[^a-z0-9._-]+/gi, '_');
+                const resolvedName = (src.fileName && src.fileName.endsWith('.json')) ? src.fileName : `${safeBase}.json`;
+                return {
+                    fileName: resolvedName,
+                    label: resolveSourceLabel(src),
+                    entries: (src.entries || []).map(stripExampleMetadata)
+                };
+            });
+
+            if (sources.length === 1) {
+                const src = sources[0];
+                const content = JSON.stringify(src.entries, null, 2);
+                const normalizedContent = content.endsWith('\n') ? content : `${content}\n`;
+                const blob = new Blob([normalizedContent], { type: 'application/json;charset=utf-8' });
+                triggerBlobDownload(blob, src.fileName);
+                showNotification(`Downloaded updated ${src.label} JSON.`, 'success', 1800);
+                return;
+            }
+
+            const zip = new JSZip();
+            sources.forEach(src => {
+                const content = JSON.stringify(src.entries, null, 2);
+                const normalizedContent = content.endsWith('\n') ? content : `${content}\n`;
+                zip.file(src.fileName, normalizedContent);
+            });
+            const blob = await zip.generateAsync({ type: 'blob' });
+            triggerBlobDownload(blob, 'example-library.zip');
+            showNotification('Downloaded updated vocab library (.zip).', 'success', 1800);
         }
 
 
@@ -3396,12 +3655,18 @@
             if (unsubscribe) unsubscribe();
             if (foldersUnsubscribe) foldersUnsubscribe();
             if (deletedCardsUnsubscribe) deletedCardsUnsubscribe();
+            if (exampleLibraryUnsubscribe) exampleLibraryUnsubscribe();
             allCards = [];
             deletedCards = [];
             folders = [];
             foldersCollectionRef = null;
             deletedCardsCollectionRef = null;
             deletedCardsUnsubscribe = null;
+            exampleLibraryDocRef = null;
+            exampleLibraryUnsubscribe = null;
+            exampleLibrarySources = [];
+            exampleSourcesLoaded = [];
+            exampleWordMap = new Map();
             hasRestoredFolderPreference = false;
             currentReviewFolderId = ALL_FOLDERS_VALUE;
             currentReviewSessionId = null;
@@ -3470,6 +3735,23 @@
             cardsCollectionRef = collection(db, collectionPath);
             foldersCollectionRef = collection(db, folderPath);
             deletedCardsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/deleted_cards`);
+            exampleLibraryDocRef = doc(db, `artifacts/${appId}/users/${userId}/exampleLibrary/default`);
+
+            if (exampleLibraryUnsubscribe) exampleLibraryUnsubscribe();
+            exampleLibraryUnsubscribe = onSnapshot(exampleLibraryDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data && Array.isArray(data.sources)) {
+                        applyRemoteExampleLibrary(data.sources);
+                    }
+                } else if (exampleLibrarySources.length > 0) {
+                    persistExampleLibrary().catch(err => console.warn('Failed to seed example library to Firestore', err));
+                } else {
+                    setExampleLibraryStatus('Upload A1/A2/B1 JSON to search for Beispiele. Files sync to your account.');
+                }
+            }, (error) => {
+                console.error('Failed to sync example library from Firestore', error);
+            });
 
             if (foldersUnsubscribe) foldersUnsubscribe();
             foldersUnsubscribe = onSnapshot(foldersCollectionRef, (snapshot) => {
@@ -4193,6 +4475,16 @@
                 currentExampleFolderId = exampleFolderFilter.value || ALL_FOLDERS_VALUE;
                 refreshExampleMatches({ forceReloadLibrary: false });
             });
+            EXAMPLE_SOURCE_SLOTS.forEach(slot => {
+                const uploadBtn = document.getElementById(`example-upload-btn-${slot.id}`);
+                const uploadInput = document.getElementById(`example-upload-input-${slot.id}`);
+                if (uploadBtn && uploadInput) {
+                    uploadBtn.addEventListener('click', () => uploadInput.click());
+                    uploadInput.addEventListener('change', (event) => handleExampleUpload(event, slot.id));
+                }
+                const downloadBtn = document.getElementById(`example-download-btn-${slot.id}`);
+                if (downloadBtn) downloadBtn.addEventListener('click', () => handleDownloadExampleLibrary(slot.id));
+            });
             const findExampleMatchesBtn = document.getElementById('find-example-matches-btn');
             if (findExampleMatchesBtn) findExampleMatchesBtn.addEventListener('click', () => refreshExampleMatches({ forceReloadLibrary: false }));
             const reloadExampleLibraryBtn = document.getElementById('refresh-example-library-btn');
@@ -4245,9 +4537,16 @@
                     const cardId = applyBtn.dataset.cardId;
                     const word = applyBtn.dataset.word;
                     const sourceId = applyBtn.dataset.sourceId;
-                    setButtonLoading(applyBtn, true, 'Adding...');
-                    await handleApplyExamplesToCard(cardId, word, sourceId);
-                    setButtonLoading(applyBtn, false);
+                    const entryId = applyBtn.dataset.entryId;
+                    try {
+                        setButtonLoading(applyBtn, true, 'Adding...');
+                        await handleApplyExamplesToCard(cardId, word, sourceId, entryId);
+                    } catch (error) {
+                        console.error('Failed to apply Beispiele:', error);
+                        showNotification('Could not add Beispiele. Check console for details.', 'error', 3500);
+                    } finally {
+                        setButtonLoading(applyBtn, false);
+                    }
                 });
                 exampleMatchesContainer.addEventListener('click', (event) => {
                     const copyBtn = event.target.closest('.example-copy-btn');
@@ -4480,7 +4779,9 @@
             filterAndRenderCards();
             updateFolderDeleteButtonState();
             updateLegacyBadge();
-            setExampleLibraryStatus('Not loaded yet. Click "Find Matches" to search.');
+            if (!exampleLibrarySources.length) {
+                setExampleLibraryStatus('Upload A1/A2/B1 JSON to search for Beispiele. Files sync to your account.');
+            }
             onAuthStateChanged(auth, user => { if (user) showAppUI(user); else showLoginUI(); });
             document.getElementById('delete-cards-btn').addEventListener('click', openDeleteCardsModal);
             document.getElementById('confirm-delete-cards-btn').addEventListener('click', handleConfirmDeleteCards);

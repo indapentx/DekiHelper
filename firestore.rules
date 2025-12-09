@@ -1,0 +1,36 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // User-scoped data: cards, folders, deleted_cards, exampleLibrary, review_sessions, etc.
+    match /artifacts/{appId}/users/{userId} {
+      // Access to the user root doc (if you ever store one)
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      match /cards/{cardId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /folders/{folderId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /review_sessions/{sessionId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /deleted_cards/{cardId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // New: example library storage (e.g., /exampleLibrary/default)
+      match /exampleLibrary/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Fallback for any additional subcollections under the user
+      match /{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+  }
+}
