@@ -140,7 +140,7 @@
              <p class="text-base font-semibold text-gray-400 flex items-center gap-2">Cards: <span id="session-counter" title="Cards from latest session" class="text-green-400 font-bold">0</span> / <span id="total-counter" title="Total cards" class="text-blue-400 font-bold">0</span></p>
              <div id="default-actions" class="flex flex-col sm:flex-row sm:flex-wrap gap-3 w-full">
                 <button id="import-btn" class="btn btn-secondary w-full sm:w-auto"><i class="fas fa-upload"></i> Import</button>
-                <input type="file" id="import-file-input" class="hidden" accept=".txt, .tsv, .zip" multiple>
+                <input type="file" id="import-file-input" class="hidden" accept=".txt, .tsv, .json, .zip" multiple>
                 <button id="review-btn" class="btn btn-secondary w-full sm:w-auto"><i class="fas fa-eye"></i> Review</button>
                 <button id="export-btn" class="btn btn-primary w-full sm:w-auto"><i class="fas fa-download"></i> Export</button>
                 <button id="fix-legacy-fronts-btn" class="btn btn-secondary w-full sm:w-auto"><i class="fas fa-wrench"></i> Fix Legacy Fronts</button>
@@ -3860,6 +3860,58 @@
             };
         }
 
+        function extractBackValuesFromJson(payload) {
+            let entries = [];
+            if (Array.isArray(payload)) {
+                entries = payload;
+            } else if (payload && Array.isArray(payload.cards)) {
+                entries = payload.cards;
+            } else if (payload && Array.isArray(payload.words)) {
+                entries = payload.words;
+            }
+
+            if (!entries.length) return [];
+
+            return entries
+                .map(item => {
+                    if (typeof item === 'string') return item;
+                    if (item && typeof item === 'object') {
+                        return item.word || item.back || item.term || item.value || '';
+                    }
+                    return '';
+                })
+                .map(value => (typeof value === 'string' ? value.trim() : String(value || '').trim()))
+                .filter(Boolean);
+        }
+
+        async function importCardsFromJsonFile(file, { folderId, folderName, importTimestamp, cardCounterRef }) {
+            if (!file) return 0;
+
+            let payload;
+            try {
+                const text = await file.text();
+                payload = JSON.parse(text);
+            } catch (error) {
+                console.error(`Failed to parse JSON import from ${file?.name || 'file'}`, error);
+                showNotification(`Could not read ${file?.name || 'JSON file'}.`, 'error');
+                return 0;
+            }
+
+            const backValues = extractBackValuesFromJson(payload);
+            if (!backValues.length) {
+                showNotification(`${file?.name || 'JSON file'} contained no words to import.`, 'error');
+                return 0;
+            }
+
+            const lines = backValues.map(value => `\t${value}`);
+            return importCardLines(lines, {
+                folderId,
+                folderName,
+                importTimestamp,
+                cardCounterRef
+            });
+        }
+
         async function importCardLines(lines, { folderId, folderName, importTimestamp, cardCounterRef }) {
             if (!cardsCollectionRef || !userId) {
                 throw new Error('Not connected.');
@@ -4019,6 +4071,15 @@
                         const { imported, categoriesCreated: importedCategories } = await importCategoryArchive(file, importTimestamp, cardCounterRef);
                         totalImported += imported;
                         categoriesCreated += importedCategories;
+                        continue;
+                    }
+                    if (lowerName.endsWith('.json')) {
+                        totalImported += await importCardsFromJsonFile(file, {
+                            folderId: selectedFolderId,
+                            folderName: selectedFolderName,
+                            importTimestamp,
+                            cardCounterRef
+                        });
                         continue;
                     }
 
