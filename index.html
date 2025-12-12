@@ -253,6 +253,13 @@
                         <label for="review-date-selector" class="anki-label mb-2 block">Select Date:</label>
                         <select id="review-date-selector" class="anki-input"></select>
                     </div>
+                    <div>
+                        <label class="flex items-center space-x-2 text-sm text-gray-300">
+                            <input type="checkbox" id="review-missing-only-toggle" class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
+                            <span>Only cards without Beispiel</span>
+                        </label>
+                        <p class="text-xs text-gray-500 mt-1">Filter the session to cards that do not have example sentences yet.</p>
+                    </div>
                     <button id="start-session-btn" class="btn btn-primary btn-lg w-full mt-6">Start Session</button>
                     <button id="close-review-setup-btn" class="btn btn-secondary btn-lg w-full">Close</button>
                 </div>
@@ -638,6 +645,16 @@
                 .split(/\r?\n/)
                 .map(line => line.trim())
                 .filter(line => line.length > 0);
+        }
+
+        function cardHasBeispiel(card) {
+            if (!card) return false;
+            return normalizeSentencesFromBeispiel(card.beispiel).length > 0;
+        }
+
+        function isReviewMissingOnly() {
+            const toggle = document.getElementById('review-missing-only-toggle');
+            return !!(toggle && toggle.checked);
         }
 
         function clearAutoSkipTimer() {
@@ -1580,7 +1597,7 @@
             currentExampleFolderId = populateFolderSelect(selector, currentExampleFolderId);
         }
 
-        function buildReviewSessionId(selectedDate, folderValue) {
+        function buildReviewSessionId(selectedDate, folderValue, missingOnly = false) {
             const datePart = selectedDate === 'all' ? 'date_all' : `date_${selectedDate}`;
             let folderPart = 'folder_none';
             if (folderValue === ALL_FOLDERS_VALUE) {
@@ -1588,7 +1605,8 @@
             } else if (folderValue && folderValue !== NO_FOLDER_VALUE) {
                 folderPart = `folder_${folderValue}`;
             }
-            return `${datePart}__${folderPart}`;
+            const missingPart = missingOnly ? '__missing_beispiel' : '';
+            return `${datePart}__${folderPart}${missingPart}`;
         }
 
         function parseTsvLine(line) {
@@ -2840,7 +2858,10 @@
             const reviewDateSelector = document.getElementById('review-date-selector');
             const reviewBtn = document.getElementById('review-btn');
             const startSessionBtn = document.getElementById('start-session-btn');
-            const relevantCards = allCards.filter(card => cardMatchesFolder(card, currentReviewFolderId));
+            const missingOnly = isReviewMissingOnly();
+            const relevantCards = allCards
+                .filter(card => cardMatchesFolder(card, currentReviewFolderId))
+                .filter(card => !missingOnly || !cardHasBeispiel(card));
             const dates = new Set();
             relevantCards.forEach(card => {
                 if (card.createdAt && typeof card.createdAt === 'string') {
@@ -3138,6 +3159,7 @@
             const reviewFolderSelector = document.getElementById('review-folder-selector');
             const selectedDate = reviewDateSelector ? reviewDateSelector.value : 'all';
             const selectedFolder = reviewFolderSelector ? reviewFolderSelector.value : ALL_FOLDERS_VALUE;
+            const missingOnly = isReviewMissingOnly();
 
             currentReviewDate = selectedDate;
             currentReviewFolderId = selectedFolder;
@@ -3146,14 +3168,20 @@
             if (selectedDate !== 'all') {
                 cardsForReview = cardsForReview.filter(card => card.createdAt && card.createdAt.startsWith(selectedDate));
             }
+            if (missingOnly) {
+                cardsForReview = cardsForReview.filter(card => !cardHasBeispiel(card));
+            }
             cardsForReview.sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt));
 
             if (cardsForReview.length === 0) {
-                showNotification('No cards found for the selected filters.');
+                const message = missingOnly
+                    ? 'No cards without Beispiele for the selected filters.'
+                    : 'No cards found for the selected filters.';
+                showNotification(message);
                 return;
             }
 
-            currentReviewSessionId = buildReviewSessionId(selectedDate, selectedFolder);
+            currentReviewSessionId = buildReviewSessionId(selectedDate, selectedFolder, missingOnly);
 
             reviewSession.originalCards = [...cardsForReview];
             reviewSession.cards = [...cardsForReview];
@@ -4406,6 +4434,10 @@
                     currentReviewFolderId = event.target.value;
                     updateReviewDateSelector();
                 });
+            }
+            const reviewMissingToggle = document.getElementById('review-missing-only-toggle');
+            if (reviewMissingToggle) {
+                reviewMissingToggle.addEventListener('change', updateReviewDateSelector);
             }
             if (viewFolderSelector) {
                 viewFolderSelector.addEventListener('change', (event) => {
