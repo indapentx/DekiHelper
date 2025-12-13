@@ -40,6 +40,8 @@
         .progress-bar-container { background-color: #333; border-radius: 9999px; height: 8px; width: 100%; overflow: hidden;}
         .progress-bar { background-color: #007acc; height: 100%; width: 0%; transition: width 0.3s ease; }
         .copy-highlight { background-color: rgba(0, 122, 204, 0.3); transition: background-color 0.1s ease-in-out; border-radius: 6px;}
+        .review-sound-pill { transition: background-color 0.15s ease, box-shadow 0.15s ease; }
+        .sound-pill-active { box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.6); background-color: rgba(0, 122, 204, 0.15); }
         .toggle-label .dot { transition: transform 0.2s ease-in-out; }
         #auto-skip-toggle:checked ~ .dot { transform: translateX(100%); background-color: #27ae60; }
         #auto-skip-toggle:checked ~ .block { background-color: #2ecc71; }
@@ -323,6 +325,13 @@
                         </div>
                     </div>
                     <div>
+                        <label class="anki-label ml-2 flex justify-between"><span>Beispiel Speech</span> <span class="text-gray-500">Shortcut: S</span></label>
+                        <div class="review-card">
+                            <div id="review-beispiel-speech" class="review-content flex-grow flex flex-wrap items-center gap-2 py-2"></div>
+                            <button class="review-copy-btn" data-target="review-beispiel-speech" data-copy-type="beispiel-speech" title="Copy Beispiel Speech (S)"><i class="fas fa-copy fa-lg"></i></button>
+                        </div>
+                    </div>
+                    <div>
                         <label class="anki-label ml-2 flex justify-between"><span>Translation</span></label>
                         <div class="review-card">
                             <div id="review-translation" class="review-content flex-grow flex flex-col justify-center py-2 space-y-2"></div>
@@ -573,7 +582,7 @@
         let pendingFolderDeleteId = null;
         let pendingFolderDeleteName = '';
         let pendingFolderDeleteCount = 0;
-        let reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, beispielCopyIndex: 0, editedCardIds: new Set(), originalCards: [] };
+        let reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, beispielCopyIndex: 0, beispielSpeechCopyIndex: 0, editedCardIds: new Set(), originalCards: [] };
         let currentReviewFolderId = ALL_FOLDERS_VALUE;
         let currentReviewSessionId = null;
         let currentViewFolderId = ALL_FOLDERS_VALUE;
@@ -1941,6 +1950,21 @@
             return currentValue;
         }
 
+        function extractSoundTagsFromBeispielSpeech(value) {
+            if (!value) return [];
+            const normalized = String(value).replace(/\s*<br\s*\/?>\s*/gi, ' ');
+            const matches = normalized.match(/\[sound:[^\]]+\]/gi);
+            if (!matches) return [];
+            return matches.map(tag => tag.trim()).filter(Boolean);
+        }
+
+        function normalizeSoundIdentifier(tag) {
+            if (!tag) return '';
+            const match = /\[sound:([^\]]+)\]/i.exec(tag);
+            const inner = match ? match[1] : String(tag);
+            return inner.replace(/\.[^.]+$/, '');
+        }
+
         function setBeispielSpeechBoxValue(element, rawValue) {
             if (!element) return;
             const safeValue = rawValue || '';
@@ -2925,11 +2949,50 @@
                 container.textContent = '—';
             }
         }
+
+        function setBeispielSpeechActive(activeIndex = null) {
+            const container = document.getElementById('review-beispiel-speech');
+            if (!container) return;
+            container.querySelectorAll('.review-sound-pill').forEach(pill => {
+                pill.classList.remove('sound-pill-active');
+                if (activeIndex !== null && Number(pill.dataset.soundIndex) === Number(activeIndex)) {
+                    pill.classList.add('sound-pill-active');
+                }
+            });
+        }
+
+        function renderBeispielSpeechForReview(container, speechText) {
+            if (!container) return;
+            container.innerHTML = '';
+            const raw = speechText == null ? '' : String(speechText);
+            const soundTags = extractSoundTagsFromBeispielSpeech(raw);
+            const hasText = raw.trim().length > 0;
+
+            if (soundTags.length === 0 && !hasText) {
+                container.textContent = '—';
+                return;
+            }
+
+            if (soundTags.length === 0) {
+                container.textContent = raw.trim();
+                return;
+            }
+
+            soundTags.forEach((tag, index) => {
+                const pill = document.createElement('span');
+                pill.className = 'inline-block bg-gray-800 px-2 py-1 rounded text-sm review-sound-pill';
+                pill.dataset.soundIndex = index;
+                pill.textContent = tag;
+                container.appendChild(pill);
+            });
+            setBeispielSpeechActive(null);
+        }
         
         function renderReviewEmptyState(message = 'No cards available.') {
             const frontEl = document.getElementById('review-front');
             const backEl = document.getElementById('review-back');
             const beispielEl = document.getElementById('review-beispiel');
+            const beispielSpeechEl = document.getElementById('review-beispiel-speech');
             const translationEl = document.getElementById('review-translation');
             const progressTextEl = document.getElementById('review-progress-text');
             const editedTextEl = document.getElementById('review-edited-text');
@@ -2938,6 +3001,7 @@
             if (frontEl) frontEl.textContent = '—';
             if (backEl) backEl.textContent = '—';
             if (beispielEl) beispielEl.innerHTML = `<p class="text-center text-gray-500 w-full">${message}</p>`;
+            if (beispielSpeechEl) beispielSpeechEl.textContent = '—';
             if (translationEl) translationEl.innerHTML = '';
             if (progressTextEl) progressTextEl.textContent = message;
             if (editedTextEl) editedTextEl.textContent = '';
@@ -2963,12 +3027,14 @@
             }
 
             reviewSession.beispielCopyIndex = 0;
+            reviewSession.beispielSpeechCopyIndex = 0;
 
             const card = reviewSession.cards[reviewSession.currentIndex];
             document.getElementById('review-front').textContent = card.front || '—';
             document.getElementById('review-back').textContent = card.back || '—';
 
             renderMultiLineForReview(document.getElementById('review-beispiel'), card.beispiel);
+            renderBeispielSpeechForReview(document.getElementById('review-beispiel-speech'), card.beispielSpeech);
             renderMultiLineForReview(document.getElementById('review-translation'), card.translation);
             
             // Update counters and marker
@@ -3037,7 +3103,46 @@
                 }
             }
         }
-        
+
+        function copyBeispielSpeechTag() {
+            clearAutoSkipTimer();
+            if (reviewSession.currentIndex === -1) return;
+            const card = reviewSession.cards[reviewSession.currentIndex];
+            if (!card) return;
+
+            const rawSpeech = card.beispielSpeech == null ? '' : String(card.beispielSpeech);
+            const soundTags = extractSoundTagsFromBeispielSpeech(rawSpeech);
+            const container = document.getElementById('review-beispiel-speech');
+
+            if (soundTags.length === 0) {
+                const trimmed = rawSpeech.trim();
+                if (!trimmed) return;
+                copyPlainTextToClipboard(trimmed);
+                if (container) {
+                    container.classList.add('copy-highlight');
+                    setTimeout(() => container.classList.remove('copy-highlight'), 400);
+                }
+                showNotification('Copied Beispiel speech.', 'success', 1200);
+                return;
+            }
+
+            const currentIndex = reviewSession.beispielSpeechCopyIndex || 0;
+            const normalizedIndex = currentIndex % soundTags.length;
+            const tagToCopy = soundTags[normalizedIndex];
+            const identifierToCopy = normalizeSoundIdentifier(tagToCopy) || tagToCopy;
+            copyPlainTextToClipboard(identifierToCopy);
+
+            if (container) {
+                const highlightTarget = container.querySelector(`[data-sound-index="${normalizedIndex}"]`) || container;
+                setBeispielSpeechActive(normalizedIndex);
+                highlightTarget.classList.add('copy-highlight');
+                setTimeout(() => highlightTarget.classList.remove('copy-highlight'), 400);
+            }
+            const label = normalizeSoundIdentifier(tagToCopy) || `sound ${normalizedIndex + 1}`;
+            showNotification(`Copied ${label} (${normalizedIndex + 1} of ${soundTags.length}).`, 'success', 1200);
+            reviewSession.beispielSpeechCopyIndex = (normalizedIndex + 1) % soundTags.length;
+        }
+
         function handleReviewKeyboard(e) {
             if (document.activeElement.id === 'in-review-search-input' || (document.activeElement.tagName === 'TEXTAREA' && isReviewEditing)) return;
             
@@ -3104,6 +3209,12 @@
                 showNotification(`Copied: "${sentenceToCopy}"`, "success", 1500);
                 reviewSession.beispielCopyIndex = (reviewSession.beispielCopyIndex + 1) % sentences.length;
 
+            }
+
+            if (e.key === 's' || e.key === 'S') {
+                e.preventDefault();
+                copyBeispielSpeechTag();
+                return;
             }
 
             if (e.key === 'Enter' && !isReviewEditing) enterReviewEditMode();
@@ -3213,7 +3324,7 @@
         function endReviewSession() {
             clearAutoSkipTimer();
             resetDeleteShortcut();
-            reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, beispielCopyIndex: 0, editedCardIds: new Set(), originalCards: [] };
+            reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, beispielCopyIndex: 0, beispielSpeechCopyIndex: 0, editedCardIds: new Set(), originalCards: [] };
             currentReviewSessionId = null;
             document.getElementById('main-app').classList.remove('hidden');
             document.getElementById('review-modal').classList.add('hidden');
@@ -4751,6 +4862,11 @@
 
                 const mainCopyBtn = e.target.closest('.review-copy-btn');
                 if (mainCopyBtn) {
+                    const copyType = mainCopyBtn.dataset.copyType;
+                    if (copyType === 'beispiel-speech') {
+                        copyBeispielSpeechTag();
+                        return;
+                    }
                     clearAutoSkipTimer();
                     const targetId = mainCopyBtn.dataset.target;
                     const contentEl = document.getElementById(targetId);
