@@ -2755,7 +2755,7 @@
             }
         }
         
-        function renderCards(cardsToRender) {
+        function renderCards(cardsToRender, { sortByCreatedAt = true } = {}) {
             const cardList = document.getElementById('card-list');
             if (!cardList) return;
 
@@ -2784,7 +2784,9 @@
             }
             
             const docs = [...cardsToRender];
-            docs.sort((a, b) => getCreatedAtTime(b.createdAt) - getCreatedAtTime(a.createdAt));
+            if (sortByCreatedAt) {
+                docs.sort((a, b) => getCreatedAtTime(b.createdAt) - getCreatedAtTime(a.createdAt));
+            }
             docs.forEach(cardData => {
                 const cardEl = document.createElement('div');
                 cardEl.className = 'card-item';
@@ -4231,26 +4233,79 @@
         }
 
         
+        function normalizeSearchField(value) {
+            if (value === null || value === undefined) return '';
+            const rawString = typeof value === 'string' ? value : String(value);
+            const withoutBreaks = unformatMultiLine(rawString);
+            return withoutBreaks
+                .replace(/<[^>]+>/g, ' ')
+                .replace(/\[sound:[^\]]+\]/gi, ' ')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .toLowerCase();
+        }
+
+        function computeCardSearchScore(card, tokens) {
+            if (!card || !Array.isArray(tokens) || tokens.length === 0) return null;
+            const folderMeta = card.folderId ? folders.find(folder => folder.id === card.folderId) : null;
+            const fields = {
+                front: normalizeSearchField(card.front),
+                back: normalizeSearchField(card.back),
+                translation: normalizeSearchField(card.translation),
+                beispiel: normalizeSearchField(card.beispiel),
+                folder: normalizeSearchField((folderMeta && folderMeta.name) || card.folderName || '')
+            };
+
+            let score = 0;
+            for (const token of tokens) {
+                let tokenMatched = false;
+                const frontMatch = fields.front.includes(token);
+                const backMatch = fields.back.includes(token);
+                const translationMatch = fields.translation.includes(token);
+                const beispielMatch = fields.beispiel.includes(token);
+                const folderMatch = fields.folder.includes(token);
+
+                if (frontMatch || backMatch || translationMatch || beispielMatch || folderMatch) {
+                    tokenMatched = true;
+                    if (frontMatch) score += 6 + (fields.front.startsWith(token) ? 2 : 0);
+                    if (backMatch) score += 6 + (fields.back.startsWith(token) ? 2 : 0);
+                    if (translationMatch) score += 4 + (fields.translation.startsWith(token) ? 1 : 0);
+                    if (beispielMatch) score += 1;
+                    if (folderMatch) score += 0.5;
+                }
+
+                if (!tokenMatched) {
+                    return null;
+                }
+            }
+
+            return score;
+        }
+
         function filterAndRenderCards() {
             const searchInput = document.getElementById('search-input');
             const searchTerm = (searchInput ? searchInput.value : '').toLowerCase().trim();
-            let filteredCards = [...allCards];
+            const filteredByFolder = allCards.filter(card => cardMatchesFolder(card, currentViewFolderId));
 
-            if (searchTerm) {
-                filteredCards = filteredCards.filter(card => {
-                    const folderMeta = card.folderId ? folders.find(folder => folder.id === card.folderId) : null;
-                    const folderNameToMatch = ((folderMeta && folderMeta.name) || card.folderName || '').toLowerCase();
-                    return (card.front || '').toLowerCase().includes(searchTerm) ||
-                           (card.back || '').toLowerCase().includes(searchTerm) ||
-                           (card.beispiel || '').toLowerCase().includes(searchTerm) ||
-                           (card.translation || '').toLowerCase().includes(searchTerm) ||
-                           folderNameToMatch.includes(searchTerm);
-                });
+            if (!searchTerm) {
+                renderCards(filteredByFolder);
+                return;
             }
 
-            filteredCards = filteredCards.filter(card => cardMatchesFolder(card, currentViewFolderId));
+            const tokens = searchTerm.split(/\s+/).filter(Boolean);
+            const scoredCards = filteredByFolder
+                .map(card => {
+                    const score = computeCardSearchScore(card, tokens);
+                    return score === null ? null : { card, score };
+                })
+                .filter(Boolean);
 
-            renderCards(filteredCards);
+            scoredCards.sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                return getCreatedAtTime(b.card.createdAt) - getCreatedAtTime(a.card.createdAt);
+            });
+
+            renderCards(scoredCards.map(entry => entry.card), { sortByCreatedAt: false });
         }
 
         function populateDeleteDateSelection() {
