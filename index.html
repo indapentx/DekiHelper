@@ -562,6 +562,7 @@
         const appId = 'anki-card-generator-default';
         const NO_FOLDER_VALUE = '__none__';
         const ALL_FOLDERS_VALUE = '__all_folders__';
+        const EXPORT_SELECT_ALL_ID = 'export-folder-select-all-checkbox';
         const FOLDER_STORAGE_KEY = 'deki-helper-current-folder';
         const FIREBASE_FUNCTIONS_REGION = 'us-central1';
         const EXAMPLE_SOURCE_SLOTS = [
@@ -3569,6 +3570,35 @@
             showNotification(`Exported ${totalCards} card${totalCards === 1 ? '' : 's'} from ${exportedFolders} categor${exportedFolders === 1 ? 'y' : 'ies'}.`, 'success');
         }
 
+        function getExportFolderCheckboxes() {
+            return Array.from(document.querySelectorAll('#export-folder-selection input[type="checkbox"]'))
+                .filter(input => input.id !== EXPORT_SELECT_ALL_ID);
+        }
+
+        function toggleAllExportFolders(checked) {
+            getExportFolderCheckboxes().forEach(input => {
+                input.checked = checked;
+            });
+        }
+
+        function syncExportFolderSelectAllCheckbox() {
+            const selectAllCheckbox = document.getElementById(EXPORT_SELECT_ALL_ID);
+            if (!selectAllCheckbox) return;
+
+            const folderCheckboxes = getExportFolderCheckboxes();
+            if (folderCheckboxes.length === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+                selectAllCheckbox.disabled = true;
+                return;
+            }
+
+            const checkedCount = folderCheckboxes.filter(input => input.checked).length;
+            selectAllCheckbox.disabled = false;
+            selectAllCheckbox.checked = checkedCount === folderCheckboxes.length;
+            selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < folderCheckboxes.length;
+        }
+
         async function handleConfirmExport() {
             const format = document.querySelector('input[name="export-format"]:checked').value;
             const range = document.querySelector('input[name="export-range"]:checked').value;
@@ -3590,7 +3620,7 @@
                 const selectedDates = Array.from(selectedDateNodes).map(el => el.value);
                 cardsToExport = allCards.filter(card => card.createdAt && card.createdAt.split('T')[0] && selectedDates.includes(card.createdAt.split('T')[0]));
             } else if (range === 'folder') {
-                const selectedFolderNodes = document.querySelectorAll('#export-folder-selection input[type="checkbox"]:checked');
+                const selectedFolderNodes = document.querySelectorAll('#export-folder-selection input[type="checkbox"]:checked:not(#export-folder-select-all-checkbox)');
                 if (selectedFolderNodes.length === 0) {
                     showNotification("Please select at least one folder to export.");
                     return;
@@ -3693,6 +3723,10 @@
             
             const exportFolderSelection = document.getElementById('export-folder-selection');
             exportFolderSelection.innerHTML = '';
+            const selectAllRow = document.createElement('label');
+            selectAllRow.className = 'flex items-center space-x-2 text-gray-300 py-1 border-b border-gray-700 mb-1';
+            selectAllRow.innerHTML = `<input type="checkbox" id="${EXPORT_SELECT_ALL_ID}" class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded"> <span>Select all folders</span>`;
+            exportFolderSelection.appendChild(selectAllRow);
             const folderOptions = new Map();
             allCards.forEach(card => {
                 const key = card.folderId || NO_FOLDER_VALUE;
@@ -3711,11 +3745,12 @@
                 });
 
             const defaultFolderValue = currentFolderId != null ? currentFolderId : NO_FOLDER_VALUE;
-            Array.from(exportFolderSelection.querySelectorAll('input[type="checkbox"]')).forEach(input => {
+            getExportFolderCheckboxes().forEach(input => {
                 if (input.value === defaultFolderValue) {
                     input.checked = true;
                 }
             });
+            syncExportFolderSelectAllCheckbox();
 
             document.getElementById('export-modal').classList.remove('hidden');
         }
@@ -4886,6 +4921,14 @@
                     document.getElementById('export-folder-selection').classList.remove('hidden');
                     document.getElementById('export-date-selection').classList.add('hidden');
                 }
+            });
+            document.getElementById('export-folder-selection').addEventListener('change', (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLInputElement) || target.type !== 'checkbox') return;
+                if (target.id === EXPORT_SELECT_ALL_ID) {
+                    toggleAllExportFolders(target.checked);
+                }
+                syncExportFolderSelectAllCheckbox();
             });
             const deleteDateRadio = document.getElementById('delete-date-radio');
             if (deleteDateRadio) {
