@@ -2614,6 +2614,50 @@
             }
         }
 
+        async function ensureFolderForRestoredCard(folderId, folderName) {
+            if (!folderId || folderId === NO_FOLDER_VALUE) {
+                return { id: null, name: null, createdAt: null, exists: false, wasCreated: false };
+            }
+
+            const existing = folders.find(folder => folder.id === folderId);
+            if (existing) {
+                return {
+                    id: folderId,
+                    name: existing.name || folderName || null,
+                    createdAt: existing.createdAt || null,
+                    exists: true,
+                    wasCreated: false
+                };
+            }
+
+            if (!foldersCollectionRef) {
+                return { id: folderId, name: folderName || null, createdAt: null, exists: false, wasCreated: false };
+            }
+
+            const nameToUse = (folderName && String(folderName).trim()) ? folderName.trim() : 'Restored Folder';
+            const folderDocRef = doc(foldersCollectionRef, folderId);
+
+            try {
+                const snapshot = await getDoc(folderDocRef);
+                if (!snapshot.exists()) {
+                    const createdAt = new Date().toISOString();
+                    await setDoc(folderDocRef, { name: nameToUse, createdAt });
+                    return { id: folderId, name: nameToUse, createdAt, exists: true, wasCreated: true };
+                }
+                const data = snapshot.data() || {};
+                return {
+                    id: folderId,
+                    name: data.name || nameToUse,
+                    createdAt: data.createdAt || null,
+                    exists: true,
+                    wasCreated: false
+                };
+            } catch (error) {
+                console.error('Failed to restore folder for card:', error);
+                return { id: folderId, name: nameToUse, createdAt: null, exists: false, wasCreated: false };
+            }
+        }
+
         async function restoreDeletedCard(card, options = {}) {
             if (!card || !cardsCollectionRef || !deletedCardsCollectionRef) {
                 showNotification('Unable to restore this card right now.', 'error');
@@ -2621,6 +2665,17 @@
             }
             const cardId = card.originalId || card.id;
             const { deletedAt, originalId, ...rest } = card;
+            const folderDetails = await ensureFolderForRestoredCard(rest.folderId, rest.folderName);
+
+            if (folderDetails.exists && folderDetails.id && folderDetails.name && !folders.some(folder => folder.id === folderDetails.id)) {
+                folders.push({
+                    id: folderDetails.id,
+                    name: folderDetails.name,
+                    createdAt: folderDetails.createdAt || new Date().toISOString()
+                });
+                renderFolderOptions();
+            }
+
             const payload = {
                 front: rest.front || '',
                 back: rest.back || '',
@@ -2628,8 +2683,8 @@
                 beispiel: rest.beispiel || '',
                 beispielSpeech: rest.beispielSpeech || '',
                 translation: rest.translation || '',
-                folderId: rest.folderId || null,
-                folderName: rest.folderName || null,
+                folderId: folderDetails.id || null,
+                folderName: folderDetails.name || null,
                 createdAt: rest.createdAt || new Date().toISOString()
             };
 
