@@ -47,6 +47,8 @@
         #auto-skip-toggle:checked ~ .block { background-color: #2ecc71; }
         #pause-timer-toggle:checked ~ .dot { transform: translateX(100%); background-color: #c0392b; }
         #pause-timer-toggle:checked ~ .block { background-color: #e74c3c; }
+        #review-back-only-toggle:checked ~ .dot { transform: translateX(100%); background-color: #007acc; }
+        #review-back-only-toggle:checked ~ .block { background-color: #1d72f3; }
         .duplicates-page { min-height: 100vh; }
         .duplicate-group { background-color: #111; border: 1px solid #333; border-radius: 12px; padding: 18px; }
         .duplicate-field-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #888; }
@@ -290,6 +292,14 @@
                             <span class="mr-2 text-sm font-medium">Pause Timer</span>
                             <div class="relative">
                                 <input type="checkbox" id="pause-timer-toggle" class="sr-only">
+                                <div class="block bg-gray-600 w-10 h-6 rounded-full"></div>
+                                <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full"></div>
+                            </div>
+                        </label>
+                        <label class="toggle-label flex items-center cursor-pointer">
+                            <span class="mr-2 text-sm font-medium">Back Only</span>
+                            <div class="relative">
+                                <input type="checkbox" id="review-back-only-toggle" class="sr-only">
                                 <div class="block bg-gray-600 w-10 h-6 rounded-full"></div>
                                 <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full"></div>
                             </div>
@@ -665,6 +675,18 @@
         function isReviewMissingOnly() {
             const toggle = document.getElementById('review-missing-only-toggle');
             return !!(toggle && toggle.checked);
+        }
+
+        function isReviewBackOnlyMode() {
+            const toggle = document.getElementById('review-back-only-toggle');
+            return !!(toggle && toggle.checked);
+        }
+
+        function ensureTrailingDot(value) {
+            const trimmed = (value || '').trim();
+            if (!trimmed) return trimmed;
+            if (/[.!?]$/.test(trimmed)) return trimmed;
+            return `${trimmed}.`;
         }
 
         function clearAutoSkipTimer() {
@@ -5028,7 +5050,10 @@
                     const contentEl = document.getElementById(targetId);
                     if (!contentEl) return;
 
-                    const textToCopy = unformatMultiLine(contentEl.innerHTML);
+                    let textToCopy = unformatMultiLine(contentEl.innerHTML);
+                    if (targetId === 'review-back' && isReviewBackOnlyMode()) {
+                        textToCopy = ensureTrailingDot(textToCopy);
+                    }
 
                     const tempInput = document.createElement('textarea');
                     tempInput.value = textToCopy;
