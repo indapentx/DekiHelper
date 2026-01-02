@@ -1992,17 +1992,20 @@
             const {
                 preserveLeadingBr = false,
                 preserveSpacingAroundBr = false,
-                keepOuterWhitespace = false
+                keepOuterWhitespace = false,
+                spaceAroundBr = false
             } = settings;
 
             let text = isBlank(value) ? (fallback != null ? fallback : '') : value;
             if (text == null) text = '';
 
             let sanitized = String(text).replace(/[\r\n]+/g, '<br>');
-            if (preserveSpacingAroundBr) {
+            if (spaceAroundBr) {
+                sanitized = sanitized.replace(/\s*<br\s*\/?>\s*/gi, ' <br> ');
+            } else if (preserveSpacingAroundBr) {
                 sanitized = sanitized.replace(/<br\s*\/?>/gi, '<br>');
             } else {
-                sanitized = sanitized.replace(/\s*(<br\s*\/?>)\s*/gi, '<br>');
+                sanitized = sanitized.replace(/\s*<br\s*\/?>\s*/gi, '<br>');
             }
 
             if (!preserveLeadingBr) {
@@ -2924,13 +2927,13 @@
                     sanitizeForExport(data.front, sanitizedBack),
                     sanitizedBack,
                     sanitizeForExport(speechValue),
-                    sanitizeForExport(data.beispiel),
+                    sanitizeForExport(data.beispiel, '', { spaceAroundBr: true }),
                     sanitizeForExport(resolvedBeispielSpeech, '', {
                         preserveLeadingBr: true,
                         preserveSpacingAroundBr: true,
                         keepOuterWhitespace: true
                     }),
-                    sanitizeForExport(data.translation)
+                    sanitizeForExport(data.translation, '', { spaceAroundBr: true })
                 ];
                 return fields.join('\t');
             }).join('\n');
