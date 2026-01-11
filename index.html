@@ -103,8 +103,25 @@
         </div>
     </div>
 
-    <div id="main-app" class="container mx-auto max-w-2xl p-4 sm:p-8 hidden">
-        <form id="anki-form" class="space-y-6 mb-12">
+    <div id="main-app" class="hidden">
+        <div class="mx-auto w-full max-w-6xl px-4 sm:px-8 py-4 sm:py-8">
+            <div class="flex flex-col lg:flex-row lg:items-start gap-6">
+                <aside id="folder-sidebar" class="lg:w-64 shrink-0 order-2 lg:order-1 lg:sticky lg:top-6">
+                    <div class="bg-[#111] border border-[#333] rounded-xl p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <h2 class="text-xs font-semibold uppercase tracking-widest text-gray-400">Folders</h2>
+                            <span class="text-xs text-gray-500">Click to copy</span>
+                        </div>
+                        <div id="folder-sidebar-list" class="space-y-2 max-h-[70vh] overflow-y-auto pr-1"></div>
+                        <p id="folder-sidebar-empty" class="text-xs text-gray-500 hidden">No folders yet.</p>
+                        <button id="copy-all-folders-btn" type="button" class="btn btn-secondary btn-sm w-full mt-3" disabled>
+                            Copy all
+                        </button>
+                    </div>
+                </aside>
+                <main class="flex-1 order-1 lg:order-2">
+                    <div class="max-w-2xl mx-auto">
+                        <form id="anki-form" class="space-y-6 mb-12">
             <div>
                 <label for="folder-select" class="anki-label">Folder</label>
                 <div class="flex items-center gap-3">
@@ -237,12 +254,16 @@
             <div id="card-list"></div>
         </div>
 
-        <footer class="mt-12 pt-8 border-t border-gray-700 flex justify-between items-center">
-            <div id="user-info" class="flex items-center gap-3">
-                <span id="user-email" class="font-semibold text-gray-300 text-sm"></span>
+                        <footer class="mt-12 pt-8 border-t border-gray-700 flex justify-between items-center">
+                            <div id="user-info" class="flex items-center gap-3">
+                                <span id="user-email" class="font-semibold text-gray-300 text-sm"></span>
+                            </div>
+                            <button id="logout-btn" class="btn btn-secondary">Sign Out</button>
+                        </footer>
+                    </div>
+                </main>
             </div>
-            <button id="logout-btn" class="btn btn-secondary">Sign Out</button>
-        </footer>
+        </div>
     </div>
     <div id="review-modal" class="modal-backdrop hidden fixed inset-0 bg-black p-4 sm:p-8 z-50">
         <div class="w-full max-w-3xl mx-auto flex flex-col h-full">
@@ -1417,6 +1438,18 @@
             container.appendChild(label);
         }
 
+        function getSortedFoldersForSidebar() {
+            return [...folders].sort((a, b) => {
+                const createdAtDiff = getCreatedAtTime(b.createdAt) - getCreatedAtTime(a.createdAt);
+                if (createdAtDiff !== 0) {
+                    return createdAtDiff;
+                }
+                const nameA = (a.name || '').toLowerCase();
+                const nameB = (b.name || '').toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+        }
+
         function renderFolderOptions() {
             const folderSelect = document.getElementById('folder-select');
             if (!folderSelect) return;
@@ -1468,7 +1501,72 @@
             }
             updateReviewDateSelector();
             populateDuplicatesFolderFilter();
+            renderFolderSidebarList();
             updateFolderDeleteButtonState();
+        }
+
+        function renderFolderSidebarList() {
+            const container = document.getElementById('folder-sidebar-list');
+            if (!container) return;
+            const emptyState = document.getElementById('folder-sidebar-empty');
+            const copyAllButton = document.getElementById('copy-all-folders-btn');
+            container.innerHTML = '';
+
+            const sortedFolders = getSortedFoldersForSidebar();
+            if (copyAllButton) copyAllButton.disabled = sortedFolders.length === 0;
+
+            if (sortedFolders.length === 0) {
+                if (emptyState) emptyState.classList.remove('hidden');
+                return;
+            }
+            if (emptyState) emptyState.classList.add('hidden');
+
+            const counts = getFolderCardCounts();
+            sortedFolders.forEach(folder => {
+                const baseName = (folder.name || '').trim() || 'Untitled Folder';
+                const count = Number.isFinite(counts[folder.id]) ? counts[folder.id] : 0;
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'w-full text-left px-3 py-2 rounded-lg bg-[#161616] hover:bg-[#1e1e1e] border border-transparent hover:border-[#2a2a2a] transition';
+                button.title = `Copy "${baseName}"`;
+
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-2';
+                const nameEl = document.createElement('span');
+                nameEl.className = 'text-sm font-semibold text-gray-200 truncate flex-1 min-w-0';
+                nameEl.textContent = baseName;
+                const countEl = document.createElement('span');
+                countEl.className = 'text-xs text-gray-500 shrink-0';
+                countEl.textContent = `${count} card${count === 1 ? '' : 's'}`;
+                row.appendChild(nameEl);
+                row.appendChild(countEl);
+                button.appendChild(row);
+
+                button.addEventListener('click', () => {
+                    copyPlainTextToClipboard(baseName);
+                    button.classList.add('copy-highlight');
+                    setTimeout(() => button.classList.remove('copy-highlight'), 400);
+                    showNotification(`Copied "${escapeHtml(baseName)}".`, 'success', 1200);
+                });
+
+                container.appendChild(button);
+            });
+        }
+
+        function handleCopyAllFolders() {
+            const sortedFolders = getSortedFoldersForSidebar();
+            if (!sortedFolders.length) {
+                showNotification('No folders to copy.', 'error', 1200);
+                return;
+            }
+            const names = sortedFolders.map(folder => (folder.name || '').trim() || 'Untitled Folder');
+            copyPlainTextToClipboard(names.join('\n'));
+            const copyAllButton = document.getElementById('copy-all-folders-btn');
+            if (copyAllButton) {
+                copyAllButton.classList.add('copy-highlight');
+                setTimeout(() => copyAllButton.classList.remove('copy-highlight'), 400);
+            }
+            showNotification('Copied all folder names.', 'success', 1200);
         }
 
         function openFolderModal() {
@@ -4795,6 +4893,10 @@
                     closeFolderModal();
                 }
             });
+            const copyAllFoldersBtn = document.getElementById('copy-all-folders-btn');
+            if (copyAllFoldersBtn) {
+                copyAllFoldersBtn.addEventListener('click', handleCopyAllFolders);
+            }
             const deleteFolderBtn = document.getElementById('delete-folder-btn');
             if (deleteFolderBtn) {
                 deleteFolderBtn.addEventListener('click', openDeleteFolderModal);
