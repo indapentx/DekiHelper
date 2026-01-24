@@ -489,6 +489,10 @@
                             <span>Copy to Clipboard (Back only)</span>
                         </label>
                         <label class="flex items-center space-x-2">
+                            <input type="radio" name="export-format" value="clipboard-quizlet" class="form-radio">
+                            <span>Copy to Clipboard (Quizlet - Back only, one per line)</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
                             <input type="radio" name="export-format" value="beispiel-speech" class="form-radio">
                             <span>Copy to Clipboard (Beispiel Speech)</span>
                         </label>
@@ -3886,6 +3890,12 @@
                     .map(data => sanitizeForExport(data.back))
                     .filter(text => !isBlank(text))
                     .join(', ');
+            } else if (format === 'clipboard-quizlet') {
+                clipboardText = cardsToExport
+                    .sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt))
+                    .map(data => sanitizeForExport(data.back))
+                    .filter(text => !isBlank(text))
+                    .join('\n');
             } else {
                 triggerExportDownload(cardsToExport, format);
                 document.getElementById('export-modal').classList.add('hidden');
