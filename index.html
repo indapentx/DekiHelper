@@ -3862,6 +3862,7 @@
             }
             
             let clipboardText = '';
+            let clipboardSuccessMessage = "Copied to clipboard!";
             if (format === 'clipboard') {
                 clipboardText = cardsToExport
                     .sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt))
@@ -3896,6 +3897,9 @@
                     .map(data => sanitizeForExport(data.back))
                     .filter(text => !isBlank(text))
                     .join('\n');
+                const today = new Date().toISOString().split('T')[0];
+                triggerDownload(clipboardText, `quizlet-back-only-${today}.txt`, 'text/plain;charset=utf-8');
+                clipboardSuccessMessage = "Copied to clipboard and exported back-only TXT!";
             } else {
                 triggerExportDownload(cardsToExport, format);
                 document.getElementById('export-modal').classList.add('hidden');
@@ -3909,7 +3913,7 @@
             document.execCommand('copy');
             document.body.removeChild(tempInput);
             
-            showNotification("Copied to clipboard!", "success");
+            showNotification(clipboardSuccessMessage, "success");
             document.getElementById('export-modal').classList.add('hidden');
         }
 
