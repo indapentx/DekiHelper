@@ -109,7 +109,10 @@
                 <aside id="folder-sidebar" class="lg:w-64 shrink-0 order-2 lg:order-1 lg:sticky lg:top-6">
                     <div class="bg-[#111] border border-[#333] rounded-xl p-4">
                         <div class="flex items-center justify-between mb-3">
-                            <h2 class="text-xs font-semibold uppercase tracking-widest text-gray-400">Folders</h2>
+                            <div class="flex items-center gap-2">
+                                <h2 class="text-xs font-semibold uppercase tracking-widest text-gray-400">Folders</h2>
+                                <span id="folder-sidebar-count" class="text-xs text-gray-500 shrink-0">0 folders</span>
+                            </div>
                             <span class="text-xs text-gray-500">Click to copy</span>
                         </div>
                         <div id="folder-sidebar-list" class="space-y-2 max-h-[70vh] overflow-y-auto pr-1"></div>
@@ -1522,10 +1525,15 @@
             const emptyState = document.getElementById('folder-sidebar-empty');
             const copyAllButton = document.getElementById('copy-all-folders-btn');
             const toggleOrderButton = document.getElementById('toggle-folder-order-btn');
+            const folderCountLabel = document.getElementById('folder-sidebar-count');
             container.innerHTML = '';
 
             const sortedFolders = getSortedFoldersForSidebar();
             const hasFolders = sortedFolders.length > 0;
+            if (folderCountLabel) {
+                const label = sortedFolders.length === 1 ? '1 folder' : `${sortedFolders.length} folders`;
+                folderCountLabel.textContent = label;
+            }
             if (copyAllButton) copyAllButton.disabled = !hasFolders;
             if (toggleOrderButton) toggleOrderButton.disabled = !hasFolders;
             updateFolderSidebarOrderButton();
@@ -3945,26 +3953,67 @@
             
             const exportFolderSelection = document.getElementById('export-folder-selection');
             exportFolderSelection.innerHTML = '';
-            const selectAllRow = document.createElement('label');
-            selectAllRow.className = 'flex items-center space-x-2 text-gray-300 py-1 border-b border-gray-700 mb-1';
-            selectAllRow.innerHTML = `<input type="checkbox" id="${EXPORT_SELECT_ALL_ID}" class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded"> <span>Select all folders</span>`;
-            exportFolderSelection.appendChild(selectAllRow);
-            const folderOptions = new Map();
-            allCards.forEach(card => {
-                const key = card.folderId || NO_FOLDER_VALUE;
-                const folderMeta = folders.find(f => f.id === card.folderId);
-                const displayName = folderMeta && folderMeta.name ? folderMeta.name : (card.folderName || 'No Folder');
-                const label = key === NO_FOLDER_VALUE ? 'No Folder' : displayName;
-                folderOptions.set(key, label);
+            const counts = getFolderCardCounts();
+            const options = [];
+            const knownFolderIds = new Set(folders.map(folder => folder.id));
+            const noFolderCount = counts[NO_FOLDER_VALUE] || 0;
+            if (noFolderCount > 0) {
+                options.push({ value: NO_FOLDER_VALUE, label: formatFolderLabel('No Folder', noFolderCount) });
+            }
+
+            const sortedFolders = [...folders].sort((a, b) => {
+                const createdAtDiff = getCreatedAtTime(b.createdAt) - getCreatedAtTime(a.createdAt);
+                if (createdAtDiff !== 0) {
+                    return createdAtDiff;
+                }
+                const nameA = (a.name || '').toLowerCase();
+                const nameB = (b.name || '').toLowerCase();
+                return nameA.localeCompare(nameB);
             });
-            Array.from(folderOptions.entries())
+
+            sortedFolders.forEach(folder => {
+                const count = counts[folder.id] || 0;
+                if (count > 0) {
+                    const baseName = (folder.name || '').trim() || 'Untitled Folder';
+                    options.push({ value: folder.id, label: formatFolderLabel(baseName, count) });
+                }
+            });
+
+            const orphanFolderMap = new Map();
+            allCards.forEach(card => {
+                if (!card.folderId || knownFolderIds.has(card.folderId)) return;
+                const count = counts[card.folderId] || 0;
+                if (count <= 0) return;
+                if (orphanFolderMap.has(card.folderId)) return;
+                const baseName = (card.folderName || '').trim() || `Folder ID: ${card.folderId}`;
+                orphanFolderMap.set(card.folderId, baseName);
+            });
+
+            Array.from(orphanFolderMap.entries())
                 .sort((a, b) => a[1].toLowerCase().localeCompare(b[1].toLowerCase()))
-                .forEach(([value, label]) => {
-                    const checkbox = document.createElement('label');
-                    checkbox.className = 'flex items-center space-x-2 text-gray-300 py-1';
-                    checkbox.innerHTML = `<input type="checkbox" value="${value}" class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded"> <span>${label}</span>`;
-                    exportFolderSelection.appendChild(checkbox);
+                .forEach(([folderId, baseName]) => {
+                    options.push({ value: folderId, label: formatFolderLabel(baseName, counts[folderId]) });
                 });
+
+            if (options.length > 0) {
+                const selectAllRow = document.createElement('label');
+                selectAllRow.className = 'flex items-center space-x-2 text-gray-300 py-1 border-b border-gray-700 mb-1';
+                selectAllRow.innerHTML = `<input type="checkbox" id="${EXPORT_SELECT_ALL_ID}" class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded"> <span>Select all folders</span>`;
+                exportFolderSelection.appendChild(selectAllRow);
+                options.forEach(option => {
+                    createSelectionCheckbox(exportFolderSelection, option.label, option.value);
+                });
+            } else {
+                const message = document.createElement('p');
+                message.className = 'text-sm text-gray-500 py-1';
+                message.textContent = 'No folders with cards available.';
+                exportFolderSelection.appendChild(message);
+            }
+
+            const exportFolderRadio = document.getElementById('export-folder-radio');
+            if (exportFolderRadio) {
+                exportFolderRadio.disabled = options.length === 0;
+            }
 
             const defaultFolderValue = currentFolderId != null ? currentFolderId : NO_FOLDER_VALUE;
             getExportFolderCheckboxes().forEach(input => {
