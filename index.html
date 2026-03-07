@@ -4192,10 +4192,9 @@
                     if (data && Array.isArray(data.sources)) {
                         applyRemoteExampleLibrary(data.sources);
                     }
-                } else if (exampleLibrarySources.length > 0) {
-                    persistExampleLibrary().catch(err => console.warn('Failed to seed example library to Firestore', err));
                 } else {
-                    setExampleLibraryStatus('Upload A1/A2/B1 JSON to search for Beispiele. Files sync to your account.');
+                    // Remote deletion should clear in-memory sources, not recreate the document.
+                    applyRemoteExampleLibrary([]);
                 }
             }, (error) => {
                 console.error('Failed to sync example library from Firestore', error);
