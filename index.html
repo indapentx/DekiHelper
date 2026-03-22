@@ -1712,7 +1712,7 @@
             return counts;
         }
 
-        function buildFolderSelectOptions() {
+        function buildFolderSelectOptions({ reverseFolders = false } = {}) {
             const counts = getFolderCardCounts();
             const options = [
                 { value: ALL_FOLDERS_VALUE, label: formatFolderLabel('All Folders', counts[ALL_FOLDERS_VALUE]) },
@@ -1727,15 +1727,16 @@
                 const nameB = (b.name || '').toLowerCase();
                 return nameA.localeCompare(nameB);
             });
-            sortedFolders.forEach(folder => {
+            const orderedFolders = reverseFolders ? sortedFolders.reverse() : sortedFolders;
+            orderedFolders.forEach(folder => {
                 options.push({ value: folder.id, label: formatFolderLabel(folder.name || 'Untitled Folder', counts[folder.id]) });
             });
             return options;
         }
 
-        function populateFolderSelect(selectElement, currentValue) {
+        function populateFolderSelect(selectElement, currentValue, { reverseFolders = false } = {}) {
             if (!selectElement) return currentValue || ALL_FOLDERS_VALUE;
-            const options = buildFolderSelectOptions();
+            const options = buildFolderSelectOptions({ reverseFolders });
             const fragment = document.createDocumentFragment();
             let hasCurrentValue = false;
             options.forEach(option => {
@@ -1756,7 +1757,7 @@
 
         function renderReviewFolderOptions() {
             const selector = document.getElementById('review-folder-selector');
-            currentReviewFolderId = populateFolderSelect(selector, currentReviewFolderId);
+            currentReviewFolderId = populateFolderSelect(selector, currentReviewFolderId, { reverseFolders: true });
         }
 
         function renderViewFolderOptions() {
