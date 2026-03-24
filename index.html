@@ -306,7 +306,7 @@
                         <p id="review-edited-text" class="font-semibold"></p>
                     </div>
                     <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-                        <button id="edit-review-card-btn" class="btn btn-secondary"><i class="fas fa-pencil-alt"></i> Edit</button>
+                        <button id="edit-review-card-btn" class="btn btn-secondary" title="Edit (T)"><i class="fas fa-pencil-alt"></i> Edit</button>
                         <button id="save-review-edit-btn" class="btn btn-success hidden"><i class="fas fa-check"></i> Save</button>
                         <button id="cancel-review-edit-btn" class="btn btn-secondary hidden"><i class="fas fa-times"></i> Cancel</button>
                         <button id="mark-edited-btn" class="btn btn-secondary" title="Mark as Edited (M)"><i class="fas fa-check"></i></button>
@@ -3493,7 +3493,11 @@
                 return;
             }
 
-            if (e.key === 'Enter' && !isReviewEditing) enterReviewEditMode();
+            if ((e.key === 't' || e.key === 'T') && !isReviewEditing) {
+                e.preventDefault();
+                enterReviewEditMode();
+                return;
+            }
             if (e.key === 'Delete') {
                 resetDeleteShortcut();
                 document.getElementById('delete-review-card-btn').click();
