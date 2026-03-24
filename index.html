@@ -4906,11 +4906,15 @@
             const editBeispiel = document.getElementById('edit-beispiel');
             editBeispiel.classList.remove('hidden');
             editBeispiel.value = unformatMultiLine(card.beispiel || '');
+            editBeispiel.scrollTop = 0;
+            editBeispiel.scrollLeft = 0;
             
             document.getElementById('review-translation').classList.add('hidden');
             const editTranslation = document.getElementById('edit-translation');
             editTranslation.classList.remove('hidden');
             editTranslation.value = unformatMultiLine(card.translation || '');
+            editTranslation.scrollTop = 0;
+            editTranslation.scrollLeft = 0;
             
             document.querySelectorAll('.review-card .review-copy-btn, .review-card .copy-line-btn').forEach(btn => btn.classList.add('hidden'));
             document.getElementById('edit-review-card-btn').classList.add('hidden');
