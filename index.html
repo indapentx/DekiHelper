@@ -47,6 +47,8 @@
         #auto-skip-toggle:checked ~ .block { background-color: #2ecc71; }
         #pause-timer-toggle:checked ~ .dot { transform: translateX(100%); background-color: #c0392b; }
         #pause-timer-toggle:checked ~ .block { background-color: #e74c3c; }
+        #review-word-only-toggle:checked ~ .dot { transform: translateX(100%); background-color: #d97706; }
+        #review-word-only-toggle:checked ~ .block { background-color: #f59e0b; }
         #review-back-only-toggle:checked ~ .dot { transform: translateX(100%); background-color: #007acc; }
         #review-back-only-toggle:checked ~ .block { background-color: #1d72f3; }
         .duplicates-page { min-height: 100vh; }
@@ -321,6 +323,14 @@
                             <span class="mr-2 text-sm font-medium">Pause Timer</span>
                             <div class="relative">
                                 <input type="checkbox" id="pause-timer-toggle" class="sr-only">
+                                <div class="block bg-gray-600 w-10 h-6 rounded-full"></div>
+                                <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full"></div>
+                            </div>
+                        </label>
+                        <label class="toggle-label flex items-center cursor-pointer">
+                            <span class="mr-2 text-sm font-medium">Word Only</span>
+                            <div class="relative">
+                                <input type="checkbox" id="review-word-only-toggle" class="sr-only">
                                 <div class="block bg-gray-600 w-10 h-6 rounded-full"></div>
                                 <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full"></div>
                             </div>
@@ -714,6 +724,34 @@
         function isReviewBackOnlyMode() {
             const toggle = document.getElementById('review-back-only-toggle');
             return !!(toggle && toggle.checked);
+        }
+
+        function isReviewWordOnlyMode() {
+            const toggle = document.getElementById('review-word-only-toggle');
+            return !!(toggle && toggle.checked);
+        }
+
+        function shouldPauseReviewBackCopy() {
+            const pauseTimerToggle = document.getElementById('pause-timer-toggle');
+            return !!(pauseTimerToggle && pauseTimerToggle.checked) || isReviewWordOnlyMode();
+        }
+
+        function getReviewBackCopyText(value) {
+            const normalizedValue = unformatMultiLine(String(value || ''));
+            if (!normalizedValue) return '';
+
+            if (isReviewWordOnlyMode()) {
+                const firstSpaceIndex = normalizedValue.indexOf(' ');
+                if (firstSpaceIndex === -1) return normalizedValue;
+                const strippedValue = normalizedValue.slice(firstSpaceIndex + 1).trim();
+                return strippedValue || normalizedValue;
+            }
+
+            if (isReviewBackOnlyMode()) {
+                return ensureTrailingDot(normalizedValue);
+            }
+
+            return normalizedValue;
         }
 
         function ensureTrailingDot(value) {
@@ -3325,12 +3363,10 @@
                     const nextCard = reviewSession.cards[newIndex];
                     if (nextCard && nextCard.back) {
                         try {
-                            const tempInput = document.createElement('textarea');
-                            tempInput.value = nextCard.back;
-                            document.body.appendChild(tempInput);
-                            tempInput.select();
-                            document.execCommand('copy');
-                            document.body.removeChild(tempInput);
+                            const backTextToCopy = getReviewBackCopyText(nextCard.back);
+                            if (backTextToCopy) {
+                                copyPlainTextToClipboard(backTextToCopy);
+                            }
                             showNotification("Copied next card's back!", "success", 1500);
                         } catch (err) {
                             showNotification("Failed to copy automatically.");
@@ -4939,11 +4975,11 @@
         }
 
         async function afterSaveAction() {
-            const isPauseTimerEnabled = document.getElementById('pause-timer-toggle').checked;
+            const shouldAutoEditNext = shouldPauseReviewBackCopy();
             
             exitReviewEditMode();
 
-            if (isPauseTimerEnabled) {
+            if (shouldAutoEditNext) {
                 if (reviewSession.currentIndex < reviewSession.cards.length - 1) {
                     await handleReviewNav(1, true); // Pass true to auto-edit the next card
                 }
@@ -5266,24 +5302,20 @@
                     const contentEl = document.getElementById(targetId);
                     if (!contentEl) return;
 
+                    const isBackButton = targetId === 'review-back';
                     let textToCopy = unformatMultiLine(contentEl.innerHTML);
-                    if (targetId === 'review-back' && isReviewBackOnlyMode()) {
-                        textToCopy = ensureTrailingDot(textToCopy);
+                    if (isBackButton) {
+                        textToCopy = getReviewBackCopyText(textToCopy);
                     }
 
-                    const tempInput = document.createElement('textarea');
-                    tempInput.value = textToCopy;
-                    document.body.appendChild(tempInput);
-                    tempInput.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(tempInput);
+                    copyPlainTextToClipboard(textToCopy);
                     
                     showNotification("Copied!", "success", 1500);
 
                     const isPauseTimerEnabled = document.getElementById('pause-timer-toggle').checked;
-                    const isBackButton = mainCopyBtn.dataset.target === 'review-back';
+                    const shouldPauseAfterCopy = isBackButton && shouldPauseReviewBackCopy();
 
-                    if (isPauseTimerEnabled && isBackButton) {
+                    if (shouldPauseAfterCopy) {
                         if (!isReviewEditing) enterReviewEditMode();
                         return;
                     }
