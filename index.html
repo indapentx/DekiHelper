@@ -2244,10 +2244,9 @@
 
         function createDuplicateKey(card) {
             if (!card) return '';
-            const frontKey = normalizeDuplicateValue(card.front);
             const backKey = normalizeDuplicateValue(card.back);
-            if (!frontKey && !backKey) return '';
-            return `${frontKey}|||${backKey}`;
+            if (!backKey) return '';
+            return backKey;
         }
 
         function findDuplicateGroups(cards) {
@@ -2449,14 +2448,16 @@
                     header.className = 'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3';
 
                     const title = document.createElement('div');
-                    const groupFront = formatDuplicateField(group[0].front);
                     const groupBack = formatDuplicateField(group[0].back);
+                    const uniqueFronts = Array.from(new Set(group.map(card => formatDuplicateField(card.front))));
                     const titleFront = document.createElement('p');
                     titleFront.className = 'text-lg font-semibold text-gray-100';
-                    titleFront.textContent = groupFront !== '—' ? groupFront : 'No Front';
+                    titleFront.textContent = groupBack !== '—' ? groupBack : 'No Back';
                     const titleBack = document.createElement('p');
                     titleBack.className = 'text-sm text-gray-400';
-                    titleBack.textContent = groupBack !== '—' ? groupBack : 'No Back';
+                    titleBack.textContent = uniqueFronts.length === 1
+                        ? `Front: ${uniqueFronts[0] !== '—' ? uniqueFronts[0] : 'No Front'}`
+                        : `Fronts: ${uniqueFronts.length} different values`;
                     title.append(titleFront, titleBack);
                     header.appendChild(title);
 
