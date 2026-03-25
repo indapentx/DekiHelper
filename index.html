@@ -628,12 +628,22 @@
             { id: 'B1', label: 'B1', defaultFileName: 'B1.json' }
         ];
         const EXAMPLE_MATCH_PAGE_SIZE = 10;
+        const EXTERNAL_EDIT_CARD_PARAM = 'editCardId';
 
         
         let app, auth, db, userId, cardsCollectionRef, unsubscribe;
         let foldersCollectionRef, foldersUnsubscribe;
         let deletedCardsCollectionRef, deletedCardsUnsubscribe;
         let currentEditId = null, cardToDeleteId = null, allCards = [];
+        let pendingDuplicateViewRecovery = false;
+        let pendingExternalEditCardId = (() => {
+            const params = new URLSearchParams(window.location.search);
+            const requestedId = params.get(EXTERNAL_EDIT_CARD_PARAM);
+            return requestedId && requestedId.trim() ? requestedId.trim() : null;
+        })();
+        let hasHandledExternalEditRequest = false;
+        let hasLoadedFoldersSnapshot = false;
+        let hasLoadedCardsSnapshot = false;
         let deletedCards = [];
         let folders = [];
         let currentFolderId = null;
@@ -2384,6 +2394,45 @@
             };
         }
 
+        function recoverDuplicateViewFiltersAfterDelete() {
+            if (!pendingDuplicateViewRecovery) return;
+            if (!isDuplicatesViewActive()) {
+                pendingDuplicateViewRecovery = false;
+                return;
+            }
+
+            const searchInput = document.getElementById('duplicates-search-input');
+            const folderFilterSelect = document.getElementById('duplicates-folder-filter');
+            let searchTerm = (searchInput ? searchInput.value : '').trim();
+            let folderFilter = folderFilterSelect ? folderFilterSelect.value : '__all__';
+            let { baseGroups, filteredGroups } = buildDuplicateViewModel({ searchTerm, folderFilter });
+
+            pendingDuplicateViewRecovery = false;
+
+            if (baseGroups.length === 0 || filteredGroups.length > 0) {
+                return;
+            }
+
+            let filtersChanged = false;
+
+            if (folderFilterSelect && folderFilter !== '__all__') {
+                folderFilterSelect.value = '__all__';
+                folderFilter = '__all__';
+                filtersChanged = true;
+                ({ filteredGroups } = buildDuplicateViewModel({ searchTerm, folderFilter }));
+            }
+
+            if (searchInput && searchTerm && filteredGroups.length === 0) {
+                searchInput.value = '';
+                searchTerm = '';
+                filtersChanged = true;
+            }
+
+            if (filtersChanged) {
+                renderDuplicatesView();
+            }
+        }
+
         function updateDuplicateBadge() {
             const badge = document.getElementById('duplicate-count-badge');
             if (!badge) return;
@@ -2980,6 +3029,42 @@
             }
             updateSpeechFields();
             if (front) front.focus();
+        }
+
+        function clearExternalEditCardParamFromUrl() {
+            const url = new URL(window.location.href);
+            if (!url.searchParams.has(EXTERNAL_EDIT_CARD_PARAM)) return;
+            url.searchParams.delete(EXTERNAL_EDIT_CARD_PARAM);
+            window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
+        }
+
+        function openCardEditorInNewTab(cardId) {
+            const normalizedCardId = (cardId || '').trim();
+            if (!normalizedCardId) return null;
+            const url = new URL(window.location.href);
+            url.searchParams.set(EXTERNAL_EDIT_CARD_PARAM, normalizedCardId);
+            return window.open(url.toString(), '_blank', 'noopener');
+        }
+
+        function applyPendingExternalEditRequest() {
+            if (!pendingExternalEditCardId || hasHandledExternalEditRequest) return;
+            if (!hasLoadedFoldersSnapshot || !hasLoadedCardsSnapshot) return;
+
+            hasHandledExternalEditRequest = true;
+            const requestedCardId = pendingExternalEditCardId;
+            pendingExternalEditCardId = null;
+            clearExternalEditCardParamFromUrl();
+
+            const card = allCards.find(existing => existing.id === requestedCardId);
+            if (!card) {
+                showNotification('Requested card could not be loaded.', 'error');
+                return;
+            }
+
+            showMainAppView();
+            setEditMode(true, card);
+            const frontInput = document.getElementById('front');
+            if (frontInput) frontInput.focus();
         }
 
         function setEditMode(isEditing, cardData = null) {
@@ -3681,6 +3766,7 @@
         async function handleDeleteConfirmed() {
             if (!cardToDeleteId || !userId) return;
             const isReviewDelete = reviewSession.cards.length > 0;
+            const shouldRecoverDuplicateView = isDuplicatesViewActive();
             resetDeleteShortcut();
             
             try {
@@ -3699,6 +3785,9 @@
                     await archiveCardBeforeDeletion(cardData);
                 }
                 const docRef = doc(db, `artifacts/${appId}/users/${userId}/cards`, cardToDeleteId);
+                if (shouldRecoverDuplicateView) {
+                    pendingDuplicateViewRecovery = true;
+                }
                 await deleteDoc(docRef);
                 
                 if (isReviewDelete) {
@@ -3720,7 +3809,10 @@
                 document.getElementById('delete-modal').classList.add('hidden');
                 cardToDeleteId = null;
                 showNotification("Card deleted.", "success");
-            } catch (error) { showNotification("Failed to delete card."); }
+            } catch (error) {
+                pendingDuplicateViewRecovery = false;
+                showNotification("Failed to delete card.");
+            }
         }
         
         async function applyLegacyFrontFixes(candidates, { triggerButton = null, confirmMessage = null, loadingText = 'Fixing...' } = {}) {
@@ -4180,6 +4272,8 @@
             exampleWordMap = new Map();
             hasRestoredFolderPreference = false;
             isFolderSidebarReversed = false;
+            hasLoadedFoldersSnapshot = false;
+            hasLoadedCardsSnapshot = false;
             currentReviewFolderId = ALL_FOLDERS_VALUE;
             currentReviewSessionId = null;
             currentReviewDate = 'all';
@@ -4266,11 +4360,13 @@
 
             if (foldersUnsubscribe) foldersUnsubscribe();
             foldersUnsubscribe = onSnapshot(foldersCollectionRef, (snapshot) => {
+                hasLoadedFoldersSnapshot = true;
                 folders = [];
                 snapshot.forEach(folderDoc => folders.push({ id: folderDoc.id, ...folderDoc.data() }));
                 restoreFolderPreference();
                 ensureCurrentFolderIsValid();
                 renderFolderOptions();
+                applyPendingExternalEditRequest();
                 filterAndRenderCards();
             });
 
@@ -4285,6 +4381,7 @@
 
             if (unsubscribe) unsubscribe();
             unsubscribe = onSnapshot(cardsCollectionRef, (snapshot) => {
+                hasLoadedCardsSnapshot = true;
                 allCards = [];
                 snapshot.forEach(doc => {
                     const data = doc.data();
@@ -4306,8 +4403,10 @@
                 }
 
                 renderFolderOptions();
+                applyPendingExternalEditRequest();
                 filterAndRenderCards();
                 updateReviewDateSelector();
+                recoverDuplicateViewFiltersAfterDelete();
                 updateDuplicateBadge();
                 updateLegacyBadge();
                 refreshExampleMatches();
@@ -5470,8 +5569,11 @@
                     if (editBtn) {
                         const card = allCards.find(c => c.id === editBtn.dataset.cardId);
                         if (card) {
-                            showMainAppView();
-                            setEditMode(true, card);
+                            const openedTab = openCardEditorInNewTab(card.id);
+                            if (!openedTab) {
+                                showMainAppView();
+                                setEditMode(true, card);
+                            }
                         }
                         return;
                     }
