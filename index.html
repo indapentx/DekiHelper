@@ -58,6 +58,7 @@
         .duplicate-card-entry { background-color: #151515; border: 1px solid #2a2a2a; border-radius: 10px; padding: 16px; }
         .duplicate-card-meta { font-size: 0.75rem; color: #b0b0b0; word-break: break-word; }
         .duplicate-card-entry.highlight { border-color: #1d72f3; box-shadow: 0 0 0 1px rgba(29, 114, 243, 0.2); }
+        .duplicate-folder-switch-select { margin-top: 0; width: auto; min-width: 12rem; max-width: 100%; padding: 6px 10px; }
         .deleted-page { min-height: 100vh; }
         .deleted-card-entry { background-color: #151515; border: 1px solid #333; border-radius: 12px; padding: 16px; }
         .deleted-card-entry header { display: flex; flex-direction: column; gap: 4px; }
@@ -2321,6 +2322,98 @@
             return wrapper;
         }
 
+        function buildDuplicateFolderSwitchSelect(card) {
+            const select = document.createElement('select');
+            select.className = 'anki-input duplicate-folder-switch-select';
+            select.dataset.cardId = card.id;
+
+            const noFolderOption = document.createElement('option');
+            noFolderOption.value = NO_FOLDER_VALUE;
+            noFolderOption.textContent = 'No folder';
+            select.appendChild(noFolderOption);
+
+            const sortedFolders = [...folders].sort((a, b) => {
+                const nameA = (a.name || '').toLowerCase();
+                const nameB = (b.name || '').toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+
+            sortedFolders.forEach(folder => {
+                const option = document.createElement('option');
+                option.value = folder.id;
+                option.textContent = folder.name || 'Untitled Folder';
+                select.appendChild(option);
+            });
+
+            if (card.folderId && !sortedFolders.some(folder => folder.id === card.folderId)) {
+                const fallbackOption = document.createElement('option');
+                fallbackOption.value = card.folderId;
+                fallbackOption.textContent = card.folderName || `Folder ID: ${card.folderId}`;
+                select.appendChild(fallbackOption);
+            }
+
+            select.value = card.folderId || NO_FOLDER_VALUE;
+            return select;
+        }
+
+        async function switchDuplicateCardFolder(cardId, targetFolderValue) {
+            if (!cardsCollectionRef || !userId) {
+                showNotification('Not connected.', 'error');
+                return false;
+            }
+
+            const card = allCards.find(existing => existing.id === cardId);
+            if (!card) {
+                showNotification('Card not found.', 'error');
+                return false;
+            }
+
+            const normalizedTarget = targetFolderValue && targetFolderValue !== NO_FOLDER_VALUE ? targetFolderValue : null;
+            const currentFolderValue = card.folderId || NO_FOLDER_VALUE;
+            const nextFolderValue = normalizedTarget || NO_FOLDER_VALUE;
+
+            if (currentFolderValue === nextFolderValue) {
+                showNotification('Card is already in that folder.', 'error', 1500);
+                return false;
+            }
+
+            const folderMeta = normalizedTarget ? folders.find(folder => folder.id === normalizedTarget) : null;
+            if (normalizedTarget && !folderMeta) {
+                showNotification('Selected folder could not be found.', 'error');
+                return false;
+            }
+
+            try {
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/cards`, cardId);
+                if (normalizedTarget) {
+                    await updateDoc(docRef, {
+                        folderId: normalizedTarget,
+                        folderName: folderMeta && folderMeta.name ? folderMeta.name : null
+                    });
+                    card.folderId = normalizedTarget;
+                    card.folderName = folderMeta && folderMeta.name ? folderMeta.name : null;
+                } else {
+                    await updateDoc(docRef, {
+                        folderId: deleteField(),
+                        folderName: deleteField()
+                    });
+                    delete card.folderId;
+                    delete card.folderName;
+                }
+
+                renderFolderOptions();
+                filterAndRenderCards();
+                updateDuplicateBadge();
+                const destinationLabel = normalizedTarget ? (folderMeta && folderMeta.name ? folderMeta.name : 'Untitled Folder') : 'No folder';
+                showNotification(`Card moved to "${destinationLabel}".`, 'success');
+                return true;
+            } catch (error) {
+                console.error('Failed to switch duplicate card folder:', error);
+                showNotification('Failed to switch folder.', 'error');
+                return false;
+            }
+        }
+
         function isDuplicatesViewActive() {
             const view = document.getElementById('duplicates-view');
             return view ? !view.classList.contains('hidden') : false;
@@ -2606,6 +2699,15 @@
                         copyBtn.dataset.cardId = card.id;
                         copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy Back';
                         actionsRow.appendChild(copyBtn);
+
+                        const folderSwitchSelect = buildDuplicateFolderSwitchSelect(card);
+                        actionsRow.appendChild(folderSwitchSelect);
+
+                        const switchFolderBtn = document.createElement('button');
+                        switchFolderBtn.className = 'btn btn-secondary btn-sm duplicate-switch-folder-btn';
+                        switchFolderBtn.dataset.cardId = card.id;
+                        switchFolderBtn.innerHTML = '<i class="fas fa-folder-open"></i> Switch Folder';
+                        actionsRow.appendChild(switchFolderBtn);
 
                         cardEntry.appendChild(actionsRow);
                         groupCardsWrapper.appendChild(cardEntry);
@@ -5564,7 +5666,7 @@
             if (duplicatesExportBtn) duplicatesExportBtn.addEventListener('click', exportVisibleDuplicates);
             const duplicatesContainer = document.getElementById('duplicates-container');
             if (duplicatesContainer) {
-                duplicatesContainer.addEventListener('click', (e) => {
+                duplicatesContainer.addEventListener('click', async (e) => {
                     const editBtn = e.target.closest('.duplicate-edit-btn');
                     if (editBtn) {
                         const card = allCards.find(c => c.id === editBtn.dataset.cardId);
@@ -5575,6 +5677,21 @@
                                 setEditMode(true, card);
                             }
                         }
+                        return;
+                    }
+                    const switchFolderBtn = e.target.closest('.duplicate-switch-folder-btn');
+                    if (switchFolderBtn) {
+                        const cardEntry = switchFolderBtn.closest('.duplicate-card-entry');
+                        const folderSelect = cardEntry ? cardEntry.querySelector('.duplicate-folder-switch-select') : null;
+                        if (!folderSelect) {
+                            showNotification('Folder selector is unavailable.', 'error');
+                            return;
+                        }
+                        switchFolderBtn.disabled = true;
+                        folderSelect.disabled = true;
+                        await switchDuplicateCardFolder(switchFolderBtn.dataset.cardId, folderSelect.value);
+                        switchFolderBtn.disabled = false;
+                        folderSelect.disabled = false;
                         return;
                     }
                     const deleteBtn = e.target.closest('.duplicate-delete-btn');
