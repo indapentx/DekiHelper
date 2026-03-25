@@ -486,6 +486,10 @@
                             <span>TXT (for Anki)</span>
                         </label>
                         <label class="flex items-center space-x-2">
+                            <input type="radio" name="export-format" value="txt-empty-beispiel-speech" class="form-radio">
+                            <span>TXT (for Anki, empty Beispiel Speech)</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
                             <input type="radio" name="export-format" value="json" class="form-radio">
                             <span>JSON</span>
                         </label>
@@ -3119,7 +3123,8 @@
             URL.revokeObjectURL(url);
         }
 
-        function buildTsvFromCards(cards) {
+        function buildTsvFromCards(cards, options = {}) {
+            const { emptyBeispielSpeech = false } = options;
             const sortedCards = [...cards].sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt));
             return sortedCards.map(data => {
                 const soundTagBase = prepareForSoundTag(data.back);
@@ -3131,7 +3136,7 @@
                     sanitizedBack,
                     sanitizeForExport(speechValue),
                     sanitizeForExport(data.beispiel, '', { spaceAroundBr: true }),
-                    sanitizeForExport(resolvedBeispielSpeech, '', {
+                    emptyBeispielSpeech ? '' : sanitizeForExport(resolvedBeispielSpeech, '', {
                         preserveLeadingBr: true,
                         preserveSpacingAroundBr: true,
                         keepOuterWhitespace: true
@@ -3794,9 +3799,10 @@
                 content = JSON.stringify(jsonData, null, 2);
                 fileName = `${today}.json`;
                 mimeType = 'application/json';
-            } else { // txt format
-                content = buildTsvFromCards(cards);
-                fileName = `${today}.txt`;
+            } else {
+                const emptyBeispielSpeech = format === 'txt-empty-beispiel-speech';
+                content = buildTsvFromCards(cards, { emptyBeispielSpeech });
+                fileName = emptyBeispielSpeech ? `${today}-empty-beispiel-speech.txt` : `${today}.txt`;
                 mimeType = 'text/plain;charset=utf-8';
             }
             triggerDownload(content, fileName, mimeType);
