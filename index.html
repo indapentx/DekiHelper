@@ -3904,17 +3904,14 @@
             } catch (error) { showNotification("Failed to update card."); }
         }
 
-        async function handleDeleteConfirmed() {
-            if (!cardToDeleteId || !userId) return;
-            const isReviewDelete = reviewSession.cards.length > 0;
-            const shouldRecoverDuplicateView = isDuplicatesViewActive();
-            resetDeleteShortcut();
-            
+        async function deleteCardById(cardId, { isReviewDelete = false, shouldRecoverDuplicateView = false } = {}) {
+            if (!cardId || !userId) return false;
+
             try {
-                let cardData = allCards.find(card => card.id === cardToDeleteId);
+                let cardData = allCards.find(card => card.id === cardId);
                 if (!cardData && cardsCollectionRef) {
                     try {
-                        const cardDoc = await getDoc(doc(cardsCollectionRef, cardToDeleteId));
+                        const cardDoc = await getDoc(doc(cardsCollectionRef, cardId));
                         if (cardDoc.exists()) {
                             cardData = { id: cardDoc.id, ...cardDoc.data() };
                         }
@@ -3925,14 +3922,14 @@
                 if (cardData) {
                     await archiveCardBeforeDeletion(cardData);
                 }
-                const docRef = doc(db, `artifacts/${appId}/users/${userId}/cards`, cardToDeleteId);
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/cards`, cardId);
                 if (shouldRecoverDuplicateView) {
                     pendingDuplicateViewRecovery = true;
                 }
                 await deleteDoc(docRef);
                 
                 if (isReviewDelete) {
-                    const deletedIndex = reviewSession.cards.findIndex(c => c.id === cardToDeleteId);
+                    const deletedIndex = reviewSession.cards.findIndex(c => c.id === cardId);
                     if (deletedIndex > -1) {
                          reviewSession.cards.splice(deletedIndex, 1);
                          if (reviewSession.currentIndex >= deletedIndex) {
@@ -3949,10 +3946,21 @@
                 
                 closeDeleteModal();
                 showNotification("Card deleted.", "success");
+                return true;
             } catch (error) {
                 pendingDuplicateViewRecovery = false;
                 showNotification("Failed to delete card.");
+                return false;
             }
+        }
+
+        async function handleDeleteConfirmed() {
+            if (!cardToDeleteId || !userId) return;
+            resetDeleteShortcut();
+            await deleteCardById(cardToDeleteId, {
+                isReviewDelete: reviewSession.cards.length > 0,
+                shouldRecoverDuplicateView: isDuplicatesViewActive()
+            });
         }
         
         async function applyLegacyFrontFixes(candidates, { triggerButton = null, confirmMessage = null, loadingText = 'Fixing...' } = {}) {
@@ -5735,7 +5743,9 @@
                     if (deleteBtn) {
                         const cardId = deleteBtn.dataset.cardId;
                         if (cardId) {
-                            openDeleteModal(cardId);
+                            deleteBtn.disabled = true;
+                            await deleteCardById(cardId, { shouldRecoverDuplicateView: true });
+                            deleteBtn.disabled = false;
                         }
                         return;
                     }
