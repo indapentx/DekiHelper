@@ -1111,9 +1111,16 @@
 
             visibleMatches.forEach(match => {
                 const existingSentences = normalizeSentencesFromBeispiel(match.card.beispiel);
-                const existingPreview = existingSentences.length
-                    ? `Existing Beispiel: ${escapeHtml(existingSentences.slice(0, 2).join(' • '))}${existingSentences.length > 2 ? ' ...' : ''}`
-                    : 'No Beispiel on this card yet.';
+                const existingPreviewHtml = existingSentences.length
+                    ? `
+                        <div class="text-xs text-gray-500 mt-1">
+                            <p class="text-gray-400">Existing Beispiel:</p>
+                            <div class="mt-1 space-y-1">
+                                ${existingSentences.map(sentence => `<div class="leading-5">${escapeHtml(sentence)}</div>`).join('')}
+                            </div>
+                        </div>
+                    `
+                    : '<p class="text-xs text-gray-500 mt-1">No Beispiel on this card yet.</p>';
                 const folderMeta = match.card.folderId ? folders.find(f => f.id === match.card.folderId) : null;
                 const folderLabel = folderMeta && folderMeta.name ? folderMeta.name : 'No Folder';
                 const deleteButtonTitle = 'Delete this card.';
@@ -1132,7 +1139,7 @@
                             </div>
                             <p class="text-xs text-gray-400 mt-1">Front: ${escapeHtml(frontLabel)}</p>
                             <p class="text-xs text-gray-500 mt-1">Back: ${escapeHtml(backLabel)} • Source: ${escapeHtml(getExampleSourceLabel(match.sourceId))} • Folder: ${escapeHtml(folderLabel)}</p>
-                            <p class="text-xs text-gray-500 mt-1">${existingPreview}</p>
+                            ${existingPreviewHtml}
                         </div>
                         <div class="flex flex-col items-stretch gap-2 sm:min-w-[10rem]">
                             <button class="btn btn-success btn-sm example-apply-btn w-full" data-card-id="${match.card.id}" data-word="${encodeURIComponent(match.word)}" data-source-id="${match.sourceId}" data-entry-id="${escapeHtml(match.entryId || '')}">
