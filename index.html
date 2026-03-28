@@ -1116,10 +1116,7 @@
                     : 'No Beispiel on this card yet.';
                 const folderMeta = match.card.folderId ? folders.find(f => f.id === match.card.folderId) : null;
                 const folderLabel = folderMeta && folderMeta.name ? folderMeta.name : 'No Folder';
-                const canRemoveFromFolder = Boolean(match.card.folderId);
-                const removeButtonTitle = canRemoveFromFolder
-                    ? `Remove this card from "${folderLabel}".`
-                    : 'Card is already not in a folder.';
+                const deleteButtonTitle = 'Delete this card.';
                 const frontPreview = formatDuplicateDisplayValue(match.card.front);
                 const backPreview = formatDuplicateDisplayValue(match.card.back);
                 const frontLabel = frontPreview !== '—' ? frontPreview : 'No front';
@@ -1141,7 +1138,7 @@
                             <button class="btn btn-success btn-sm example-apply-btn w-full" data-card-id="${match.card.id}" data-word="${encodeURIComponent(match.word)}" data-source-id="${match.sourceId}" data-entry-id="${escapeHtml(match.entryId || '')}">
                                 <i class="fas fa-plus"></i> Add Beispiele
                             </button>
-                            <button class="btn btn-danger btn-sm example-remove-folder-btn w-full" data-card-id="${match.card.id}" title="${escapeHtml(removeButtonTitle)}" ${canRemoveFromFolder ? '' : 'disabled'}>
+                            <button class="btn btn-danger btn-sm example-delete-card-btn w-full" data-card-id="${match.card.id}" title="${escapeHtml(deleteButtonTitle)}">
                                 <i class="fas fa-trash-alt"></i> Delete
                             </button>
                         </div>
@@ -1263,9 +1260,9 @@
             }
         }
 
-        async function handleRemoveExampleMatchCardFromFolder(cardId) {
-            if (!userId || !cardsCollectionRef) {
-                showNotification('Sign in to remove cards from folders.', 'error');
+        async function handleDeleteExampleMatchCard(cardId) {
+            if (!userId || !cardsCollectionRef || !deletedCardsCollectionRef) {
+                showNotification('Sign in to delete cards.', 'error');
                 return;
             }
 
@@ -1275,14 +1272,10 @@
                 return;
             }
 
-            if (!card.folderId) {
-                showNotification('Card is already not in a folder.', 'error', 1500);
-                return;
-            }
-
-            const removed = await switchDuplicateCardFolder(cardId, NO_FOLDER_VALUE);
-            if (removed) {
-                await refreshExampleMatches({ forceReloadLibrary: false });
+            const deleted = await deleteCardById(cardId);
+            if (deleted) {
+                currentExampleMatches = currentExampleMatches.filter(match => match.card.id !== cardId);
+                renderExampleMatches(currentExampleMatches, { resetVisibleCount: false });
             }
         }
 
@@ -5739,8 +5732,8 @@
             if (exampleMatchesContainer) {
                 exampleMatchesContainer.addEventListener('click', async (event) => {
                     const applyBtn = event.target.closest('.example-apply-btn');
-                    const removeBtn = event.target.closest('.example-remove-folder-btn');
-                    if (!applyBtn && !removeBtn) return;
+                    const deleteBtn = event.target.closest('.example-delete-card-btn');
+                    if (!applyBtn && !deleteBtn) return;
 
                     if (applyBtn) {
                         const cardId = applyBtn.dataset.cardId;
@@ -5759,16 +5752,16 @@
                         return;
                     }
 
-                    if (removeBtn) {
-                        const cardId = removeBtn.dataset.cardId;
+                    if (deleteBtn) {
+                        const cardId = deleteBtn.dataset.cardId;
                         try {
-                            setButtonLoading(removeBtn, true, 'Removing...');
-                            await handleRemoveExampleMatchCardFromFolder(cardId);
+                            setButtonLoading(deleteBtn, true, 'Deleting...');
+                            await handleDeleteExampleMatchCard(cardId);
                         } catch (error) {
-                            console.error('Failed to remove card from folder:', error);
-                            showNotification('Could not remove the card from its folder.', 'error', 3500);
+                            console.error('Failed to delete card from example finder:', error);
+                            showNotification('Could not delete the card.', 'error', 3500);
                         } finally {
-                            setButtonLoading(removeBtn, false);
+                            setButtonLoading(deleteBtn, false);
                         }
                     }
                 });
