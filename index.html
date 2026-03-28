@@ -188,6 +188,7 @@
                     <i class="fas fa-trash-restore"></i> Deleted
                     <span id="deleted-count-badge" class="hidden text-xs font-semibold bg-yellow-500 text-black px-2 py-0.5 rounded-full"></span>
                 </button>
+                <button id="move-cards-btn" class="btn btn-secondary w-full sm:w-auto"><i class="fas fa-right-left"></i> Move Cards</button>
                 <button id="delete-cards-btn" class="btn btn-danger w-full sm:w-auto"><i class="fas fa-trash-alt"></i> Delete Cards</button>
              </div>
              <div id="edit-actions" class="hidden space-x-4">
@@ -580,6 +581,42 @@
             <div class="flex justify-end items-center space-x-4 mt-8">
                 <button id="cancel-delete-cards-btn" class="btn btn-secondary">Cancel</button>
                 <button id="confirm-delete-cards-btn" class="btn btn-danger">Delete Selected</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="move-cards-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-6">Move Cards</h2>
+            <div class="space-y-6">
+                <div>
+                    <label for="move-source-folder-select" class="anki-label mb-2 block">Source Folder</label>
+                    <select id="move-source-folder-select" class="anki-input"></select>
+                </div>
+                <div>
+                    <label for="move-target-folder-select" class="anki-label mb-2 block">Destination Folder</label>
+                    <select id="move-target-folder-select" class="anki-input"></select>
+                </div>
+                <div>
+                    <h3 class="anki-label mb-2">Move Which Cards</h3>
+                    <label class="flex items-center space-x-2">
+                        <input type="radio" name="move-cards-filter" value="with_beispiel" class="form-radio" checked>
+                        <span>Only cards with Beispiel</span>
+                    </label>
+                    <label class="flex items-center space-x-2 mt-2">
+                        <input type="radio" name="move-cards-filter" value="without_beispiel" class="form-radio">
+                        <span>Only cards without Beispiel</span>
+                    </label>
+                    <label class="flex items-center space-x-2 mt-2">
+                        <input type="radio" name="move-cards-filter" value="all" class="form-radio">
+                        <span>All cards</span>
+                    </label>
+                </div>
+                <p id="move-cards-summary" class="text-sm text-gray-400 leading-6"></p>
+            </div>
+            <div class="flex justify-end items-center space-x-4 mt-8">
+                <button id="cancel-move-cards-btn" class="btn btn-secondary">Cancel</button>
+                <button id="confirm-move-cards-btn" class="btn btn-primary">Move Cards</button>
             </div>
         </div>
     </div>
@@ -1561,6 +1598,8 @@
             renderViewFolderOptions();
             renderReviewFolderOptions();
             renderExampleFolderOptions();
+            renderMoveCardsSourceOptions();
+            renderMoveCardsTargetOptions();
             if (currentViewFolderId !== previousViewFolder) {
                 filterAndRenderCards();
             }
@@ -1809,6 +1848,26 @@
             return valueToApply;
         }
 
+        function populateOptionSelect(selectElement, options, currentValue, fallbackValue) {
+            if (!selectElement) return fallbackValue;
+            const fragment = document.createDocumentFragment();
+            let hasCurrentValue = false;
+            options.forEach(option => {
+                const optionEl = document.createElement('option');
+                optionEl.value = option.value;
+                optionEl.textContent = option.label;
+                fragment.appendChild(optionEl);
+                if (option.value === currentValue) {
+                    hasCurrentValue = true;
+                }
+            });
+            selectElement.innerHTML = '';
+            selectElement.appendChild(fragment);
+            const valueToApply = hasCurrentValue ? currentValue : fallbackValue;
+            selectElement.value = valueToApply;
+            return valueToApply;
+        }
+
         function renderReviewFolderOptions() {
             const selector = document.getElementById('review-folder-selector');
             currentReviewFolderId = populateFolderSelect(selector, currentReviewFolderId, { reverseFolders: true });
@@ -1822,6 +1881,129 @@
         function renderExampleFolderOptions() {
             const selector = document.getElementById('example-folder-filter');
             currentExampleFolderId = populateFolderSelect(selector, currentExampleFolderId);
+        }
+
+        function getFolderDisplayName(folderValue) {
+            if (folderValue === ALL_FOLDERS_VALUE) return 'All Folders';
+            if (!folderValue || folderValue === NO_FOLDER_VALUE) return 'No Folder';
+            const folderMeta = folders.find(folder => folder.id === folderValue);
+            const name = folderMeta && folderMeta.name ? folderMeta.name.trim() : '';
+            return name || 'Untitled Folder';
+        }
+
+        function buildMoveTargetFolderOptions() {
+            const counts = getFolderCardCounts();
+            const options = [
+                { value: NO_FOLDER_VALUE, label: formatFolderLabel('No Folder', counts[NO_FOLDER_VALUE]) }
+            ];
+            const sortedFolders = [...folders].sort((a, b) => {
+                const createdAtDiff = getCreatedAtTime(b.createdAt) - getCreatedAtTime(a.createdAt);
+                if (createdAtDiff !== 0) {
+                    return createdAtDiff;
+                }
+                const nameA = (a.name || '').toLowerCase();
+                const nameB = (b.name || '').toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+            sortedFolders.forEach(folder => {
+                options.push({
+                    value: folder.id,
+                    label: formatFolderLabel(folder.name || 'Untitled Folder', counts[folder.id])
+                });
+            });
+            return options;
+        }
+
+        function getPreferredMoveSourceFolderValue() {
+            if (currentViewFolderId && currentViewFolderId !== ALL_FOLDERS_VALUE) {
+                return currentViewFolderId;
+            }
+            return currentFolderId || ALL_FOLDERS_VALUE;
+        }
+
+        function getPreferredMoveTargetFolderValue(sourceValue) {
+            const sortedFolders = [...folders].sort((a, b) => {
+                const createdAtDiff = getCreatedAtTime(b.createdAt) - getCreatedAtTime(a.createdAt);
+                if (createdAtDiff !== 0) {
+                    return createdAtDiff;
+                }
+                const nameA = (a.name || '').toLowerCase();
+                const nameB = (b.name || '').toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+            const differentFolder = sortedFolders.find(folder => folder.id !== sourceValue);
+            if (differentFolder) {
+                return differentFolder.id;
+            }
+            return NO_FOLDER_VALUE;
+        }
+
+        function renderMoveCardsSourceOptions() {
+            const selector = document.getElementById('move-source-folder-select');
+            if (!selector) return getPreferredMoveSourceFolderValue();
+            const fallbackValue = getPreferredMoveSourceFolderValue();
+            const currentValue = selector.value || fallbackValue;
+            return populateOptionSelect(selector, buildFolderSelectOptions(), currentValue, fallbackValue);
+        }
+
+        function renderMoveCardsTargetOptions(sourceValue = null) {
+            const selector = document.getElementById('move-target-folder-select');
+            if (!selector) return getPreferredMoveTargetFolderValue(sourceValue);
+            const fallbackValue = getPreferredMoveTargetFolderValue(sourceValue || renderMoveCardsSourceOptions());
+            const requestedValue = selector.value || fallbackValue;
+            const currentValue = sourceValue && requestedValue === sourceValue ? fallbackValue : requestedValue;
+            return populateOptionSelect(selector, buildMoveTargetFolderOptions(), currentValue, fallbackValue);
+        }
+
+        function getMoveCardsFilterMode() {
+            const selected = document.querySelector('input[name="move-cards-filter"]:checked');
+            return selected ? selected.value : 'with_beispiel';
+        }
+
+        function getMoveCardsCandidates({ sourceValue, targetValue, filterMode }) {
+            const normalizedTargetValue = targetValue && targetValue !== NO_FOLDER_VALUE ? targetValue : NO_FOLDER_VALUE;
+            return allCards.filter(card => {
+                if (!cardMatchesFolder(card, sourceValue)) return false;
+                if (filterMode === 'with_beispiel' && !cardHasBeispiel(card)) return false;
+                if (filterMode === 'without_beispiel' && cardHasBeispiel(card)) return false;
+                const currentFolderValue = card.folderId || NO_FOLDER_VALUE;
+                return currentFolderValue !== normalizedTargetValue;
+            });
+        }
+
+        function renderMoveCardsSummary() {
+            const summary = document.getElementById('move-cards-summary');
+            const confirmBtn = document.getElementById('confirm-move-cards-btn');
+            const sourceSelector = document.getElementById('move-source-folder-select');
+            const targetSelector = document.getElementById('move-target-folder-select');
+            if (!summary || !confirmBtn || !sourceSelector || !targetSelector) return;
+
+            const sourceValue = sourceSelector.value || ALL_FOLDERS_VALUE;
+            const targetValue = targetSelector.value || NO_FOLDER_VALUE;
+            const filterMode = getMoveCardsFilterMode();
+            const matchingCards = getMoveCardsCandidates({ sourceValue, targetValue, filterMode });
+
+            if (sourceValue !== ALL_FOLDERS_VALUE && sourceValue === targetValue) {
+                summary.textContent = 'Choose a different destination folder.';
+                confirmBtn.disabled = true;
+                return;
+            }
+
+            if (matchingCards.length === 0) {
+                const filterLabel = filterMode === 'with_beispiel'
+                    ? 'with Beispiel'
+                    : (filterMode === 'without_beispiel' ? 'without Beispiel' : 'in the selected source');
+                summary.textContent = `No cards ${filterLabel} are available to move from "${getFolderDisplayName(sourceValue)}".`;
+                confirmBtn.disabled = true;
+                return;
+            }
+
+            const cardLabel = matchingCards.length === 1 ? '1 card' : `${matchingCards.length} cards`;
+            const filterLabel = filterMode === 'with_beispiel'
+                ? 'Only cards with Beispiel'
+                : (filterMode === 'without_beispiel' ? 'Only cards without Beispiel' : 'All matching cards');
+            summary.textContent = `${filterLabel}: move ${cardLabel} from "${getFolderDisplayName(sourceValue)}" to "${getFolderDisplayName(targetValue)}".`;
+            confirmBtn.disabled = false;
         }
 
         function buildReviewSessionId(selectedDate, folderValue, missingOnly = false) {
@@ -4999,6 +5181,25 @@
             }
         }
 
+        function openMoveCardsModal() {
+            if (allCards.length === 0) {
+                showNotification("There are no cards to move.", "success");
+                return;
+            }
+
+            const sourceValue = renderMoveCardsSourceOptions();
+            renderMoveCardsTargetOptions(sourceValue);
+            renderMoveCardsSummary();
+
+            const modal = document.getElementById('move-cards-modal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeMoveCardsModal() {
+            const modal = document.getElementById('move-cards-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
         function openDeleteCardsModal() {
             if (allCards.length === 0) {
                 showNotification("There are no cards to delete.", "success");
@@ -5023,6 +5224,93 @@
             toggleDeleteModeSections(defaultMode);
 
             document.getElementById('delete-cards-modal').classList.remove('hidden');
+        }
+
+        async function handleConfirmMoveCards() {
+            if (!cardsCollectionRef || !userId) {
+                showNotification("You must be logged in to move cards.", "error");
+                return;
+            }
+
+            const sourceSelector = document.getElementById('move-source-folder-select');
+            const targetSelector = document.getElementById('move-target-folder-select');
+            if (!sourceSelector || !targetSelector) {
+                showNotification('Move controls are unavailable.', 'error');
+                return;
+            }
+
+            const sourceValue = sourceSelector.value || ALL_FOLDERS_VALUE;
+            const targetValue = targetSelector.value || NO_FOLDER_VALUE;
+            const filterMode = getMoveCardsFilterMode();
+            const cardsToMove = getMoveCardsCandidates({ sourceValue, targetValue, filterMode });
+            if (cardsToMove.length === 0) {
+                showNotification('No cards match the selected move.', 'success');
+                renderMoveCardsSummary();
+                return;
+            }
+
+            const normalizedTarget = targetValue && targetValue !== NO_FOLDER_VALUE ? targetValue : null;
+            const targetFolderMeta = normalizedTarget ? folders.find(folder => folder.id === normalizedTarget) : null;
+            if (normalizedTarget && !targetFolderMeta) {
+                showNotification('Selected destination folder could not be found.', 'error');
+                renderMoveCardsSummary();
+                return;
+            }
+
+            const confirmBtn = document.getElementById('confirm-move-cards-btn');
+            const destinationLabel = normalizedTarget ? getFolderDisplayName(normalizedTarget) : 'No Folder';
+            const BATCH_LIMIT = 400;
+
+            try {
+                setButtonLoading(confirmBtn, true, 'Moving...');
+                for (let index = 0; index < cardsToMove.length; index += BATCH_LIMIT) {
+                    const slice = cardsToMove.slice(index, index + BATCH_LIMIT);
+                    const batch = writeBatch(db);
+                    slice.forEach(card => {
+                        const cardRef = doc(cardsCollectionRef, card.id);
+                        if (normalizedTarget) {
+                            batch.update(cardRef, {
+                                folderId: normalizedTarget,
+                                folderName: targetFolderMeta && targetFolderMeta.name ? targetFolderMeta.name : null
+                            });
+                        } else {
+                            batch.update(cardRef, {
+                                folderId: deleteField(),
+                                folderName: deleteField()
+                            });
+                        }
+                    });
+                    await batch.commit();
+                }
+
+                cardsToMove.forEach(card => {
+                    if (normalizedTarget) {
+                        card.folderId = normalizedTarget;
+                        card.folderName = targetFolderMeta && targetFolderMeta.name ? targetFolderMeta.name : null;
+                    } else {
+                        delete card.folderId;
+                        delete card.folderName;
+                    }
+                });
+
+                renderFolderOptions();
+                filterAndRenderCards();
+                updateDuplicateBadge();
+                updateLegacyBadge();
+                refreshExampleMatches({ forceReloadLibrary: false });
+                if (isDuplicatesViewActive()) {
+                    renderDuplicatesView();
+                }
+
+                closeMoveCardsModal();
+                showNotification(`Moved ${cardsToMove.length} card${cardsToMove.length === 1 ? '' : 's'} to "${destinationLabel}".`, 'success');
+            } catch (error) {
+                console.error('Failed to move cards:', error);
+                showNotification('Failed to move cards.', 'error');
+                renderMoveCardsSummary();
+            } finally {
+                setButtonLoading(confirmBtn, false);
+            }
         }
 
         async function deleteCardsWithArchive(cardsToDelete, { successMessage } = {}) {
@@ -5682,6 +5970,24 @@
                 setExampleLibraryStatus('Upload A1/A2/B1 JSON to search for Beispiele. Files sync to your account.');
             }
             onAuthStateChanged(auth, user => { if (user) showAppUI(user); else showLoginUI(); });
+            const moveCardsBtn = document.getElementById('move-cards-btn');
+            if (moveCardsBtn) moveCardsBtn.addEventListener('click', openMoveCardsModal);
+            const moveSourceSelect = document.getElementById('move-source-folder-select');
+            if (moveSourceSelect) {
+                moveSourceSelect.addEventListener('change', () => {
+                    renderMoveCardsTargetOptions(moveSourceSelect.value);
+                    renderMoveCardsSummary();
+                });
+            }
+            const moveTargetSelect = document.getElementById('move-target-folder-select');
+            if (moveTargetSelect) moveTargetSelect.addEventListener('change', renderMoveCardsSummary);
+            document.querySelectorAll('input[name="move-cards-filter"]').forEach(input => {
+                input.addEventListener('change', renderMoveCardsSummary);
+            });
+            const cancelMoveCardsBtn = document.getElementById('cancel-move-cards-btn');
+            if (cancelMoveCardsBtn) cancelMoveCardsBtn.addEventListener('click', closeMoveCardsModal);
+            const confirmMoveCardsBtn = document.getElementById('confirm-move-cards-btn');
+            if (confirmMoveCardsBtn) confirmMoveCardsBtn.addEventListener('click', handleConfirmMoveCards);
             document.getElementById('delete-cards-btn').addEventListener('click', openDeleteCardsModal);
             document.getElementById('confirm-delete-cards-btn').addEventListener('click', handleConfirmDeleteCards);
             document.getElementById('cancel-delete-cards-btn').addEventListener('click', () => document.getElementById('delete-cards-modal').classList.add('hidden'));
