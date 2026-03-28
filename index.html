@@ -1116,6 +1116,10 @@
                     : 'No Beispiel on this card yet.';
                 const folderMeta = match.card.folderId ? folders.find(f => f.id === match.card.folderId) : null;
                 const folderLabel = folderMeta && folderMeta.name ? folderMeta.name : 'No Folder';
+                const canRemoveFromFolder = Boolean(match.card.folderId);
+                const removeButtonTitle = canRemoveFromFolder
+                    ? `Remove this card from "${folderLabel}".`
+                    : 'Card is already not in a folder.';
                 const frontPreview = formatDuplicateDisplayValue(match.card.front);
                 const backPreview = formatDuplicateDisplayValue(match.card.back);
                 const frontLabel = frontPreview !== '—' ? frontPreview : 'No front';
@@ -1133,9 +1137,12 @@
                             <p class="text-xs text-gray-500 mt-1">Back: ${escapeHtml(backLabel)} • Source: ${escapeHtml(getExampleSourceLabel(match.sourceId))} • Folder: ${escapeHtml(folderLabel)}</p>
                             <p class="text-xs text-gray-500 mt-1">${existingPreview}</p>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <button class="btn btn-success btn-sm example-apply-btn" data-card-id="${match.card.id}" data-word="${encodeURIComponent(match.word)}" data-source-id="${match.sourceId}" data-entry-id="${escapeHtml(match.entryId || '')}">
+                        <div class="flex flex-col items-stretch gap-2 sm:min-w-[10rem]">
+                            <button class="btn btn-success btn-sm example-apply-btn w-full" data-card-id="${match.card.id}" data-word="${encodeURIComponent(match.word)}" data-source-id="${match.sourceId}" data-entry-id="${escapeHtml(match.entryId || '')}">
                                 <i class="fas fa-plus"></i> Add Beispiele
+                            </button>
+                            <button class="btn btn-danger btn-sm example-remove-folder-btn w-full" data-card-id="${match.card.id}" title="${escapeHtml(removeButtonTitle)}" ${canRemoveFromFolder ? '' : 'disabled'}>
+                                <i class="fas fa-trash-alt"></i> Delete
                             </button>
                         </div>
                     </div>
@@ -1253,6 +1260,29 @@
             } catch (error) {
                 console.error('Failed to add Beispiele to card:', error);
                 showNotification('Failed to update card with Beispiele.', 'error');
+            }
+        }
+
+        async function handleRemoveExampleMatchCardFromFolder(cardId) {
+            if (!userId || !cardsCollectionRef) {
+                showNotification('Sign in to remove cards from folders.', 'error');
+                return;
+            }
+
+            const card = allCards.find(existing => existing.id === cardId);
+            if (!card) {
+                showNotification('Card not found.', 'error');
+                return;
+            }
+
+            if (!card.folderId) {
+                showNotification('Card is already not in a folder.', 'error', 1500);
+                return;
+            }
+
+            const removed = await switchDuplicateCardFolder(cardId, NO_FOLDER_VALUE);
+            if (removed) {
+                await refreshExampleMatches({ forceReloadLibrary: false });
             }
         }
 
@@ -5709,19 +5739,37 @@
             if (exampleMatchesContainer) {
                 exampleMatchesContainer.addEventListener('click', async (event) => {
                     const applyBtn = event.target.closest('.example-apply-btn');
-                    if (!applyBtn) return;
-                    const cardId = applyBtn.dataset.cardId;
-                    const word = applyBtn.dataset.word;
-                    const sourceId = applyBtn.dataset.sourceId;
-                    const entryId = applyBtn.dataset.entryId;
-                    try {
-                        setButtonLoading(applyBtn, true, 'Adding...');
-                        await handleApplyExamplesToCard(cardId, word, sourceId, entryId);
-                    } catch (error) {
-                        console.error('Failed to apply Beispiele:', error);
-                        showNotification('Could not add Beispiele. Check console for details.', 'error', 3500);
-                    } finally {
-                        setButtonLoading(applyBtn, false);
+                    const removeBtn = event.target.closest('.example-remove-folder-btn');
+                    if (!applyBtn && !removeBtn) return;
+
+                    if (applyBtn) {
+                        const cardId = applyBtn.dataset.cardId;
+                        const word = applyBtn.dataset.word;
+                        const sourceId = applyBtn.dataset.sourceId;
+                        const entryId = applyBtn.dataset.entryId;
+                        try {
+                            setButtonLoading(applyBtn, true, 'Adding...');
+                            await handleApplyExamplesToCard(cardId, word, sourceId, entryId);
+                        } catch (error) {
+                            console.error('Failed to apply Beispiele:', error);
+                            showNotification('Could not add Beispiele. Check console for details.', 'error', 3500);
+                        } finally {
+                            setButtonLoading(applyBtn, false);
+                        }
+                        return;
+                    }
+
+                    if (removeBtn) {
+                        const cardId = removeBtn.dataset.cardId;
+                        try {
+                            setButtonLoading(removeBtn, true, 'Removing...');
+                            await handleRemoveExampleMatchCardFromFolder(cardId);
+                        } catch (error) {
+                            console.error('Failed to remove card from folder:', error);
+                            showNotification('Could not remove the card from its folder.', 'error', 3500);
+                        } finally {
+                            setButtonLoading(removeBtn, false);
+                        }
                     }
                 });
                 exampleMatchesContainer.addEventListener('click', (event) => {
