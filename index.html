@@ -2090,6 +2090,19 @@
             return buildMoveTargetFolderOptions().filter(option => option.value !== currentFolderValue);
         }
 
+        function getPreferredCardMoveTargetValue(card, options) {
+            if (!Array.isArray(options) || options.length === 0) return NO_FOLDER_VALUE;
+
+            const currentFolderValue = card && card.folderId ? card.folderId : NO_FOLDER_VALUE;
+            const preferredValue = currentFolderId != null ? currentFolderId : NO_FOLDER_VALUE;
+
+            if (preferredValue !== currentFolderValue && options.some(option => option.value === preferredValue)) {
+                return preferredValue;
+            }
+
+            return options[0].value;
+        }
+
         function renderSingleCardMoveSummary() {
             const summary = document.getElementById('single-card-move-summary');
             const confirmBtn = document.getElementById('confirm-single-card-move-btn');
@@ -2142,7 +2155,7 @@
                 return false;
             }
 
-            const fallbackValue = options[0].value;
+            const fallbackValue = getPreferredCardMoveTargetValue(card, options);
             const currentValue = options.some(option => option.value === targetSelector.value)
                 ? targetSelector.value
                 : fallbackValue;
@@ -2267,7 +2280,7 @@
                 return false;
             }
 
-            const fallbackValue = options[0].value;
+            const fallbackValue = getPreferredCardMoveTargetValue(card, options);
             const currentValue = options.some(option => option.value === targetSelector.value)
                 ? targetSelector.value
                 : fallbackValue;
