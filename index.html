@@ -312,7 +312,7 @@
                         <button id="save-review-edit-btn" class="btn btn-success hidden"><i class="fas fa-check"></i> Save</button>
                         <button id="cancel-review-edit-btn" class="btn btn-secondary hidden"><i class="fas fa-times"></i> Cancel</button>
                         <button id="mark-edited-btn" class="btn btn-secondary" title="Mark as Edited (M)"><i class="fas fa-check"></i></button>
-                        <button id="move-review-card-btn" class="btn btn-secondary" title="Move Card (V)"><i class="fas fa-right-left"></i></button>
+                        <button id="move-review-card-btn" class="btn btn-secondary" title="Move Card (N)"><i class="fas fa-right-left"></i></button>
                         <button id="delete-review-card-btn" class="btn btn-danger"><i class="fas fa-trash-alt"></i></button>
                         <label class="toggle-label flex items-center cursor-pointer">
                             <span class="mr-2 text-sm font-medium">Skip Delay</span>
@@ -638,7 +638,7 @@
             </div>
             <div class="flex justify-end items-center space-x-4 mt-8">
                 <button id="cancel-review-move-card-btn" class="btn btn-secondary">Cancel</button>
-                <button id="confirm-review-move-card-btn" class="btn btn-primary">Move Card</button>
+                <button id="confirm-review-move-card-btn" class="btn btn-primary" title="Move Card (N)">Move Card</button>
             </div>
         </div>
     </div>
@@ -4053,6 +4053,14 @@
                 if (e.key === 'Escape') {
                     e.preventDefault();
                     closeReviewMoveCardModal();
+                    return;
+                }
+                if (e.key === 'n' || e.key === 'N') {
+                    const confirmMoveBtn = document.getElementById('confirm-review-move-card-btn');
+                    if (confirmMoveBtn && !confirmMoveBtn.disabled) {
+                        e.preventDefault();
+                        confirmMoveBtn.click();
+                    }
                 }
                 return;
             }
@@ -4138,7 +4146,7 @@
                 document.getElementById('delete-review-card-btn').click();
             }
             if (e.key === 'm' || e.key === 'M') document.getElementById('mark-edited-btn').click();
-            if (e.key === 'v' || e.key === 'V') {
+            if (e.key === 'n' || e.key === 'N') {
                 e.preventDefault();
                 document.getElementById('move-review-card-btn').click();
             }
