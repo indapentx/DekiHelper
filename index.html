@@ -830,16 +830,21 @@
             return !!(toggle && toggle.checked);
         }
 
+        function isReviewSkipDelayEnabled() {
+            const toggle = document.getElementById('auto-skip-toggle');
+            return !!(toggle && toggle.checked);
+        }
+
         function shouldPauseReviewBackCopy() {
             const pauseTimerToggle = document.getElementById('pause-timer-toggle');
-            return !!(pauseTimerToggle && pauseTimerToggle.checked) || isReviewWordOnlyMode();
+            return !!(pauseTimerToggle && pauseTimerToggle.checked) || (isReviewWordOnlyMode() && !isReviewSkipDelayEnabled());
         }
 
         function getReviewBackCopyText(value) {
             const normalizedValue = unformatMultiLine(String(value || ''));
             if (!normalizedValue) return '';
 
-            if (isReviewWordOnlyMode()) {
+            if (isReviewWordOnlyMode() || isReviewSkipDelayEnabled()) {
                 const firstSpaceIndex = normalizedValue.indexOf(' ');
                 if (firstSpaceIndex === -1) return normalizedValue;
                 const strippedValue = normalizedValue.slice(firstSpaceIndex + 1).trim();
@@ -2349,6 +2354,7 @@
                 showNotification('No active review card to move.', 'error');
                 return;
             }
+            clearAutoSkipTimer();
 
             if (isReviewEditing) {
                 const success = await saveReviewEdit();
@@ -2874,6 +2880,7 @@
         }
 
         function openDeleteModal(cardId) {
+            clearAutoSkipTimer();
             const deleteModal = document.getElementById('delete-modal');
             if (!deleteModal) return;
             cardToDeleteId = cardId || null;
@@ -6372,7 +6379,7 @@
                     
                     const advance = () => { if (reviewSession.currentIndex < reviewSession.cards.length - 1) handleReviewNav(1); };
                     if (!isReviewEditing) {
-                        const isDelayedSkip = document.getElementById('auto-skip-toggle').checked;
+                        const isDelayedSkip = isReviewSkipDelayEnabled();
                         if (isDelayedSkip && !isPauseTimerEnabled) {
                             reviewSession.autoSkipTimer = setTimeout(advance, 55000);
                         } else if (!isDelayedSkip) {
@@ -6683,6 +6690,7 @@
                 });
             });
             document.getElementById('mark-edited-btn').addEventListener('click', async () => {
+                clearAutoSkipTimer();
                 if (reviewSession.currentIndex > -1) {
                     const cardId = reviewSession.cards[reviewSession.currentIndex].id;
                     if (reviewSession.editedCardIds.has(cardId)) {
@@ -6695,23 +6703,28 @@
                     renderReviewCard();
                 }
             });
-             document.getElementById('in-review-search-input').addEventListener('input', (e) => {
-                const searchTerm = e.target.value.toLowerCase().trim();
-                if (!searchTerm) {
-                    reviewSession.cards = [...reviewSession.originalCards];
-                    reviewSession.currentIndex = reviewSession.cards.length > 0 ? 0 : -1;
-                } else {
-                    const filtered = reviewSession.originalCards.filter(card => {
-                        return (card.front || '').toLowerCase().includes(searchTerm) ||
-                               (card.back || '').toLowerCase().includes(searchTerm) ||
-                               (card.beispiel || '').toLowerCase().includes(searchTerm) ||
-                               (card.translation || '').toLowerCase().includes(searchTerm);
-                    });
-                    reviewSession.cards = filtered;
-                    reviewSession.currentIndex = filtered.length > 0 ? 0 : -1;
-                }
-                renderReviewCard();
-            });
+            const inReviewSearchInput = document.getElementById('in-review-search-input');
+            if (inReviewSearchInput) {
+                inReviewSearchInput.addEventListener('focus', clearAutoSkipTimer);
+                inReviewSearchInput.addEventListener('input', (e) => {
+                    clearAutoSkipTimer();
+                    const searchTerm = e.target.value.toLowerCase().trim();
+                    if (!searchTerm) {
+                        reviewSession.cards = [...reviewSession.originalCards];
+                        reviewSession.currentIndex = reviewSession.cards.length > 0 ? 0 : -1;
+                    } else {
+                        const filtered = reviewSession.originalCards.filter(card => {
+                            return (card.front || '').toLowerCase().includes(searchTerm) ||
+                                   (card.back || '').toLowerCase().includes(searchTerm) ||
+                                   (card.beispiel || '').toLowerCase().includes(searchTerm) ||
+                                   (card.translation || '').toLowerCase().includes(searchTerm);
+                        });
+                        reviewSession.cards = filtered;
+                        reviewSession.currentIndex = filtered.length > 0 ? 0 : -1;
+                    }
+                    renderReviewCard();
+                });
+            }
         });
     </script>
 </body>
