@@ -643,6 +643,27 @@
         </div>
     </div>
 
+    <div id="single-card-move-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-4">Move Card</h2>
+            <div class="space-y-5">
+                <div>
+                    <p class="anki-label mb-2 block">Current Folder</p>
+                    <p id="single-card-move-current-folder" class="text-sm text-gray-300 leading-6">No Folder</p>
+                </div>
+                <div>
+                    <label for="single-card-move-target-folder-select" class="anki-label mb-2 block">Destination Folder</label>
+                    <select id="single-card-move-target-folder-select" class="anki-input"></select>
+                </div>
+                <p id="single-card-move-summary" class="text-sm text-gray-400 leading-6"></p>
+            </div>
+            <div class="flex justify-end items-center space-x-4 mt-8">
+                <button id="cancel-single-card-move-btn" class="btn btn-secondary">Cancel</button>
+                <button id="confirm-single-card-move-btn" class="btn btn-primary">Move Card</button>
+            </div>
+        </div>
+    </div>
+
     <div id="folder-modal" class="modal-backdrop hidden">
         <div class="modal-content">
             <h2 class="text-2xl font-bold mb-4">Create Folder</h2>
@@ -695,7 +716,7 @@
         let app, auth, db, userId, cardsCollectionRef, unsubscribe;
         let foldersCollectionRef, foldersUnsubscribe;
         let deletedCardsCollectionRef, deletedCardsUnsubscribe;
-        let currentEditId = null, cardToDeleteId = null, allCards = [];
+        let currentEditId = null, cardToDeleteId = null, pendingSingleCardMoveId = null, allCards = [];
         let pendingDuplicateViewRecovery = false;
         let pendingExternalEditCardId = (() => {
             const params = new URLSearchParams(window.location.search);
@@ -2058,15 +2079,130 @@
             confirmBtn.disabled = false;
         }
 
+        function getPendingSingleCardMove() {
+            if (!pendingSingleCardMoveId) return null;
+            return allCards.find(card => card.id === pendingSingleCardMoveId) || null;
+        }
+
+        function buildCardMoveTargetOptions(card) {
+            if (!card) return [];
+            const currentFolderValue = card.folderId || NO_FOLDER_VALUE;
+            return buildMoveTargetFolderOptions().filter(option => option.value !== currentFolderValue);
+        }
+
+        function renderSingleCardMoveSummary() {
+            const summary = document.getElementById('single-card-move-summary');
+            const confirmBtn = document.getElementById('confirm-single-card-move-btn');
+            const targetSelector = document.getElementById('single-card-move-target-folder-select');
+            const currentFolderEl = document.getElementById('single-card-move-current-folder');
+            const card = getPendingSingleCardMove();
+            if (!summary || !confirmBtn || !targetSelector || !currentFolderEl) return;
+
+            if (!card) {
+                currentFolderEl.textContent = 'No card selected.';
+                summary.textContent = 'Choose a card from the list to move it.';
+                confirmBtn.disabled = true;
+                return;
+            }
+
+            const currentFolderValue = card.folderId || NO_FOLDER_VALUE;
+            currentFolderEl.textContent = getFolderDisplayName(currentFolderValue);
+
+            const targetValue = targetSelector.value || NO_FOLDER_VALUE;
+            if (targetValue === currentFolderValue) {
+                summary.textContent = 'Choose a different destination folder.';
+                confirmBtn.disabled = true;
+                return;
+            }
+
+            summary.textContent = `Move this card from "${getFolderDisplayName(currentFolderValue)}" to "${getFolderDisplayName(targetValue)}".`;
+            confirmBtn.disabled = false;
+        }
+
+        function renderSingleCardMoveOptions() {
+            const targetSelector = document.getElementById('single-card-move-target-folder-select');
+            const summary = document.getElementById('single-card-move-summary');
+            const confirmBtn = document.getElementById('confirm-single-card-move-btn');
+            const currentFolderEl = document.getElementById('single-card-move-current-folder');
+            if (!targetSelector || !summary || !confirmBtn || !currentFolderEl) return false;
+
+            const card = getPendingSingleCardMove();
+            const options = buildCardMoveTargetOptions(card);
+            targetSelector.innerHTML = '';
+
+            if (!card) {
+                renderSingleCardMoveSummary();
+                return false;
+            }
+
+            if (options.length === 0) {
+                currentFolderEl.textContent = getFolderDisplayName(card.folderId || NO_FOLDER_VALUE);
+                summary.textContent = 'No other destination is available. Create another folder first.';
+                confirmBtn.disabled = true;
+                return false;
+            }
+
+            const fallbackValue = options[0].value;
+            const currentValue = options.some(option => option.value === targetSelector.value)
+                ? targetSelector.value
+                : fallbackValue;
+            populateOptionSelect(targetSelector, options, currentValue, fallbackValue);
+            renderSingleCardMoveSummary();
+            return true;
+        }
+
+        function openSingleCardMoveModal(cardId) {
+            const card = allCards.find(existing => existing.id === cardId);
+            if (!card) {
+                showNotification('Card not found.', 'error');
+                return;
+            }
+
+            pendingSingleCardMoveId = card.id;
+            renderSingleCardMoveOptions();
+            const modal = document.getElementById('single-card-move-modal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeSingleCardMoveModal() {
+            const modal = document.getElementById('single-card-move-modal');
+            if (modal) modal.classList.add('hidden');
+            pendingSingleCardMoveId = null;
+        }
+
+        async function handleConfirmSingleCardMove() {
+            const targetSelector = document.getElementById('single-card-move-target-folder-select');
+            const confirmBtn = document.getElementById('confirm-single-card-move-btn');
+            const card = getPendingSingleCardMove();
+            if (!targetSelector || !card) {
+                showNotification('No card selected to move.', 'error');
+                return;
+            }
+
+            const targetValue = targetSelector.value || NO_FOLDER_VALUE;
+
+            try {
+                setButtonLoading(confirmBtn, true, 'Moving...');
+                const result = await moveCardToFolder(card.id, targetValue);
+                if (!result.ok) {
+                    renderSingleCardMoveSummary();
+                    return;
+                }
+
+                closeSingleCardMoveModal();
+                showNotification(`Card moved to "${result.destinationLabel}".`, 'success');
+            } finally {
+                setButtonLoading(confirmBtn, false);
+            }
+        }
+
         function getCurrentReviewCard() {
             if (reviewSession.currentIndex < 0 || !Array.isArray(reviewSession.cards)) return null;
             return reviewSession.cards[reviewSession.currentIndex] || null;
         }
 
         function buildReviewMoveTargetOptions(card) {
-            if (!card) return [];
-            const currentFolderValue = card.folderId || NO_FOLDER_VALUE;
-            return buildMoveTargetFolderOptions().filter(option => option.value !== currentFolderValue);
+            return buildCardMoveTargetOptions(card);
         }
 
         function willReviewMoveRemoveCardFromSession(targetFolderValue) {
@@ -3651,6 +3787,7 @@
                     <div class="flex items-center space-x-2">
                         <button class="btn-icon copy-btn" title="Copy Back (C)"><i class="fas fa-copy"></i></button>
                         <button class="btn-icon export-card-btn" title="Export This Card as TXT"><i class="fas fa-download"></i></button>
+                        <button class="btn-icon move-card-btn" title="Move to Folder"><i class="fas fa-folder-open"></i></button>
                         <button class="btn-icon edit-btn" title="Edit"><i class="fas fa-pencil-alt"></i></button>
                         <button class="btn-icon delete-btn" title="Delete"><i class="fas fa-trash-alt"></i></button>
                     </div>
@@ -3675,6 +3812,7 @@
                     }
                 });
                 cardEl.querySelector('.export-card-btn').addEventListener('click', () => exportSingleCardAsTxt(cardData));
+                cardEl.querySelector('.move-card-btn').addEventListener('click', () => openSingleCardMoveModal(cardData.id));
                 cardEl.querySelector('.edit-btn').addEventListener('click', () => setEditMode(true, cardData));
                 cardEl.querySelector('.delete-btn').addEventListener('click', () => { 
                     openDeleteModal(cardData.id);
@@ -6202,6 +6340,12 @@
                     closeFolderModal();
                     return;
                 }
+                const singleCardMoveModal = document.getElementById('single-card-move-modal');
+                if (e.key === 'Escape' && singleCardMoveModal && !singleCardMoveModal.classList.contains('hidden')) {
+                    e.preventDefault();
+                    closeSingleCardMoveModal();
+                    return;
+                }
                 const formInputs = ['front', 'back', 'beispiel', 'translation'];
                 const reviewInputs = ['edit-beispiel', 'edit-translation'];
                 const activeId = document.activeElement.id;
@@ -6293,6 +6437,20 @@
                 reviewMoveCardModal.addEventListener('click', (event) => {
                     if (event.target === reviewMoveCardModal) {
                         closeReviewMoveCardModal();
+                    }
+                });
+            }
+            const singleCardMoveTargetSelect = document.getElementById('single-card-move-target-folder-select');
+            if (singleCardMoveTargetSelect) singleCardMoveTargetSelect.addEventListener('change', renderSingleCardMoveSummary);
+            const cancelSingleCardMoveBtn = document.getElementById('cancel-single-card-move-btn');
+            if (cancelSingleCardMoveBtn) cancelSingleCardMoveBtn.addEventListener('click', closeSingleCardMoveModal);
+            const confirmSingleCardMoveBtn = document.getElementById('confirm-single-card-move-btn');
+            if (confirmSingleCardMoveBtn) confirmSingleCardMoveBtn.addEventListener('click', handleConfirmSingleCardMove);
+            const singleCardMoveModal = document.getElementById('single-card-move-modal');
+            if (singleCardMoveModal) {
+                singleCardMoveModal.addEventListener('click', (event) => {
+                    if (event.target === singleCardMoveModal) {
+                        closeSingleCardMoveModal();
                     }
                 });
             }
