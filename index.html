@@ -312,7 +312,7 @@
                         <button id="save-review-edit-btn" class="btn btn-success hidden"><i class="fas fa-check"></i> Save</button>
                         <button id="cancel-review-edit-btn" class="btn btn-secondary hidden"><i class="fas fa-times"></i> Cancel</button>
                         <button id="mark-edited-btn" class="btn btn-secondary" title="Mark as Edited (M)"><i class="fas fa-check"></i></button>
-                        <button id="move-review-card-btn" class="btn btn-secondary" title="Move Card (N)"><i class="fas fa-right-left"></i></button>
+                        <button id="move-review-card-btn" class="btn btn-secondary" title="Move Card (V)"><i class="fas fa-right-left"></i></button>
                         <button id="delete-review-card-btn" class="btn btn-danger"><i class="fas fa-trash-alt"></i></button>
                         <label class="toggle-label flex items-center cursor-pointer">
                             <span class="mr-2 text-sm font-medium">Skip Delay</span>
@@ -638,7 +638,7 @@
             </div>
             <div class="flex justify-end items-center space-x-4 mt-8">
                 <button id="cancel-review-move-card-btn" class="btn btn-secondary">Cancel</button>
-                <button id="confirm-review-move-card-btn" class="btn btn-primary" title="Move Card (N)">Move Card</button>
+                <button id="confirm-review-move-card-btn" class="btn btn-primary" title="Move Card (V)">Move Card</button>
             </div>
         </div>
     </div>
@@ -703,6 +703,7 @@
         const ALL_FOLDERS_VALUE = '__all_folders__';
         const EXPORT_SELECT_ALL_ID = 'export-folder-select-all-checkbox';
         const FOLDER_STORAGE_KEY = 'deki-helper-current-folder';
+        const LAST_MOVED_FOLDER_STORAGE_KEY = 'deki-helper-last-moved-folder';
         const FIREBASE_FUNCTIONS_REGION = 'us-central1';
         const EXAMPLE_SOURCE_SLOTS = [
             { id: 'A1', label: 'A1', defaultFileName: 'A1.json' },
@@ -729,6 +730,7 @@
         let deletedCards = [];
         let folders = [];
         let currentFolderId = null;
+        let lastMovedFolderId;
         let pendingFolderDeleteId = null;
         let pendingFolderDeleteName = '';
         let pendingFolderDeleteCount = 0;
@@ -742,6 +744,7 @@
         let currentReviewDate = "all";
         let deleteShortcutState = { pending: false, timeoutId: null };
         let hasRestoredFolderPreference = false;
+        let hasRestoredLastMovedFolderPreference = false;
         let isFolderSidebarReversed = false;
         let isBulkTranslating = false;
         let isFixingLegacyFronts = false;
@@ -1495,6 +1498,41 @@
             }
         }
 
+        function restoreLastMovedFolderPreference() {
+            if (hasRestoredLastMovedFolderPreference) return;
+            hasRestoredLastMovedFolderPreference = true;
+            try {
+                const storedValue = localStorage.getItem(LAST_MOVED_FOLDER_STORAGE_KEY);
+                if (storedValue == null) {
+                    lastMovedFolderId = undefined;
+                    return;
+                }
+                if (storedValue === NO_FOLDER_VALUE) {
+                    lastMovedFolderId = null;
+                    return;
+                }
+                const exists = folders.some(folder => folder.id === storedValue);
+                lastMovedFolderId = exists ? storedValue : undefined;
+                if (!exists) {
+                    persistLastMovedFolderPreference();
+                }
+            } catch (error) {
+                console.warn('Failed to restore last moved folder preference:', error);
+            }
+        }
+
+        function persistLastMovedFolderPreference() {
+            try {
+                if (lastMovedFolderId === undefined) {
+                    localStorage.removeItem(LAST_MOVED_FOLDER_STORAGE_KEY);
+                    return;
+                }
+                localStorage.setItem(LAST_MOVED_FOLDER_STORAGE_KEY, lastMovedFolderId || NO_FOLDER_VALUE);
+            } catch (error) {
+                console.warn('Failed to persist last moved folder preference:', error);
+            }
+        }
+
         function ensureCurrentFolderIsValid() {
             if (!currentFolderId) return;
             const exists = folders.some(folder => folder.id === currentFolderId);
@@ -1502,6 +1540,20 @@
                 currentFolderId = null;
                 persistFolderPreference();
             }
+        }
+
+        function ensureLastMovedFolderIsValid() {
+            if (lastMovedFolderId == null) return;
+            const exists = folders.some(folder => folder.id === lastMovedFolderId);
+            if (!exists) {
+                lastMovedFolderId = undefined;
+                persistLastMovedFolderPreference();
+            }
+        }
+
+        function rememberLastMovedFolder(value) {
+            lastMovedFolderId = value === NO_FOLDER_VALUE ? null : (value || null);
+            persistLastMovedFolderPreference();
         }
 
         function updateFolderSelection(value, { persist = true, updateSelect = true } = {}) {
@@ -2094,9 +2146,11 @@
             if (!Array.isArray(options) || options.length === 0) return NO_FOLDER_VALUE;
 
             const currentFolderValue = card && card.folderId ? card.folderId : NO_FOLDER_VALUE;
-            const preferredValue = currentFolderId != null ? currentFolderId : NO_FOLDER_VALUE;
+            const preferredValue = lastMovedFolderId === undefined
+                ? undefined
+                : (lastMovedFolderId != null ? lastMovedFolderId : NO_FOLDER_VALUE);
 
-            if (preferredValue !== currentFolderValue && options.some(option => option.value === preferredValue)) {
+            if (preferredValue !== undefined && preferredValue !== currentFolderValue && options.some(option => option.value === preferredValue)) {
                 return preferredValue;
             }
 
@@ -2929,6 +2983,7 @@
                     delete card.folderId;
                     delete card.folderName;
                 }
+                rememberLastMovedFolder(nextFolderValue);
 
                 renderFolderOptions();
                 filterAndRenderCards();
@@ -4206,7 +4261,7 @@
                     closeReviewMoveCardModal();
                     return;
                 }
-                if (e.key === 'n' || e.key === 'N') {
+                if (e.key === 'v' || e.key === 'V') {
                     const confirmMoveBtn = document.getElementById('confirm-review-move-card-btn');
                     if (confirmMoveBtn && !confirmMoveBtn.disabled) {
                         e.preventDefault();
@@ -4297,7 +4352,7 @@
                 document.getElementById('delete-review-card-btn').click();
             }
             if (e.key === 'm' || e.key === 'M') document.getElementById('mark-edited-btn').click();
-            if (e.key === 'n' || e.key === 'N') {
+            if (e.key === 'v' || e.key === 'V') {
                 e.preventDefault();
                 document.getElementById('move-review-card-btn').click();
             }
@@ -5119,7 +5174,9 @@
                 folders = [];
                 snapshot.forEach(folderDoc => folders.push({ id: folderDoc.id, ...folderDoc.data() }));
                 restoreFolderPreference();
+                restoreLastMovedFolderPreference();
                 ensureCurrentFolderIsValid();
+                ensureLastMovedFolderIsValid();
                 renderFolderOptions();
                 applyPendingExternalEditRequest();
                 filterAndRenderCards();
@@ -5717,6 +5774,7 @@
                         delete card.folderName;
                     }
                 });
+                rememberLastMovedFolder(targetValue);
 
                 renderFolderOptions();
                 filterAndRenderCards();
