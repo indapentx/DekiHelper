@@ -858,9 +858,11 @@
             return normalizedValue;
         }
 
-        function copyReviewBackToClipboard(card) {
-            if (!card || !card.back) return false;
-            const backTextToCopy = getReviewBackCopyText(card.back);
+        function copyReviewBackToClipboard(card = null) {
+            const backValue = card && card.back
+                ? card.back
+                : (document.getElementById('review-back')?.innerHTML || '');
+            const backTextToCopy = getReviewBackCopyText(backValue);
             if (!backTextToCopy) return false;
             copyPlainTextToClipboard(backTextToCopy);
             return true;
@@ -4216,7 +4218,7 @@
                     const nextCard = reviewSession.cards[newIndex];
                     if (nextCard && nextCard.back) {
                         try {
-                            if (copyReviewBackToClipboard(nextCard)) {
+                            if (copyReviewBackToClipboard()) {
                                 showNotification("Copied next card's back!", "success", 1500);
                             }
                         } catch (err) {
@@ -4458,7 +4460,7 @@
 
                 if (shouldLeaveSession && removalState && removalState.hasVisibleCards) {
                     try {
-                        copiedNextCardBack = copyReviewBackToClipboard(getCurrentReviewCard());
+                        copiedNextCardBack = copyReviewBackToClipboard();
                     } catch (error) {
                         console.error('Failed to copy next review card back after move:', error);
                         failedToCopyNextCardBack = true;
