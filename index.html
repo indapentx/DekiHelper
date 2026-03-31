@@ -858,6 +858,14 @@
             return normalizedValue;
         }
 
+        function copyReviewBackToClipboard(card) {
+            if (!card || !card.back) return false;
+            const backTextToCopy = getReviewBackCopyText(card.back);
+            if (!backTextToCopy) return false;
+            copyPlainTextToClipboard(backTextToCopy);
+            return true;
+        }
+
         function ensureTrailingDot(value) {
             const trimmed = (value || '').trim();
             if (!trimmed) return trimmed;
@@ -4135,7 +4143,7 @@
             updateProgressBar();
         }
 
-        function removeCardFromReviewSession(cardId) {
+        function removeCardFromReviewSession(cardId, { preferNextCard = false } = {}) {
             if (!cardId) {
                 return {
                     hasVisibleCards: reviewSession.cards.length > 0,
@@ -4156,12 +4164,19 @@
             removeFromList(reviewSession.originalCards);
 
             if (removedVisibleIndex > -1) {
-                if (reviewSession.currentIndex >= removedVisibleIndex) {
-                    reviewSession.currentIndex = Math.max(0, reviewSession.currentIndex - 1);
-                }
                 if (reviewSession.cards.length === 0) {
                     reviewSession.currentIndex = -1;
-                } else if (reviewSession.currentIndex >= reviewSession.cards.length) {
+                } else if (preferNextCard) {
+                    if (reviewSession.currentIndex > removedVisibleIndex) {
+                        reviewSession.currentIndex = reviewSession.currentIndex - 1;
+                    } else if (reviewSession.currentIndex === removedVisibleIndex) {
+                        reviewSession.currentIndex = Math.min(removedVisibleIndex, reviewSession.cards.length - 1);
+                    }
+                } else if (reviewSession.currentIndex >= removedVisibleIndex) {
+                    reviewSession.currentIndex = Math.max(0, reviewSession.currentIndex - 1);
+                }
+
+                if (reviewSession.currentIndex >= reviewSession.cards.length) {
                     reviewSession.currentIndex = reviewSession.cards.length - 1;
                 }
             }
@@ -4201,11 +4216,9 @@
                     const nextCard = reviewSession.cards[newIndex];
                     if (nextCard && nextCard.back) {
                         try {
-                            const backTextToCopy = getReviewBackCopyText(nextCard.back);
-                            if (backTextToCopy) {
-                                copyPlainTextToClipboard(backTextToCopy);
+                            if (copyReviewBackToClipboard(nextCard)) {
+                                showNotification("Copied next card's back!", "success", 1500);
                             }
-                            showNotification("Copied next card's back!", "success", 1500);
                         } catch (err) {
                             showNotification("Failed to copy automatically.");
                         } finally {
@@ -4420,6 +4433,9 @@
 
             const targetValue = targetSelector.value || NO_FOLDER_VALUE;
             const shouldLeaveSession = willReviewMoveRemoveCardFromSession(targetValue);
+            let removalState = null;
+            let copiedNextCardBack = false;
+            let failedToCopyNextCardBack = false;
 
             try {
                 setButtonLoading(confirmBtn, true, 'Moving...');
@@ -4429,7 +4445,7 @@
                 closeReviewMoveCardModal();
 
                 if (shouldLeaveSession) {
-                    const removalState = removeCardFromReviewSession(card.id);
+                    removalState = removeCardFromReviewSession(card.id, { preferNextCard: true });
                     await persistReviewSessionEditedIds();
                     if (!removalState.hasRemainingCards) {
                         endReviewSession();
@@ -4439,7 +4455,23 @@
                 }
 
                 renderReviewCard();
-                showNotification(`Card moved to "${result.destinationLabel}".`, 'success');
+
+                if (shouldLeaveSession && removalState && removalState.hasVisibleCards) {
+                    try {
+                        copiedNextCardBack = copyReviewBackToClipboard(getCurrentReviewCard());
+                    } catch (error) {
+                        console.error('Failed to copy next review card back after move:', error);
+                        failedToCopyNextCardBack = true;
+                    }
+                }
+
+                if (copiedNextCardBack) {
+                    showNotification(`Card moved to "${result.destinationLabel}". Copied next card's back.`, 'success');
+                } else if (failedToCopyNextCardBack) {
+                    showNotification(`Card moved to "${result.destinationLabel}", but copying the next card's back failed.`, 'error');
+                } else {
+                    showNotification(`Card moved to "${result.destinationLabel}".`, 'success');
+                }
             } finally {
                 setButtonLoading(confirmBtn, false);
             }
