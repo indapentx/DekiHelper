@@ -494,6 +494,10 @@
                             <span>TXT (for Anki, empty Beispiel Speech)</span>
                         </label>
                         <label class="flex items-center space-x-2">
+                            <input type="radio" name="export-format" value="txt-empty-fields" class="form-radio">
+                            <span>TXT (for Anki, empty fields)</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
                             <input type="radio" name="export-format" value="json" class="form-radio">
                             <span>JSON</span>
                         </label>
@@ -3929,15 +3933,19 @@
         }
 
         function buildTsvFromCards(cards, options = {}) {
-            const { emptyBeispielSpeech = false } = options;
+            const { emptyBeispielSpeech = false, firstTwoFieldsOnly = false } = options;
             const sortedCards = [...cards].sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt));
             return sortedCards.map(data => {
+                const sanitizedBack = sanitizeForExport(data.back);
+                const sanitizedFront = sanitizeForExport(data.front, sanitizedBack);
+                if (firstTwoFieldsOnly) {
+                    return [sanitizedFront, sanitizedBack].join('\t');
+                }
                 const soundTagBase = prepareForSoundTag(data.back);
                 const speechValue = !isBlank(data.speech) ? data.speech : (soundTagBase ? `[sound:${soundTagBase}.mp3]` : '');
-                const sanitizedBack = sanitizeForExport(data.back);
                 const resolvedBeispielSpeech = resolveBeispielSpeechValue(data.back, data.beispiel, data.beispielSpeech);
                 const fields = [
-                    sanitizeForExport(data.front, sanitizedBack),
+                    sanitizedFront,
                     sanitizedBack,
                     sanitizeForExport(speechValue),
                     sanitizeForExport(data.beispiel, '', { spaceAroundBr: true }),
@@ -4745,8 +4753,15 @@
                 mimeType = 'application/json';
             } else {
                 const emptyBeispielSpeech = format === 'txt-empty-beispiel-speech';
-                content = buildTsvFromCards(cards, { emptyBeispielSpeech });
-                fileName = emptyBeispielSpeech ? `${today}-empty-beispiel-speech.txt` : `${today}.txt`;
+                const firstTwoFieldsOnly = format === 'txt-empty-fields';
+                content = buildTsvFromCards(cards, { emptyBeispielSpeech, firstTwoFieldsOnly });
+                if (emptyBeispielSpeech) {
+                    fileName = `${today}-empty-beispiel-speech.txt`;
+                } else if (firstTwoFieldsOnly) {
+                    fileName = `${today}-empty-fields.txt`;
+                } else {
+                    fileName = `${today}.txt`;
+                }
                 mimeType = 'text/plain;charset=utf-8';
             }
             triggerDownload(content, fileName, mimeType);
