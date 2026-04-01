@@ -4374,7 +4374,10 @@
 
             if ((e.key === 't' || e.key === 'T') && !isReviewEditing) {
                 e.preventDefault();
-                enterReviewEditMode();
+                enterReviewEditMode({
+                    copyCurrentBack: shouldPauseReviewBackCopy(),
+                    notifyOnCopiedBack: shouldPauseReviewBackCopy()
+                });
                 return;
             }
             if (e.key === 'Delete') {
@@ -5982,10 +5985,25 @@
             }
         }
 
-        function enterReviewEditMode() {
+        function enterReviewEditMode(options = {}) {
             if (reviewSession.currentIndex === -1) return;
             const card = reviewSession.cards[reviewSession.currentIndex];
+            const { copyCurrentBack = false, notifyOnCopiedBack = false } = options;
             clearAutoSkipTimer();
+
+            if (copyCurrentBack) {
+                try {
+                    const copiedCurrentCardBack = copyReviewBackToClipboard(card);
+                    if (copiedCurrentCardBack && notifyOnCopiedBack) {
+                        showNotification("Copied current card's back!", "success", 1500);
+                    }
+                } catch (error) {
+                    console.error('Failed to copy current review card back before edit mode:', error);
+                    if (notifyOnCopiedBack) {
+                        showNotification("Failed to copy automatically.");
+                    }
+                }
+            }
             
             document.getElementById('review-beispiel').classList.add('hidden');
             const editBeispiel = document.getElementById('edit-beispiel');
@@ -6705,7 +6723,12 @@
                     }
                 });
             }
-            document.getElementById('edit-review-card-btn').addEventListener('click', enterReviewEditMode);
+            document.getElementById('edit-review-card-btn').addEventListener('click', () => {
+                enterReviewEditMode({
+                    copyCurrentBack: shouldPauseReviewBackCopy(),
+                    notifyOnCopiedBack: shouldPauseReviewBackCopy()
+                });
+            });
             
             document.getElementById('save-review-edit-btn').addEventListener('click', async () => {
                 const success = await saveReviewEdit();
