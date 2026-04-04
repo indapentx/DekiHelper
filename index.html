@@ -3965,10 +3965,14 @@
                 showNotification('Card not found.', 'error');
                 return;
             }
-            const today = new Date().toISOString().split('T')[0];
+            const today = getTodayExportStamp();
+            const folderKey = card.folderId ? card.folderId : NO_FOLDER_VALUE;
+            const folderCounts = getFolderCardCounts();
+            const folderName = sanitizeFileName(getFolderDisplayName(folderKey), 'folder').slice(0, 40);
+            const folderCardCount = Number.isFinite(folderCounts[folderKey]) ? folderCounts[folderKey] : 1;
             const baseName = sanitizeFileName(card.back || card.front || 'card', 'card');
-            const clippedBaseName = baseName.slice(0, 80);
-            const fileName = `${today}-${clippedBaseName}.txt`;
+            const clippedBaseName = baseName.slice(0, 60);
+            const fileName = `${today}-${folderName}-${folderCardCount}-cards-${clippedBaseName}.txt`;
             const content = buildTsvFromCards([card]);
             triggerDownload(content, fileName, 'text/plain;charset=utf-8');
             showNotification('Single card exported as Anki TXT.', 'success', 1500);
@@ -4740,30 +4744,72 @@
             await applyLegacyFrontFixes(candidates, { triggerButton: button, confirmMessage, loadingText: 'Fixing...' });
         }
 
-        function triggerExportDownload(cards, format) {
+        function getTodayExportStamp() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        function buildExportFileBase({ range = 'all', cards = [], cardCount = null, selectedFolders = [], selectedDates = [] } = {}) {
+            const today = getTodayExportStamp();
+            const totalCards = Number.isFinite(cardCount) ? cardCount : (Array.isArray(cards) ? cards.length : 0);
+
+            if (range === 'folder') {
+                if (selectedFolders.length === 1) {
+                    const folderName = sanitizeFileName(getFolderDisplayName(selectedFolders[0]), 'folder').slice(0, 60);
+                    return `${today}-${folderName}-${totalCards}-cards`;
+                }
+
+                if (selectedFolders.length > 1) {
+                    const folderCounts = getFolderCardCounts();
+                    const folderDetails = selectedFolders
+                        .map(folderId => {
+                            const folderName = sanitizeFileName(getFolderDisplayName(folderId), 'folder').slice(0, 24);
+                            const count = Number.isFinite(folderCounts[folderId]) ? folderCounts[folderId] : 0;
+                            return `${folderName}-${count}`;
+                        })
+                        .join('__');
+                    if (folderDetails && folderDetails.length <= 90) {
+                        return `${today}-${folderDetails}`;
+                    }
+                    return `${today}-${selectedFolders.length}-folders-${totalCards}-cards`;
+                }
+            }
+
+            if (range === 'date') {
+                if (selectedDates.length === 1) {
+                    return `${today}-${selectedDates[0]}-${totalCards}-cards`;
+                }
+                if (selectedDates.length > 1) {
+                    return `${today}-${selectedDates.length}-dates-${totalCards}-cards`;
+                }
+            }
+
+            return `${today}-${totalCards}-cards`;
+        }
+
+        function triggerExportDownload(cards, format, options = {}) {
             if (cards.length === 0) {
                 showNotification("No cards match the selected criteria.", "success");
                 return;
             }
-            const today = new Date().toISOString().split('T')[0];
+            const exportBaseName = buildExportFileBase({ ...options, cards });
             let content, fileName, mimeType;
 
             if (format === 'json') {
                 const sortedCards = [...cards].sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt));
                 const jsonData = sortedCards.map(data => ({ back: data.back || '', beispiel: data.beispiel || '' }));
                 content = JSON.stringify(jsonData, null, 2);
-                fileName = `${today}.json`;
+                fileName = `${exportBaseName}.json`;
                 mimeType = 'application/json';
             } else {
                 const emptyBeispielSpeech = format === 'txt-empty-beispiel-speech';
                 const firstTwoFieldsOnly = format === 'txt-empty-fields';
                 content = buildTsvFromCards(cards, { emptyBeispielSpeech, firstTwoFieldsOnly });
                 if (emptyBeispielSpeech) {
-                    fileName = `${today}-empty-beispiel-speech.txt`;
+                    fileName = `${exportBaseName}-empty-beispiel-speech.txt`;
                 } else if (firstTwoFieldsOnly) {
-                    fileName = `${today}-empty-fields.txt`;
+                    fileName = `${exportBaseName}-empty-fields.txt`;
                 } else {
-                    fileName = `${today}.txt`;
+                    fileName = `${exportBaseName}.txt`;
                 }
                 mimeType = 'text/plain;charset=utf-8';
             }
@@ -4780,6 +4826,7 @@
             const zip = new JSZip();
             let totalCards = 0;
             let exportedFolders = 0;
+            const exportedFolderIds = [];
             const usedNames = new Set();
 
             ids.forEach(folderId => {
@@ -4802,6 +4849,7 @@
 
                 totalCards += cards.length;
                 exportedFolders += 1;
+                exportedFolderIds.push(folderId);
             });
 
             if (totalCards === 0 || exportedFolders === 0) {
@@ -4809,9 +4857,13 @@
                 return;
             }
 
-            const today = new Date().toISOString().split('T')[0];
             const blob = await zip.generateAsync({ type: 'blob' });
-            triggerBlobDownload(blob, `deki-categories-${today}.zip`);
+            const exportBaseName = buildExportFileBase({
+                range: 'folder',
+                cardCount: totalCards,
+                selectedFolders: exportedFolderIds
+            });
+            triggerBlobDownload(blob, `deki-categories-${exportBaseName}.zip`);
             showNotification(`Exported ${totalCards} card${totalCards === 1 ? '' : 's'} from ${exportedFolders} categor${exportedFolders === 1 ? 'y' : 'ies'}.`, 'success');
         }
 
@@ -4851,6 +4903,7 @@
             const clipboardOutput = document.getElementById('clipboard-output');
             let cardsToExport = [];
             let selectedFolders = [];
+            let selectedDates = [];
 
             clipboardOutputContainer.classList.add('hidden');
 
@@ -4862,7 +4915,7 @@
                     showNotification("Please select at least one date to export.");
                     return;
                 }
-                const selectedDates = Array.from(selectedDateNodes).map(el => el.value);
+                selectedDates = Array.from(selectedDateNodes).map(el => el.value);
                 cardsToExport = allCards.filter(card => card.createdAt && card.createdAt.split('T')[0] && selectedDates.includes(card.createdAt.split('T')[0]));
             } else if (range === 'folder') {
                 const selectedFolderNodes = document.querySelectorAll('#export-folder-selection input[type="checkbox"]:checked:not(#export-folder-select-all-checkbox)');
@@ -4930,11 +4983,11 @@
                     .map(data => sanitizeForExport(data.back))
                     .filter(text => !isBlank(text))
                     .join('\n');
-                const today = new Date().toISOString().split('T')[0];
-                triggerDownload(clipboardText, `quizlet-back-only-${today}.txt`, 'text/plain;charset=utf-8');
+                const exportBaseName = buildExportFileBase({ range, cards: cardsToExport, selectedFolders, selectedDates });
+                triggerDownload(clipboardText, `${exportBaseName}-quizlet-back-only.txt`, 'text/plain;charset=utf-8');
                 clipboardSuccessMessage = "Copied to clipboard and exported back-only TXT!";
             } else {
-                triggerExportDownload(cardsToExport, format);
+                triggerExportDownload(cardsToExport, format, { range, selectedFolders, selectedDates });
                 document.getElementById('export-modal').classList.add('hidden');
                 return;
             }
