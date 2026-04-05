@@ -5135,12 +5135,6 @@
                 exportFolderRadio.disabled = options.length === 0;
             }
 
-            const defaultFolderValue = currentFolderId != null ? currentFolderId : NO_FOLDER_VALUE;
-            getExportFolderCheckboxes().forEach(input => {
-                if (input.value === defaultFolderValue) {
-                    input.checked = true;
-                }
-            });
             syncExportFolderSelectAllCheckbox();
 
             document.getElementById('export-modal').classList.remove('hidden');
