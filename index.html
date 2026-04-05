@@ -2435,14 +2435,64 @@
             return fields;
         }
 
+        function buildCanonicalImageFront(src) {
+            const normalizedSource = isBlank(src) ? '' : String(src).trim();
+            if (!normalizedSource) return null;
+
+            if (typeof document !== 'undefined') {
+                const img = document.createElement('img');
+                img.setAttribute('src', normalizedSource);
+                return img.outerHTML.replace(/\s+\/>$/, '>');
+            }
+
+            const escapedSource = normalizedSource
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            return `<img src="${escapedSource}">`;
+        }
+
+        function extractImageSourceFromTag(tagMarkup) {
+            if (typeof tagMarkup !== 'string') return null;
+
+            const doubleQuotedMatch = tagMarkup.match(/\bsrc\s*=\s*"([^"]*)"/i);
+            if (doubleQuotedMatch) return doubleQuotedMatch[1].trim();
+
+            const singleQuotedMatch = tagMarkup.match(/\bsrc\s*=\s*'([^']*)'/i);
+            if (singleQuotedMatch) return singleQuotedMatch[1].trim();
+
+            const unquotedMatch = tagMarkup.match(/\bsrc\s*=\s*([^>]*?)(?=\s+[a-zA-Z_:][\w:.-]*(?:\s*=|$)|\s*\/?>$)/i);
+            if (unquotedMatch) return unquotedMatch[1].trim();
+
+            return null;
+        }
+
+        function extractCanonicalImageFront(candidate) {
+            if (typeof candidate !== 'string') return null;
+            const trimmed = candidate.trim();
+            if (!trimmed) return null;
+
+            const tagMatch = trimmed.match(/<img\b[\s\S]*?>/i);
+            if (!tagMatch) return null;
+
+            if (typeof document !== 'undefined') {
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = trimmed;
+                const images = wrapper.querySelectorAll('img');
+                if (images.length !== 1 || wrapper.textContent.trim() !== '') {
+                    return null;
+                }
+            }
+
+            const src = extractImageSourceFromTag(tagMatch[0]);
+            return buildCanonicalImageFront(src);
+        }
+
         function decodeLegacyImageFront(value) {
             if (typeof value !== 'string') return null;
             const trimmed = value.trim();
             if (!trimmed) return null;
-
-            if (/^<img\s+[^>]*>$/.test(trimmed)) {
-                return trimmed;
-            }
 
             const candidates = new Set();
             const enqueue = (input) => {
@@ -2506,25 +2556,17 @@
             }
 
             for (const candidate of candidates) {
-                if (/^<img\s+[^>]*>$/.test(candidate)) {
-                    let normalized = candidate;
-                    if (normalized.includes('""')) {
-                        normalized = normalized.replace(/""/g, '"');
-                    }
-                    normalized = normalized.replace(/\s+\/>$/, '>');
-                    if (typeof document !== 'undefined') {
-                        const wrapper = document.createElement('div');
-                        wrapper.innerHTML = normalized;
-                        const imgEl = wrapper.querySelector('img');
-                        if (imgEl) {
-                            normalized = imgEl.outerHTML.replace(/\s+\/>$/, '>');
-                        }
-                    }
-                    return normalized;
-                }
+                const normalized = extractCanonicalImageFront(candidate);
+                if (normalized) return normalized;
             }
 
             return null;
+        }
+
+        function normalizeCardFrontValue(value) {
+            if (isBlank(value)) return '';
+            const trimmed = String(value).trim();
+            return decodeLegacyImageFront(trimmed) || trimmed;
         }
 
         function getLegacyFrontCandidates() {
@@ -3658,7 +3700,7 @@
             }
 
             const payload = {
-                front: rest.front || '',
+                front: normalizeCardFrontValue(rest.front),
                 back: rest.back || '',
                 speech: rest.speech || '',
                 beispiel: rest.beispiel || '',
@@ -3937,7 +3979,7 @@
             const sortedCards = [...cards].sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt));
             return sortedCards.map(data => {
                 const sanitizedBack = sanitizeForExport(data.back);
-                const sanitizedFront = sanitizeForExport(data.front, sanitizedBack);
+                const sanitizedFront = sanitizeForExport(normalizeCardFrontValue(data.front), sanitizedBack);
                 if (firstTwoFieldsOnly) {
                     return [sanitizedFront, sanitizedBack].join('\t');
                 }
@@ -4577,7 +4619,7 @@
             const { id: selectedFolderId, name: selectedFolderName } = getSelectedFolderDetails();
 
             const cardData = {
-                front: front.value.trim(),
+                front: normalizeCardFrontValue(front.value),
                 back: back.value.trim(),
                 speech: getSpeechRawValue(speechBox),
                 beispiel: formatMultiLine(beispiel.value),
@@ -4604,7 +4646,7 @@
              const beispielSpeechBox = document.getElementById('beispiel-speech');
              const { id: selectedFolderId, name: selectedFolderName } = getSelectedFolderDetails();
              const cardData = {
-                front: front.value.trim(),
+                front: normalizeCardFrontValue(front.value),
                 back: back.value.trim(),
                 speech: getSpeechRawValue(speechBox),
                 beispiel: formatMultiLine(beispiel.value),
@@ -4954,7 +4996,7 @@
                     .sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt))
                     .map(data => {
                         const sanitizedBack = sanitizeForExport(data.back);
-                        const sanitizedFront = sanitizeForExport(data.front, sanitizedBack);
+                        const sanitizedFront = sanitizeForExport(normalizeCardFrontValue(data.front), sanitizedBack);
                         return `${sanitizedBack}\t${sanitizedFront}`;
                     })
                     .join('\n');
@@ -5106,7 +5148,10 @@
 
         function handleGenerateOrCycleImage() {
             const front = document.getElementById('front');
-            let value = front.value.trim();
+            let value = normalizeCardFrontValue(front.value);
+            if (value && value !== front.value) {
+                front.value = value;
+            }
 
             if (value.startsWith('<img src="') && value.endsWith('">')) {
                 const src = value.substring(10, value.length - 2);
@@ -5354,7 +5399,7 @@
             const computedBeispielSpeech = resolveBeispielSpeechValue(backField, beispielText, beispielSpeechField);
 
             return {
-                front: frontField,
+                front: normalizeCardFrontValue(frontField),
                 back: backField,
                 speech: computedSpeech,
                 beispiel: formattedBeispiel,
