@@ -6617,6 +6617,12 @@
                     if (e.key === 't') { 
                         e.preventDefault(); 
                         document.getElementById('generate-img-tag-btn').click(); 
+                    } else if (e.key === 'e' || e.key === 'E') {
+                        const reviewModal = document.getElementById('review-modal');
+                        if (reviewModal && reviewModal.classList.contains('hidden')) {
+                            e.preventDefault();
+                            openExportModal();
+                        }
                     } else if (e.key === 'r' || e.key === 'R') {
                         e.preventDefault();
                         document.getElementById('review-btn').click();
