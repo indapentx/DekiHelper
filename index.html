@@ -28,6 +28,49 @@
         .btn-icon { background: transparent; border: none; color: #777; padding: 4px; border-radius: 50%; } .btn-icon:hover { background-color: #333; color: #eee; }
         .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 50;}
         .modal-content { background-color: #1a1a1a; padding: 30px; border-radius: 12px; width: 90%; max-width: 500px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        #export-modal { padding: 20px; }
+        .export-modal-content { padding: 0; width: min(100%, 980px); max-width: 980px; max-height: calc(100vh - 40px); overflow: hidden; display: flex; flex-direction: column; }
+        .export-modal-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 28px 30px 20px; border-bottom: 1px solid #2a2a2a; }
+        .export-modal-subtitle { color: #9ca3af; font-size: 0.95rem; line-height: 1.5; margin-top: 8px; max-width: 42rem; }
+        .export-shortcut-pill { display: inline-flex; align-items: center; gap: 8px; background: #111827; color: #cbd5e1; border: 1px solid #334155; border-radius: 999px; padding: 6px 10px; font-size: 0.75rem; white-space: nowrap; }
+        .export-shortcut-pill kbd { background: #0b1220; border: 1px solid #475569; border-bottom-width: 2px; border-radius: 6px; padding: 2px 6px; font-family: inherit; font-weight: 700; color: #f8fafc; }
+        .export-modal-body { padding: 22px 30px 20px; overflow-y: auto; }
+        .export-modal-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.9fr); gap: 20px; }
+        .export-panel { background: #111; border: 1px solid #272727; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+        .export-panel-header { display: flex; flex-direction: column; gap: 4px; }
+        .export-panel-header h3 { font-size: 1rem; font-weight: 700; color: #f9fafb; }
+        .export-panel-header p { color: #9ca3af; font-size: 0.88rem; line-height: 1.45; }
+        .export-subsection { display: flex; flex-direction: column; gap: 10px; }
+        .export-subsection-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; font-weight: 700; }
+        .export-options-list { display: flex; flex-direction: column; gap: 10px; }
+        .export-option-card { display: flex; align-items: flex-start; gap: 12px; background: #171717; border: 1px solid #262626; border-radius: 13px; padding: 13px 14px; cursor: pointer; transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease; }
+        .export-option-card:hover { border-color: #3b3b3b; background: #1b1b1b; transform: translateY(-1px); }
+        .export-option-card.is-selected { border-color: rgba(0, 122, 204, 0.95); background: rgba(0, 122, 204, 0.12); box-shadow: 0 0 0 1px rgba(0, 122, 204, 0.18); }
+        .export-option-input { margin-top: 3px; accent-color: #0ea5e9; flex-shrink: 0; }
+        .export-option-icon { width: 36px; height: 36px; border-radius: 10px; background: #0f172a; color: #7dd3fc; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .export-option-copy { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+        .export-option-title-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .export-option-title { font-weight: 600; color: #f5f5f5; line-height: 1.3; }
+        .export-option-description { font-size: 0.86rem; color: #9ca3af; line-height: 1.45; }
+        .export-count-pill { display: inline-flex; align-items: center; justify-content: center; padding: 2px 8px; border-radius: 999px; background: #1f2937; border: 1px solid #374151; color: #d1d5db; font-size: 0.72rem; white-space: nowrap; }
+        .export-selection-panel { background: #0d0d0d; border: 1px solid #242424; border-radius: 13px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+        .export-selection-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .export-selection-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; }
+        .export-selection-caption { font-size: 0.78rem; color: #9ca3af; }
+        .export-filter-input { width: 100%; background: #161616; border: 1px solid #333; color: #ecf0f1; border-radius: 10px; padding: 10px 12px; font-size: 0.92rem; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+        .export-filter-input:focus { outline: none; border-color: #007acc; box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.15); }
+        .export-selection-list { max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 2px; }
+        .export-selection-item { display: flex; align-items: flex-start; gap: 10px; background: #151515; border: 1px solid #242424; border-radius: 11px; padding: 10px 12px; color: #e5e7eb; cursor: pointer; transition: border-color 0.2s ease, background-color 0.2s ease; }
+        .export-selection-item:hover { border-color: #3a3a3a; background: #191919; }
+        .export-selection-item.is-selected { border-color: rgba(0, 122, 204, 0.85); background: rgba(0, 122, 204, 0.10); }
+        .export-selection-item input { margin-top: 3px; accent-color: #0ea5e9; flex-shrink: 0; }
+        .export-selection-item-text { line-height: 1.4; }
+        .export-selection-empty { color: #6b7280; font-size: 0.85rem; text-align: center; padding: 4px 0; }
+        .export-modal-footer { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding: 18px 30px 24px; border-top: 1px solid #2a2a2a; background: #151515; }
+        .export-summary { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+        .export-summary-title { font-size: 0.98rem; font-weight: 700; color: #f5f5f5; }
+        .export-summary-detail { font-size: 0.86rem; color: #9ca3af; line-height: 1.4; }
+        .export-modal-actions { display: flex; align-items: center; gap: 12px; }
         .card-item { background-color: #1e1e1e; border: 1px solid #333; padding: 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .card-item-content { flex-grow: 1; overflow: hidden; }
         .card-item-front { font-weight: 600; color: #eee; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
@@ -85,6 +128,51 @@
                 min-height: 100%;
                 width: 100%;
                 max-width: 100%;
+            }
+            #export-modal {
+                align-items: flex-start;
+                overflow-y: auto;
+                padding: 12px;
+            }
+            .export-modal-content {
+                max-height: none;
+                min-height: calc(100vh - 24px);
+            }
+            .export-modal-header,
+            .export-modal-body,
+            .export-modal-footer {
+                padding-left: 18px;
+                padding-right: 18px;
+            }
+            .export-modal-header,
+            .export-modal-footer {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .export-shortcut-pill {
+                align-self: flex-start;
+            }
+            .export-modal-grid {
+                grid-template-columns: 1fr;
+            }
+            .export-modal-actions {
+                width: 100%;
+                justify-content: stretch;
+            }
+            .export-modal-actions .btn {
+                flex: 1;
+            }
+        }
+        @media (max-width: 900px) {
+            .export-modal-grid {
+                grid-template-columns: 1fr;
+            }
+            .export-modal-footer {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .export-modal-actions {
+                justify-content: flex-end;
             }
         }
     </style>
@@ -479,71 +567,180 @@
         <div id="deleted-container" class="space-y-4"></div>
     </div>
     <div id="export-modal" class="modal-backdrop hidden">
-        <div class="modal-content">
-            <h2 class="text-2xl font-bold mb-6">Export Options</h2>
-            <div class="space-y-4">
+        <div class="modal-content export-modal-content">
+            <div class="export-modal-header">
                 <div>
-                    <h3 class="anki-label mb-2">Format</h3>
-                    <div class="flex flex-col space-y-2">
-                        <label class="flex items-center space-x-2">
-                            <input type="radio" name="export-format" value="txt" class="form-radio" checked>
-                            <span>TXT (for Anki)</span>
-                        </label>
-                        <label class="flex items-center space-x-2">
-                            <input type="radio" name="export-format" value="txt-empty-beispiel-speech" class="form-radio">
-                            <span>TXT (for Anki, empty Beispiel Speech)</span>
-                        </label>
-                        <label class="flex items-center space-x-2">
-                            <input type="radio" name="export-format" value="txt-empty-fields" class="form-radio">
-                            <span>TXT (for Anki, empty fields)</span>
-                        </label>
-                        <label class="flex items-center space-x-2">
-                            <input type="radio" name="export-format" value="json" class="form-radio">
-                            <span>JSON</span>
-                        </label>
-                        <label class="flex items-center space-x-2">
-                            <input type="radio" name="export-format" value="category-zip" class="form-radio">
-                            <span>Category Folder (.zip)</span>
-                        </label>
-                        <label class="flex items-center space-x-2">
-                            <input type="radio" name="export-format" value="clipboard" class="form-radio">
-                            <span>Copy to Clipboard (Back & Front)</span>
-                        </label>
-                        <label class="flex items-center space-x-2">
-                            <input type="radio" name="export-format" value="clipboard-back-only" class="form-radio">
-                            <span>Copy to Clipboard (Back only)</span>
-                        </label>
-                        <label class="flex items-center space-x-2">
-                            <input type="radio" name="export-format" value="clipboard-quizlet" class="form-radio">
-                            <span>Copy to Clipboard (Quizlet - Back only, one per line)</span>
-                        </label>
-                        <label class="flex items-center space-x-2">
-                            <input type="radio" name="export-format" value="beispiel-speech" class="form-radio">
-                            <span>Copy to Clipboard (Beispiel Speech)</span>
-                        </label>
-                    </div>
+                    <h2 class="text-3xl font-bold">Export</h2>
+                    <p class="export-modal-subtitle">Pick a format, choose which cards to include, then export or copy without guessing what the result will look like.</p>
                 </div>
-                <hr class="border-gray-700 !my-6">
-                <div>
-                    <h3 class="anki-label mb-2">Cards to Export</h3>
-                    <label class="flex items-center space-x-2">
-                        <input type="radio" id="export-all-radio" name="export-range" value="all" class="form-radio" checked>
-                        <span>All cards</span>
-                    </label>
-                    <label class="flex items-center space-x-2 mt-2">
-                        <input type="radio" id="export-date-radio" name="export-range" value="date" class="form-radio">
-                        <span>Cards from selected dates</span>
-                    </label>
-                    <div id="export-date-selection" class="hidden pl-6 pt-2 mt-2 max-h-32 overflow-y-auto border-l-2 border-gray-700">
-                        <!-- Date checkboxes will be inserted here by JS -->
-                    </div>
-                    <label class="flex items-center space-x-2 mt-2">
-                        <input type="radio" id="export-folder-radio" name="export-range" value="folder" class="form-radio">
-                        <span>Cards from selected folders</span>
-                    </label>
-                    <div id="export-folder-selection" class="hidden pl-6 pt-2 mt-2 max-h-32 overflow-y-auto border-l-2 border-gray-700">
-                        <!-- Folder checkboxes inserted by JS -->
-                    </div>
+                <div class="export-shortcut-pill"><kbd>E</kbd> opens this modal</div>
+            </div>
+            <div class="export-modal-body">
+                <div class="export-modal-grid">
+                    <section class="export-panel">
+                        <div class="export-panel-header">
+                            <h3>Format</h3>
+                            <p>Choose whether you want a file download or a clipboard-ready result.</p>
+                        </div>
+                        <div class="export-subsection">
+                            <p class="export-subsection-title">Files</p>
+                            <div class="export-options-list">
+                                <label class="export-option-card">
+                                    <input type="radio" name="export-format" value="txt" class="export-option-input form-radio" checked>
+                                    <span class="export-option-icon"><i class="fas fa-file-lines"></i></span>
+                                    <span class="export-option-copy">
+                                        <span class="export-option-title-row">
+                                            <span class="export-option-title">TXT for Anki</span>
+                                        </span>
+                                        <span class="export-option-description">Standard 6-field export for Anki: front, back, speech, example, example speech, translation.</span>
+                                    </span>
+                                </label>
+                                <label class="export-option-card">
+                                    <input type="radio" name="export-format" value="txt-empty-beispiel-speech" class="export-option-input form-radio">
+                                    <span class="export-option-icon"><i class="fas fa-volume-xmark"></i></span>
+                                    <span class="export-option-copy">
+                                        <span class="export-option-title-row">
+                                            <span class="export-option-title">TXT without Beispiel Speech</span>
+                                        </span>
+                                        <span class="export-option-description">Same Anki layout, but leaves the Beispiel Speech field empty.</span>
+                                    </span>
+                                </label>
+                                <label class="export-option-card">
+                                    <input type="radio" name="export-format" value="txt-empty-fields" class="export-option-input form-radio">
+                                    <span class="export-option-icon"><i class="fas fa-table-columns"></i></span>
+                                    <span class="export-option-copy">
+                                        <span class="export-option-title-row">
+                                            <span class="export-option-title">TXT front/back only</span>
+                                        </span>
+                                        <span class="export-option-description">Exports only the first two fields for lightweight imports or quick cleanups.</span>
+                                    </span>
+                                </label>
+                                <label class="export-option-card">
+                                    <input type="radio" name="export-format" value="json" class="export-option-input form-radio">
+                                    <span class="export-option-icon"><i class="fas fa-code"></i></span>
+                                    <span class="export-option-copy">
+                                        <span class="export-option-title-row">
+                                            <span class="export-option-title">JSON</span>
+                                        </span>
+                                        <span class="export-option-description">Structured data export with back text and example text for scripting or reuse.</span>
+                                    </span>
+                                </label>
+                                <label class="export-option-card">
+                                    <input type="radio" name="export-format" value="category-zip" class="export-option-input form-radio">
+                                    <span class="export-option-icon"><i class="fas fa-box-archive"></i></span>
+                                    <span class="export-option-copy">
+                                        <span class="export-option-title-row">
+                                            <span class="export-option-title">Category ZIP</span>
+                                        </span>
+                                        <span class="export-option-description">Packages each selected folder into its own `cards.txt` and `metadata.json` inside one ZIP.</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="export-subsection">
+                            <p class="export-subsection-title">Clipboard</p>
+                            <div class="export-options-list">
+                                <label class="export-option-card">
+                                    <input type="radio" name="export-format" value="clipboard" class="export-option-input form-radio">
+                                    <span class="export-option-icon"><i class="fas fa-copy"></i></span>
+                                    <span class="export-option-copy">
+                                        <span class="export-option-title-row">
+                                            <span class="export-option-title">Back and front</span>
+                                        </span>
+                                        <span class="export-option-description">Copies tab-separated `back` then `front` rows straight to your clipboard.</span>
+                                    </span>
+                                </label>
+                                <label class="export-option-card">
+                                    <input type="radio" name="export-format" value="clipboard-back-only" class="export-option-input form-radio">
+                                    <span class="export-option-icon"><i class="fas fa-list"></i></span>
+                                    <span class="export-option-copy">
+                                        <span class="export-option-title-row">
+                                            <span class="export-option-title">Back only</span>
+                                        </span>
+                                        <span class="export-option-description">Copies only the back values as a comma-separated list.</span>
+                                    </span>
+                                </label>
+                                <label class="export-option-card">
+                                    <input type="radio" name="export-format" value="clipboard-quizlet" class="export-option-input form-radio">
+                                    <span class="export-option-icon"><i class="fas fa-grip-lines"></i></span>
+                                    <span class="export-option-copy">
+                                        <span class="export-option-title-row">
+                                            <span class="export-option-title">Quizlet back only</span>
+                                        </span>
+                                        <span class="export-option-description">Copies one back value per line and also downloads a `.txt` file for Quizlet-style use.</span>
+                                    </span>
+                                </label>
+                                <label class="export-option-card">
+                                    <input type="radio" name="export-format" value="beispiel-speech" class="export-option-input form-radio">
+                                    <span class="export-option-icon"><i class="fas fa-wave-square"></i></span>
+                                    <span class="export-option-copy">
+                                        <span class="export-option-title-row">
+                                            <span class="export-option-title">Beispiel Speech tags</span>
+                                        </span>
+                                        <span class="export-option-description">Copies only the generated example-audio tags.</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="export-panel">
+                        <div class="export-panel-header">
+                            <h3>Cards to export</h3>
+                            <p>Start broad, or narrow the export to one or more dates or folders.</p>
+                        </div>
+                        <div class="export-options-list">
+                            <label class="export-option-card">
+                                <input type="radio" id="export-all-radio" name="export-range" value="all" class="export-option-input form-radio" checked>
+                                <span class="export-option-icon"><i class="fas fa-layer-group"></i></span>
+                                <span class="export-option-copy">
+                                    <span class="export-option-title-row">
+                                        <span class="export-option-title">All cards</span>
+                                        <span id="export-all-count-badge" class="export-count-pill">0 cards</span>
+                                    </span>
+                                    <span class="export-option-description">Everything currently stored in your library.</span>
+                                </span>
+                            </label>
+                            <label class="export-option-card">
+                                <input type="radio" id="export-date-radio" name="export-range" value="date" class="export-option-input form-radio">
+                                <span class="export-option-icon"><i class="fas fa-calendar-days"></i></span>
+                                <span class="export-option-copy">
+                                    <span class="export-option-title-row">
+                                        <span class="export-option-title">Selected dates</span>
+                                        <span id="export-date-count-badge" class="export-count-pill">0 selected</span>
+                                    </span>
+                                    <span class="export-option-description">Useful when you want one or more specific sessions only.</span>
+                                </span>
+                            </label>
+                            <div id="export-date-selection" class="export-selection-panel hidden">
+                                <div class="export-selection-header">
+                                    <span class="export-selection-title">Dates</span>
+                                    <span id="export-date-selection-count" class="export-selection-caption">0 selected</span>
+                                </div>
+                                <div id="export-date-checkboxes" class="export-selection-list"></div>
+                                <p id="export-date-empty" class="export-selection-empty hidden">No dated cards available.</p>
+                            </div>
+                            <label class="export-option-card">
+                                <input type="radio" id="export-folder-radio" name="export-range" value="folder" class="export-option-input form-radio">
+                                <span class="export-option-icon"><i class="fas fa-folder-tree"></i></span>
+                                <span class="export-option-copy">
+                                    <span class="export-option-title-row">
+                                        <span class="export-option-title">Selected folders</span>
+                                        <span id="export-folder-count-badge" class="export-count-pill">0 selected</span>
+                                    </span>
+                                    <span class="export-option-description">Best for exports that should stay organized by folder.</span>
+                                </span>
+                            </label>
+                            <div id="export-folder-selection" class="export-selection-panel hidden">
+                                <div class="export-selection-header">
+                                    <span class="export-selection-title">Folders</span>
+                                    <span id="export-folder-selection-count" class="export-selection-caption">0 selected</span>
+                                </div>
+                                <input type="text" id="export-folder-filter" class="export-filter-input" placeholder="Filter folders by name...">
+                                <div id="export-folder-checkboxes" class="export-selection-list"></div>
+                                <p id="export-folder-empty" class="export-selection-empty hidden">No folders with cards available.</p>
+                            </div>
+                        </div>
+                    </section>
                 </div>
                 <div id="clipboard-output-container" class="hidden mt-6">
                     <label for="clipboard-output" class="anki-label mb-2">Formatted Text</label>
@@ -553,9 +750,15 @@
                     </div>
                 </div>
             </div>
-            <div class="flex justify-end items-center space-x-4 mt-8">
-               <button id="cancel-export-btn" class="btn btn-secondary">Cancel</button>
-               <button id="confirm-export-btn" class="btn btn-primary">Export</button>
+            <div class="export-modal-footer">
+                <div class="export-summary">
+                    <p id="export-summary-title" class="export-summary-title">Export all cards</p>
+                    <p id="export-summary-detail" class="export-summary-detail">Choose a format and scope. The button updates as you narrow the export.</p>
+                </div>
+                <div class="export-modal-actions">
+                    <button id="cancel-export-btn" class="btn btn-secondary">Cancel</button>
+                    <button id="confirm-export-btn" class="btn btn-primary">Export</button>
+                </div>
             </div>
        </div>
    </div>
@@ -4910,8 +5113,35 @@
         }
 
         function getExportFolderCheckboxes() {
-            return Array.from(document.querySelectorAll('#export-folder-selection input[type="checkbox"]'))
+            return Array.from(document.querySelectorAll('#export-folder-checkboxes input[type="checkbox"]'))
                 .filter(input => input.id !== EXPORT_SELECT_ALL_ID);
+        }
+
+        function createExportSelectionCheckbox(container, text, value, { disabled = false, inputId = null } = {}) {
+            if (!container) return null;
+
+            const label = document.createElement('label');
+            label.className = 'export-selection-item';
+            label.dataset.filterText = String(text || '').toLowerCase();
+            if (disabled) {
+                label.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.value = value;
+            input.disabled = disabled;
+            input.className = 'form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded';
+            if (inputId) input.id = inputId;
+
+            const span = document.createElement('span');
+            span.className = 'export-selection-item-text';
+            span.textContent = text;
+
+            label.appendChild(input);
+            label.appendChild(span);
+            container.appendChild(label);
+            return label;
         }
 
         function toggleAllExportFolders(checked) {
@@ -4936,6 +5166,258 @@
             selectAllCheckbox.disabled = false;
             selectAllCheckbox.checked = checkedCount === folderCheckboxes.length;
             selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < folderCheckboxes.length;
+        }
+
+        function formatExportCount(count, noun = 'card') {
+            return `${count} ${noun}${count === 1 ? '' : 's'}`;
+        }
+
+        function getExportFormatDetails(format) {
+            const details = {
+                txt: {
+                    title: 'TXT for Anki',
+                    action: 'Export',
+                    helper: 'Downloads a standard Anki-ready text file.'
+                },
+                'txt-empty-beispiel-speech': {
+                    title: 'TXT without Beispiel Speech',
+                    action: 'Export',
+                    helper: 'Downloads an Anki file with the Beispiel Speech column empty.'
+                },
+                'txt-empty-fields': {
+                    title: 'TXT front/back only',
+                    action: 'Export',
+                    helper: 'Downloads only the front and back fields.'
+                },
+                json: {
+                    title: 'JSON',
+                    action: 'Export',
+                    helper: 'Downloads structured JSON for scripting or reuse.'
+                },
+                'category-zip': {
+                    title: 'Category ZIP',
+                    action: 'Export',
+                    helper: 'Packages each selected folder as its own export inside one ZIP.'
+                },
+                clipboard: {
+                    title: 'Clipboard: back and front',
+                    action: 'Copy',
+                    helper: 'Copies tab-separated back/front rows to the clipboard.'
+                },
+                'clipboard-back-only': {
+                    title: 'Clipboard: back only',
+                    action: 'Copy',
+                    helper: 'Copies only the back values as a comma-separated list.'
+                },
+                'clipboard-quizlet': {
+                    title: 'Clipboard: Quizlet back only',
+                    action: 'Copy',
+                    helper: 'Copies one back value per line and also downloads a helper TXT file.'
+                },
+                'beispiel-speech': {
+                    title: 'Clipboard: Beispiel Speech',
+                    action: 'Copy',
+                    helper: 'Copies only the Beispiel Speech tags.'
+                }
+            };
+            return details[format] || details.txt;
+        }
+
+        function getCurrentExportSelectionState() {
+            const format = document.querySelector('input[name="export-format"]:checked')?.value || 'txt';
+            const range = document.querySelector('input[name="export-range"]:checked')?.value || 'all';
+            const selectedDates = Array.from(document.querySelectorAll('#export-date-checkboxes input[type="checkbox"]:checked')).map(el => el.value);
+            const selectedFolders = Array.from(document.querySelectorAll(`#export-folder-checkboxes input[type="checkbox"]:checked:not(#${EXPORT_SELECT_ALL_ID})`)).map(el => el.value);
+
+            let cardsToExport = [];
+            let selectionReady = true;
+            let invalidReason = '';
+
+            if (range === 'all') {
+                cardsToExport = [...allCards];
+            } else if (range === 'date') {
+                if (selectedDates.length === 0) {
+                    selectionReady = false;
+                    invalidReason = 'Select at least one date to export.';
+                } else {
+                    cardsToExport = allCards.filter(card => {
+                        const date = card.createdAt && card.createdAt.split('T')[0];
+                        return date && selectedDates.includes(date);
+                    });
+                }
+            } else if (range === 'folder') {
+                if (selectedFolders.length === 0) {
+                    selectionReady = false;
+                    invalidReason = 'Select at least one folder to export.';
+                } else {
+                    cardsToExport = allCards.filter(card => {
+                        if (!card.folderId) {
+                            return selectedFolders.includes(NO_FOLDER_VALUE);
+                        }
+                        return selectedFolders.includes(card.folderId);
+                    });
+                }
+            }
+
+            if (selectionReady && format === 'category-zip' && range !== 'folder') {
+                selectionReady = false;
+                invalidReason = 'Category ZIP export works only with selected folders.';
+            }
+
+            if (selectionReady && cardsToExport.length === 0) {
+                invalidReason = 'No cards match the current selection.';
+            }
+
+            return {
+                format,
+                range,
+                selectedDates,
+                selectedFolders,
+                cardsToExport,
+                totalCards: cardsToExport.length,
+                selectionReady,
+                invalidReason
+            };
+        }
+
+        function toggleExportSelectionPanels(range) {
+            const dateSelection = document.getElementById('export-date-selection');
+            const folderSelection = document.getElementById('export-folder-selection');
+            if (dateSelection) dateSelection.classList.toggle('hidden', range !== 'date');
+            if (folderSelection) folderSelection.classList.toggle('hidden', range !== 'folder');
+        }
+
+        function filterExportFolderOptions() {
+            const filterInput = document.getElementById('export-folder-filter');
+            const checkboxContainer = document.getElementById('export-folder-checkboxes');
+            const emptyState = document.getElementById('export-folder-empty');
+            if (!checkboxContainer || !emptyState) return;
+
+            const query = (filterInput?.value || '').trim().toLowerCase();
+            const items = Array.from(checkboxContainer.querySelectorAll('.export-selection-item'));
+            const selectAllItem = items.find(item => item.querySelector('input')?.id === EXPORT_SELECT_ALL_ID) || null;
+            const folderItems = items.filter(item => item !== selectAllItem);
+
+            let visibleCount = 0;
+            folderItems.forEach(item => {
+                const matches = !query || (item.dataset.filterText || '').includes(query);
+                item.classList.toggle('hidden', !matches);
+                if (matches) visibleCount += 1;
+            });
+
+            if (selectAllItem) {
+                selectAllItem.classList.toggle('hidden', query !== '' || folderItems.length === 0);
+            }
+
+            emptyState.textContent = query ? 'No folders match this filter.' : 'No folders with cards available.';
+            const shouldShowEmptyState = visibleCount === 0;
+            emptyState.classList.toggle('hidden', !shouldShowEmptyState);
+        }
+
+        function updateExportOptionCardStates() {
+            document.querySelectorAll('.export-option-card').forEach(card => {
+                const input = card.querySelector('input');
+                card.classList.toggle('is-selected', !!input?.checked);
+            });
+
+            document.querySelectorAll('.export-selection-item').forEach(item => {
+                const input = item.querySelector('input[type="checkbox"]');
+                item.classList.toggle('is-selected', !!input?.checked);
+            });
+        }
+
+        function updateExportModalState() {
+            const state = getCurrentExportSelectionState();
+            const formatDetails = getExportFormatDetails(state.format);
+            const dateCount = document.querySelectorAll('#export-date-checkboxes input[type="checkbox"]').length;
+            const folderCount = getExportFolderCheckboxes().length;
+
+            toggleExportSelectionPanels(state.range);
+            filterExportFolderOptions();
+            updateExportOptionCardStates();
+
+            const allCountBadge = document.getElementById('export-all-count-badge');
+            if (allCountBadge) allCountBadge.textContent = formatExportCount(allCards.length);
+
+            const dateBadge = document.getElementById('export-date-count-badge');
+            if (dateBadge) {
+                dateBadge.textContent = state.selectedDates.length > 0
+                    ? `${state.selectedDates.length} selected`
+                    : `${dateCount} ${dateCount === 1 ? 'date' : 'dates'}`;
+            }
+
+            const folderBadge = document.getElementById('export-folder-count-badge');
+            if (folderBadge) {
+                folderBadge.textContent = state.selectedFolders.length > 0
+                    ? `${state.selectedFolders.length} selected`
+                    : `${folderCount} ${folderCount === 1 ? 'folder' : 'folders'}`;
+            }
+
+            const dateSelectionCount = document.getElementById('export-date-selection-count');
+            if (dateSelectionCount) {
+                dateSelectionCount.textContent = state.selectedDates.length > 0
+                    ? `${state.selectedDates.length} selected`
+                    : `${dateCount} available`;
+            }
+
+            const folderSelectionCount = document.getElementById('export-folder-selection-count');
+            if (folderSelectionCount) {
+                folderSelectionCount.textContent = state.selectedFolders.length > 0
+                    ? `${state.selectedFolders.length} selected`
+                    : `${folderCount} available`;
+            }
+
+            const summaryTitle = document.getElementById('export-summary-title');
+            const summaryDetail = document.getElementById('export-summary-detail');
+            const confirmButton = document.getElementById('confirm-export-btn');
+
+            let buttonLabel = formatDetails.action;
+            let titleText = formatDetails.title;
+            let detailText = formatDetails.helper;
+
+            if (!state.selectionReady || state.invalidReason) {
+                detailText = state.invalidReason || formatDetails.helper;
+            } else if (state.format === 'category-zip') {
+                titleText = `Export ${state.selectedFolders.length} ${state.selectedFolders.length === 1 ? 'folder' : 'folders'} as ZIP`;
+                detailText = `${formatExportCount(state.totalCards)} will be bundled into folder packages. ${formatDetails.helper}`;
+                buttonLabel = `Export ${state.selectedFolders.length} ${state.selectedFolders.length === 1 ? 'folder' : 'folders'}`;
+            } else if (formatDetails.action === 'Copy') {
+                titleText = `Copy ${formatExportCount(state.totalCards)}`;
+                if (state.range === 'all') {
+                    detailText = `All cards in your library. ${formatDetails.helper}`;
+                } else if (state.range === 'date') {
+                    detailText = `${state.selectedDates.length} ${state.selectedDates.length === 1 ? 'date' : 'dates'} selected. ${formatDetails.helper}`;
+                } else {
+                    detailText = `${state.selectedFolders.length} ${state.selectedFolders.length === 1 ? 'folder' : 'folders'} selected. ${formatDetails.helper}`;
+                }
+                buttonLabel = `Copy ${formatExportCount(state.totalCards)}`;
+            } else {
+                titleText = `Export ${formatExportCount(state.totalCards)}`;
+                if (state.range === 'all') {
+                    detailText = `All cards in your library. ${formatDetails.helper}`;
+                } else if (state.range === 'date') {
+                    detailText = `${state.selectedDates.length} ${state.selectedDates.length === 1 ? 'date' : 'dates'} selected, ${formatExportCount(state.totalCards)} match. ${formatDetails.helper}`;
+                } else {
+                    detailText = `${state.selectedFolders.length} ${state.selectedFolders.length === 1 ? 'folder' : 'folders'} selected, ${formatExportCount(state.totalCards)} match. ${formatDetails.helper}`;
+                }
+                buttonLabel = `Export ${formatExportCount(state.totalCards)}`;
+            }
+
+            if (summaryTitle) summaryTitle.textContent = titleText;
+            if (summaryDetail) summaryDetail.textContent = detailText;
+            if (confirmButton) {
+                confirmButton.textContent = buttonLabel;
+                confirmButton.disabled = !state.selectionReady || !!state.invalidReason;
+            }
+        }
+
+        function closeExportModal() {
+            const modal = document.getElementById('export-modal');
+            const clipboardOutputContainer = document.getElementById('clipboard-output-container');
+            const folderFilter = document.getElementById('export-folder-filter');
+            if (modal) modal.classList.add('hidden');
+            if (clipboardOutputContainer) clipboardOutputContainer.classList.add('hidden');
+            if (folderFilter) folderFilter.value = '';
         }
 
         async function handleConfirmExport() {
@@ -4980,7 +5462,7 @@
                     return;
                 }
                 await exportFoldersAsPackages(selectedFolders);
-                document.getElementById('export-modal').classList.add('hidden');
+                closeExportModal();
                 return;
             }
 
@@ -5030,7 +5512,7 @@
                 clipboardSuccessMessage = "Copied to clipboard and exported back-only TXT!";
             } else {
                 triggerExportDownload(cardsToExport, format, { range, selectedFolders, selectedDates });
-                document.getElementById('export-modal').classList.add('hidden');
+                closeExportModal();
                 return;
             }
 
@@ -5042,7 +5524,7 @@
             document.body.removeChild(tempInput);
             
             showNotification(clipboardSuccessMessage, "success");
-            document.getElementById('export-modal').classList.add('hidden');
+            closeExportModal();
         }
 
         function openExportModal() {
@@ -5050,28 +5532,31 @@
                 showNotification("There are no cards to export.", "success");
                 return;
             }
-            document.getElementById('export-all-radio').checked = true;
+            const activeFormat = document.querySelector('input[name="export-format"]:checked')?.value || 'txt';
             document.getElementById('export-date-selection').classList.add('hidden');
             document.getElementById('export-folder-selection').classList.add('hidden');
             document.getElementById('clipboard-output-container').classList.add('hidden');
+            const exportFolderFilter = document.getElementById('export-folder-filter');
+            if (exportFolderFilter) exportFolderFilter.value = '';
             
             const dates = [...new Set(allCards.map(card => card.createdAt && card.createdAt.split('T')[0]).filter(Boolean))].sort().reverse();
-            const exportDateSelection = document.getElementById('export-date-selection');
+            const exportDateSelection = document.getElementById('export-date-checkboxes');
+            const exportDateEmpty = document.getElementById('export-date-empty');
             exportDateSelection.innerHTML = '';
 
             if (dates.length > 0) {
                 dates.forEach(date => {
-                    const label = document.createElement('label');
-                    label.className = 'flex items-center space-x-2 text-gray-300 py-1';
-                    label.innerHTML = `<input type="checkbox" value="${date}" class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded"> <span>${date}</span>`;
-                    exportDateSelection.appendChild(label);
+                    createExportSelectionCheckbox(exportDateSelection, date, date);
                 });
                 document.getElementById('export-date-radio').disabled = false;
+                if (exportDateEmpty) exportDateEmpty.classList.add('hidden');
             } else {
                 document.getElementById('export-date-radio').disabled = true;
+                if (exportDateEmpty) exportDateEmpty.classList.remove('hidden');
             }
             
-            const exportFolderSelection = document.getElementById('export-folder-selection');
+            const exportFolderSelection = document.getElementById('export-folder-checkboxes');
+            const exportFolderEmpty = document.getElementById('export-folder-empty');
             exportFolderSelection.innerHTML = '';
             const counts = getFolderCardCounts();
             const options = [];
@@ -5116,18 +5601,13 @@
                 });
 
             if (options.length > 0) {
-                const selectAllRow = document.createElement('label');
-                selectAllRow.className = 'flex items-center space-x-2 text-gray-300 py-1 border-b border-gray-700 mb-1';
-                selectAllRow.innerHTML = `<input type="checkbox" id="${EXPORT_SELECT_ALL_ID}" class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded"> <span>Select all folders</span>`;
-                exportFolderSelection.appendChild(selectAllRow);
+                createExportSelectionCheckbox(exportFolderSelection, 'Select all folders', EXPORT_SELECT_ALL_ID, { inputId: EXPORT_SELECT_ALL_ID });
                 options.forEach(option => {
-                    createSelectionCheckbox(exportFolderSelection, option.label, option.value);
+                    createExportSelectionCheckbox(exportFolderSelection, option.label, option.value);
                 });
+                if (exportFolderEmpty) exportFolderEmpty.classList.add('hidden');
             } else {
-                const message = document.createElement('p');
-                message.className = 'text-sm text-gray-500 py-1';
-                message.textContent = 'No folders with cards available.';
-                exportFolderSelection.appendChild(message);
+                if (exportFolderEmpty) exportFolderEmpty.classList.remove('hidden');
             }
 
             const exportFolderRadio = document.getElementById('export-folder-radio');
@@ -5135,7 +5615,14 @@
                 exportFolderRadio.disabled = options.length === 0;
             }
 
+            if (activeFormat === 'category-zip' && exportFolderRadio && !exportFolderRadio.disabled) {
+                exportFolderRadio.checked = true;
+            } else {
+                document.getElementById('export-all-radio').checked = true;
+            }
+
             syncExportFolderSelectAllCheckbox();
+            updateExportModalState();
 
             document.getElementById('export-modal').classList.remove('hidden');
         }
@@ -6425,10 +6912,7 @@
             });
             document.getElementById('export-btn').addEventListener('click', openExportModal);
             document.getElementById('confirm-export-btn').addEventListener('click', handleConfirmExport);
-            document.getElementById('cancel-export-btn').addEventListener('click', () => {
-                document.getElementById('export-modal').classList.add('hidden');
-                document.getElementById('clipboard-output-container').classList.add('hidden');
-            });
+            document.getElementById('cancel-export-btn').addEventListener('click', closeExportModal);
             document.getElementById('copy-clipboard-btn').addEventListener('click', () => {
                 const tempInput = document.createElement('textarea');
                 tempInput.value = document.getElementById('clipboard-output').value;
@@ -6437,6 +6921,11 @@
                 document.execCommand('copy');
                 document.body.removeChild(tempInput);
                 showNotification("Copied to clipboard!", "success");
+            });
+            document.getElementById('export-modal').addEventListener('click', (event) => {
+                if (event.target === document.getElementById('export-modal')) {
+                    closeExportModal();
+                }
             });
             document.querySelectorAll('input[name="export-format"]').forEach(radio => {
                 radio.addEventListener('change', () => {
@@ -6450,25 +6939,14 @@
                             folderRadio.dispatchEvent(new Event('change', { bubbles: true }));
                         }
                     }
+                    updateExportModalState();
                 });
             });
-            document.getElementById('export-all-radio').addEventListener('change', (e) => {
-                if(e.target.checked) {
-                    document.getElementById('export-date-selection').classList.add('hidden');
-                    document.getElementById('export-folder-selection').classList.add('hidden');
-                }
-            });
-            document.getElementById('export-date-radio').addEventListener('change', (e) => {
-                if(e.target.checked) {
-                    document.getElementById('export-date-selection').classList.remove('hidden');
-                    document.getElementById('export-folder-selection').classList.add('hidden');
-                }
-            });
-            document.getElementById('export-folder-radio').addEventListener('change', (e) => {
-                if(e.target.checked) {
-                    document.getElementById('export-folder-selection').classList.remove('hidden');
-                    document.getElementById('export-date-selection').classList.add('hidden');
-                }
+            document.getElementById('export-all-radio').addEventListener('change', updateExportModalState);
+            document.getElementById('export-date-radio').addEventListener('change', updateExportModalState);
+            document.getElementById('export-folder-radio').addEventListener('change', updateExportModalState);
+            document.getElementById('export-date-selection').addEventListener('change', () => {
+                updateExportModalState();
             });
             document.getElementById('export-folder-selection').addEventListener('change', (event) => {
                 const target = event.target;
@@ -6477,7 +6955,12 @@
                     toggleAllExportFolders(target.checked);
                 }
                 syncExportFolderSelectAllCheckbox();
+                updateExportModalState();
             });
+            const exportFolderFilter = document.getElementById('export-folder-filter');
+            if (exportFolderFilter) {
+                exportFolderFilter.addEventListener('input', filterExportFolderOptions);
+            }
             const deleteDateRadio = document.getElementById('delete-date-radio');
             if (deleteDateRadio) {
                 deleteDateRadio.addEventListener('change', () => {
@@ -6581,6 +7064,12 @@
                 if (e.key === 'Escape' && singleCardMoveModal && !singleCardMoveModal.classList.contains('hidden')) {
                     e.preventDefault();
                     closeSingleCardMoveModal();
+                    return;
+                }
+                const exportModal = document.getElementById('export-modal');
+                if (e.key === 'Escape' && exportModal && !exportModal.classList.contains('hidden')) {
+                    e.preventDefault();
+                    closeExportModal();
                     return;
                 }
                 const formInputs = ['front', 'back', 'beispiel', 'translation'];
