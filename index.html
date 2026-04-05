@@ -4327,7 +4327,8 @@
         }
 
         function handleReviewKeyboard(e) {
-            if (document.activeElement.id === 'in-review-search-input' || (document.activeElement.tagName === 'TEXTAREA' && isReviewEditing)) return;
+            if (document.activeElement.id === 'in-review-search-input') return;
+            if (isReviewEditing) return;
 
             const reviewMoveModal = document.getElementById('review-move-card-modal');
             const isReviewMoveModalOpen = reviewMoveModal && !reviewMoveModal.classList.contains('hidden');
@@ -6116,11 +6117,7 @@
             document.getElementById('save-review-edit-btn').classList.remove('hidden');
             document.getElementById('cancel-review-edit-btn').classList.remove('hidden');
             isReviewEditing = true;
-            editBeispiel.focus();
-            setTimeout(() => {
-                 const len = editBeispiel.value.length;
-                 editBeispiel.setSelectionRange(len, len);
-            }, 0);
+            focusReviewEditTextarea();
         }
 
         function exitReviewEditMode() {
@@ -6136,6 +6133,22 @@
             document.getElementById('save-review-edit-btn').classList.add('hidden');
             document.getElementById('cancel-review-edit-btn').classList.add('hidden');
             isReviewEditing = false;
+        }
+
+        function focusReviewEditTextarea() {
+            const editBeispiel = document.getElementById('edit-beispiel');
+            if (!editBeispiel) return;
+
+            const focusAtEnd = () => {
+                if (!isReviewEditing || editBeispiel.classList.contains('hidden')) return;
+                editBeispiel.focus({ preventScroll: true });
+                const len = editBeispiel.value.length;
+                editBeispiel.setSelectionRange(len, len);
+            };
+
+            focusAtEnd();
+            requestAnimationFrame(focusAtEnd);
+            setTimeout(focusAtEnd, 0);
         }
 
         async function saveReviewEdit() {
