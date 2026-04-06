@@ -4702,14 +4702,17 @@
             const speechBox = document.getElementById('speech');
             const beispielSpeechBox = document.getElementById('beispiel-speech');
             const { id: selectedFolderId, name: selectedFolderName } = getSelectedFolderDetails();
+            const normalizedBack = back.value.trim();
+            const formattedBeispiel = formatMultiLine(beispiel.value);
+            const formattedTranslation = formatMultiLine(translation.value);
 
             const cardData = {
                 front: normalizeCardFrontValue(front.value),
-                back: back.value.trim(),
-                speech: getSpeechRawValue(speechBox),
-                beispiel: formatMultiLine(beispiel.value),
-                beispielSpeech: getSpeechRawValue(beispielSpeechBox),
-                translation: formatMultiLine(translation.value),
+                back: normalizedBack,
+                speech: resolveSpeechValue(normalizedBack, getSpeechRawValue(speechBox)),
+                beispiel: formattedBeispiel,
+                beispielSpeech: resolveBeispielSpeechValue(normalizedBack, formattedBeispiel, getSpeechRawValue(beispielSpeechBox)),
+                translation: formattedTranslation,
                 folderId: selectedFolderId,
                 folderName: selectedFolderName,
                 createdAt: new Date().toISOString()
@@ -4730,13 +4733,16 @@
              const speechBox = document.getElementById('speech');
              const beispielSpeechBox = document.getElementById('beispiel-speech');
              const { id: selectedFolderId, name: selectedFolderName } = getSelectedFolderDetails();
+             const normalizedBack = back.value.trim();
+             const formattedBeispiel = formatMultiLine(beispiel.value);
+             const formattedTranslation = formatMultiLine(translation.value);
              const cardData = {
                 front: normalizeCardFrontValue(front.value),
-                back: back.value.trim(),
-                speech: getSpeechRawValue(speechBox),
-                beispiel: formatMultiLine(beispiel.value),
-                beispielSpeech: getSpeechRawValue(beispielSpeechBox),
-                translation: formatMultiLine(translation.value),
+                back: normalizedBack,
+                speech: resolveSpeechValue(normalizedBack, getSpeechRawValue(speechBox)),
+                beispiel: formattedBeispiel,
+                beispielSpeech: resolveBeispielSpeechValue(normalizedBack, formattedBeispiel, getSpeechRawValue(beispielSpeechBox)),
+                translation: formattedTranslation,
                 folderId: selectedFolderId,
                 folderName: selectedFolderName,
                 createdAt: allCards.find(c => c.id === currentEditId)?.createdAt || new Date().toISOString()
