@@ -313,7 +313,7 @@
                         <button id="cancel-review-edit-btn" class="btn btn-secondary hidden"><i class="fas fa-times"></i> Cancel</button>
                         <button id="mark-edited-btn" class="btn btn-secondary" title="Mark as Edited (M)"><i class="fas fa-check"></i></button>
                         <button id="move-review-card-btn" class="btn btn-secondary" title="Move Card (V)"><i class="fas fa-right-left"></i></button>
-                        <button id="delete-review-card-btn" class="btn btn-danger"><i class="fas fa-trash-alt"></i></button>
+                        <button id="delete-review-card-btn" class="btn btn-danger" title="Delete Card (D)"><i class="fas fa-trash-alt"></i></button>
                         <label class="toggle-label flex items-center cursor-pointer">
                             <span class="mr-2 text-sm font-medium">Skip Delay</span>
                             <div class="relative">
@@ -746,7 +746,6 @@
         let isSignUpMode = false;
         let isReviewEditing = false;
         let currentReviewDate = "all";
-        let deleteShortcutState = { pending: false, timeoutId: null };
         let hasRestoredFolderPreference = false;
         let hasRestoredLastMovedFolderPreference = false;
         let isFolderSidebarReversed = false;
@@ -857,7 +856,7 @@
             const normalizedValue = unformatMultiLine(String(value || ''));
             if (!normalizedValue) return '';
 
-            if (isReviewWordOnlyMode() || isReviewSkipDelayEnabled()) {
+            if (isReviewWordOnlyMode()) {
                 const backTerms = splitSemicolonTerms(normalizedValue);
                 if (backTerms.length > 1) {
                     const strippedTerms = backTerms.map(stripLeadingWord).filter(Boolean);
@@ -895,14 +894,6 @@
                 clearTimeout(reviewSession.autoSkipTimer);
                 reviewSession.autoSkipTimer = null;
             }
-        }
-
-        function resetDeleteShortcut() {
-            if (deleteShortcutState.timeoutId) {
-                clearTimeout(deleteShortcutState.timeoutId);
-                deleteShortcutState.timeoutId = null;
-            }
-            deleteShortcutState.pending = false;
         }
 
         function getSourceSlotMeta(sourceId) {
@@ -4435,10 +4426,17 @@
             const deleteModal = document.getElementById('delete-modal');
             const isDeleteModalOpen = deleteModal && !deleteModal.classList.contains('hidden');
             if (isDeleteModalOpen) {
-                if (e.key === 'Delete') {
+                if (e.key === 'Escape') {
                     e.preventDefault();
-                    resetDeleteShortcut();
-                    document.getElementById('confirm-delete-btn').click();
+                    closeDeleteModal();
+                    return;
+                }
+                if (e.key === 'd' || e.key === 'D' || e.key === 'Delete') {
+                    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+                    if (confirmDeleteBtn && !confirmDeleteBtn.disabled) {
+                        e.preventDefault();
+                        confirmDeleteBtn.click();
+                    }
                 }
                 return;
             }
@@ -4455,16 +4453,6 @@
             if (e.key === 'b' || e.key === 'B') document.querySelector('[data-target="review-back"]').click();
             if (e.key === 'd' || e.key === 'D') {
                 e.preventDefault();
-                if (!deleteShortcutState.pending) {
-                    deleteShortcutState.pending = true;
-                    deleteShortcutState.timeoutId = setTimeout(() => {
-                        deleteShortcutState.pending = false;
-                        deleteShortcutState.timeoutId = null;
-                    }, 2000);
-                    showNotification("Press D again to open delete confirmation.", "error", 2000);
-                    return;
-                }
-                resetDeleteShortcut();
                 document.getElementById('delete-review-card-btn').click();
                 return;
             }
@@ -4512,7 +4500,6 @@
                 return;
             }
             if (e.key === 'Delete') {
-                resetDeleteShortcut();
                 document.getElementById('delete-review-card-btn').click();
             }
             if (e.key === 'm' || e.key === 'M') document.getElementById('mark-edited-btn').click();
@@ -4654,8 +4641,6 @@
             reviewSession.cards = [...cardsForReview];
             reviewSession.currentIndex = 0;
             reviewSession.editedCardIds = new Set(cardsForReview.filter(card => card.reviewEdited).map(card => card.id));
-            resetDeleteShortcut();
-            
             // Fetch persisted edited IDs
             if (userId && currentReviewSessionId) {
                 try {
@@ -4679,7 +4664,6 @@
         
         function endReviewSession() {
             clearAutoSkipTimer();
-            resetDeleteShortcut();
             closeReviewMoveCardModal();
             reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, beispielCopyIndex: 0, beispielSpeechCopyIndex: 0, editedCardIds: new Set(), originalCards: [] };
             currentReviewSessionId = null;
@@ -4807,7 +4791,6 @@
 
         async function handleDeleteConfirmed() {
             if (!cardToDeleteId || !userId) return;
-            resetDeleteShortcut();
             await deleteCardById(cardToDeleteId, {
                 isReviewDelete: reviewSession.cards.length > 0,
                 shouldRecoverDuplicateView: isDuplicatesViewActive()
@@ -6423,7 +6406,6 @@
             document.getElementById('cancel-btn').addEventListener('click', () => setEditMode(false));
             document.getElementById('confirm-delete-btn').addEventListener('click', handleDeleteConfirmed);
             document.getElementById('cancel-delete-btn').addEventListener('click', () => {
-                resetDeleteShortcut();
                 closeDeleteModal();
             });
             document.getElementById('import-btn').addEventListener('click', () => document.getElementById('import-file-input').click());
@@ -6521,7 +6503,6 @@
             document.getElementById('prev-card-btn').addEventListener('click', () => handleReviewNav(-1));
             document.getElementById('end-review-btn').addEventListener('click', endReviewSession);
             document.getElementById('delete-review-card-btn').addEventListener('click', () => {
-                resetDeleteShortcut();
                 if (reviewSession.cards[reviewSession.currentIndex]) {
                     openDeleteModal(reviewSession.cards[reviewSession.currentIndex].id);
                 }
