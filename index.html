@@ -4743,6 +4743,8 @@
             if (!cardId || !userId) return false;
 
             try {
+                let copiedNextCardBack = false;
+                let failedToCopyNextCardBack = false;
                 let cardData = allCards.find(card => card.id === cardId);
                 if (!cardData && cardsCollectionRef) {
                     try {
@@ -4762,24 +4764,39 @@
                     pendingDuplicateViewRecovery = true;
                 }
                 await deleteDoc(docRef);
+                closeDeleteModal();
                 
                 if (isReviewDelete) {
-                    const deletedIndex = reviewSession.cards.findIndex(c => c.id === cardId);
-                    if (deletedIndex > -1) {
-                         reviewSession.cards.splice(deletedIndex, 1);
-                         if (reviewSession.currentIndex >= deletedIndex) {
-                             reviewSession.currentIndex = Math.max(0, reviewSession.currentIndex - 1);
-                         }
-                         if (reviewSession.cards.length === 0) {
-                            endReviewSession();
-                            showNotification("Last card in review deleted. Session ended.", "success");
-                         } else {
-                            renderReviewCard();
-                         }
+                    const removalState = removeCardFromReviewSession(cardId, { preferNextCard: true });
+                    await persistReviewSessionEditedIds();
+
+                    if (!removalState.hasRemainingCards) {
+                        endReviewSession();
+                        showNotification("Last card in review deleted. Session ended.", "success");
+                        return true;
                     }
+
+                    renderReviewCard();
+
+                    if (removalState.hasVisibleCards) {
+                        try {
+                            copiedNextCardBack = copyReviewBackToClipboard();
+                        } catch (error) {
+                            console.error('Failed to copy next review card back after delete:', error);
+                            failedToCopyNextCardBack = true;
+                        }
+                    }
+
+                    if (copiedNextCardBack) {
+                        showNotification("Card deleted. Copied next card's back.", "success");
+                    } else if (failedToCopyNextCardBack) {
+                        showNotification("Card deleted, but copying the next card's back failed.", "error");
+                    } else {
+                        showNotification("Card deleted.", "success");
+                    }
+                    return true;
                 }
                 
-                closeDeleteModal();
                 showNotification("Card deleted.", "success");
                 return true;
             } catch (error) {
