@@ -43,6 +43,8 @@
         .review-sound-pill { transition: background-color 0.15s ease, box-shadow 0.15s ease; }
         .sound-pill-active { box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.6); background-color: rgba(0, 122, 204, 0.15); }
         .toggle-label .dot { transition: transform 0.2s ease-in-out; }
+        #review-folder-order-toggle:checked ~ .dot { transform: translateX(100%); background-color: #0f766e; }
+        #review-folder-order-toggle:checked ~ .block { background-color: #14b8a6; }
         #auto-skip-toggle:checked ~ .dot { transform: translateX(100%); background-color: #27ae60; }
         #auto-skip-toggle:checked ~ .block { background-color: #2ecc71; }
         #pause-timer-toggle:checked ~ .dot { transform: translateX(100%); background-color: #c0392b; }
@@ -285,6 +287,17 @@
                     <div>
                         <label for="review-folder-selector" class="anki-label mb-2 block">Select Folder:</label>
                         <select id="review-folder-selector" class="anki-input"></select>
+                    </div>
+                    <div>
+                        <label class="toggle-label flex items-center justify-between rounded-lg border border-[#2a2a2a] bg-[#111] px-3 py-2 cursor-pointer">
+                            <span class="text-sm font-medium text-gray-200">Reverse Folder Order</span>
+                            <div class="relative">
+                                <input type="checkbox" id="review-folder-order-toggle" class="sr-only">
+                                <div class="block bg-gray-600 w-10 h-6 rounded-full"></div>
+                                <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full"></div>
+                            </div>
+                        </label>
+                        <p class="text-xs text-gray-500 mt-1">Only affects this review setup and resets when you reopen it.</p>
                     </div>
                     <div>
                         <label for="review-date-selector" class="anki-label mb-2 block">Select Date:</label>
@@ -821,6 +834,19 @@
         function isReviewMissingOnly() {
             const toggle = document.getElementById('review-missing-only-toggle');
             return !!(toggle && toggle.checked);
+        }
+
+        function isReviewFolderOrderReversed() {
+            const toggle = document.getElementById('review-folder-order-toggle');
+            return !!(toggle && toggle.checked);
+        }
+
+        function resetReviewFolderOrderToggle() {
+            const toggle = document.getElementById('review-folder-order-toggle');
+            if (toggle) {
+                toggle.checked = false;
+            }
+            renderReviewFolderOptions();
         }
 
         function isReviewBackOnlyMode() {
@@ -2019,7 +2045,7 @@
 
         function renderReviewFolderOptions() {
             const selector = document.getElementById('review-folder-selector');
-            currentReviewFolderId = populateFolderSelect(selector, currentReviewFolderId, { reverseFolders: true });
+            currentReviewFolderId = populateFolderSelect(selector, currentReviewFolderId, { reverseFolders: isReviewFolderOrderReversed() });
         }
 
         function renderViewFolderOptions() {
@@ -4667,6 +4693,7 @@
             closeReviewMoveCardModal();
             reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, beispielCopyIndex: 0, beispielSpeechCopyIndex: 0, editedCardIds: new Set(), originalCards: [] };
             currentReviewSessionId = null;
+            resetReviewFolderOrderToggle();
             document.getElementById('main-app').classList.remove('hidden');
             document.getElementById('review-modal').classList.add('hidden');
             document.getElementById('review-setup').classList.remove('hidden');
@@ -6323,6 +6350,13 @@
                     updateReviewDateSelector();
                 });
             }
+            const reviewFolderOrderToggle = document.getElementById('review-folder-order-toggle');
+            if (reviewFolderOrderToggle) {
+                reviewFolderOrderToggle.addEventListener('change', () => {
+                    renderReviewFolderOptions();
+                    updateReviewDateSelector();
+                });
+            }
             const reviewMissingToggle = document.getElementById('review-missing-only-toggle');
             if (reviewMissingToggle) {
                 reviewMissingToggle.addEventListener('change', updateReviewDateSelector);
@@ -6511,6 +6545,8 @@
                 });
             }
             document.getElementById('review-btn').addEventListener('click', () => {
+                resetReviewFolderOrderToggle();
+                updateReviewDateSelector();
                 document.getElementById('main-app').classList.add('hidden');
                 document.getElementById('review-modal').classList.remove('hidden');
             });
