@@ -1812,25 +1812,34 @@
             }
             if (emptyState) emptyState.classList.add('hidden');
 
-            const counts = getFolderCardCounts();
+            const folderStats = getFolderCardStats();
             sortedFolders.forEach(folder => {
                 const baseName = (folder.name || '').trim() || 'Untitled Folder';
-                const count = Number.isFinite(counts[folder.id]) ? counts[folder.id] : 0;
+                const stats = folderStats[folder.id] || { count: 0, missingBeispielCount: 0 };
+                const count = Number.isFinite(stats.count) ? stats.count : 0;
+                const missingBeispielCount = Number.isFinite(stats.missingBeispielCount) ? stats.missingBeispielCount : 0;
                 const button = document.createElement('button');
                 button.type = 'button';
                 button.className = 'w-full text-left px-3 py-2 rounded-lg bg-[#161616] hover:bg-[#1e1e1e] border border-transparent hover:border-[#2a2a2a] transition';
-                button.title = `Copy "${baseName}"`;
+                button.title = `Copy "${baseName}" (${count} card${count === 1 ? '' : 's'}, ${missingBeispielCount} without example sentence${missingBeispielCount === 1 ? '' : 's'})`;
 
                 const row = document.createElement('div');
                 row.className = 'flex items-center gap-2';
                 const nameEl = document.createElement('span');
                 nameEl.className = 'text-sm font-semibold text-gray-200 truncate flex-1 min-w-0';
                 nameEl.textContent = baseName;
+                const statsEl = document.createElement('div');
+                statsEl.className = 'flex flex-col items-end shrink-0 text-right leading-tight';
                 const countEl = document.createElement('span');
-                countEl.className = 'text-xs text-gray-500 shrink-0';
+                countEl.className = 'text-xs text-gray-500';
                 countEl.textContent = `${count} card${count === 1 ? '' : 's'}`;
+                const missingEl = document.createElement('span');
+                missingEl.className = `text-[11px] ${missingBeispielCount > 0 ? 'text-amber-400' : 'text-emerald-500/80'}`;
+                missingEl.textContent = `${missingBeispielCount} no example`;
                 row.appendChild(nameEl);
-                row.appendChild(countEl);
+                statsEl.appendChild(countEl);
+                statsEl.appendChild(missingEl);
+                row.appendChild(statsEl);
                 button.appendChild(row);
 
                 button.addEventListener('click', () => {
@@ -1978,6 +1987,28 @@
                 counts[folderKey] += 1;
             });
             return counts;
+        }
+
+        function getFolderCardStats() {
+            const stats = {
+                [ALL_FOLDERS_VALUE]: { count: allCards.length, missingBeispielCount: 0 },
+                [NO_FOLDER_VALUE]: { count: 0, missingBeispielCount: 0 }
+            };
+            folders.forEach(folder => {
+                stats[folder.id] = { count: 0, missingBeispielCount: 0 };
+            });
+            allCards.forEach(card => {
+                const folderKey = card.folderId ? card.folderId : NO_FOLDER_VALUE;
+                if (!stats[folderKey]) {
+                    stats[folderKey] = { count: 0, missingBeispielCount: 0 };
+                }
+                stats[folderKey].count += 1;
+                if (!cardHasBeispiel(card)) {
+                    stats[folderKey].missingBeispielCount += 1;
+                    stats[ALL_FOLDERS_VALUE].missingBeispielCount += 1;
+                }
+            });
+            return stats;
         }
 
         function buildFolderSelectOptions({ reverseFolders = false } = {}) {
