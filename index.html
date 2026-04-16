@@ -6793,7 +6793,9 @@
                         }
                     } else if (e.key === 'r' || e.key === 'R') {
                         e.preventDefault();
-                        document.getElementById('review-btn').click();
+                        document.getElementById('review-modal').classList.contains('hidden')
+                            ? document.getElementById('review-btn').click()
+                            : document.getElementById('start-session-btn').click();
                     } else if (e.key === ' ') { 
                         e.preventDefault(); 
                         document.getElementById('review-modal').classList.contains('hidden') ? document.getElementById('review-btn').click() : document.getElementById('start-session-btn').click(); 
