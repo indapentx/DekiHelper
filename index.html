@@ -324,7 +324,7 @@
                         <button id="edit-review-card-btn" class="btn btn-secondary" title="Edit (T)"><i class="fas fa-pencil-alt"></i> Edit</button>
                         <button id="save-review-edit-btn" class="btn btn-success hidden"><i class="fas fa-check"></i> Save</button>
                         <button id="cancel-review-edit-btn" class="btn btn-secondary hidden"><i class="fas fa-times"></i> Cancel</button>
-                        <button id="mark-edited-btn" class="btn btn-secondary" title="Mark as Edited (M)"><i class="fas fa-check"></i></button>
+                        <button id="mark-edited-btn" class="btn btn-secondary" title="Mark as Edited"><i class="fas fa-check"></i></button>
                         <button id="move-review-card-btn" class="btn btn-secondary" title="Move Card (V)"><i class="fas fa-right-left"></i></button>
                         <button id="delete-review-card-btn" class="btn btn-danger" title="Delete Card (D)"><i class="fas fa-trash-alt"></i></button>
                         <label class="toggle-label flex items-center cursor-pointer">
@@ -405,9 +405,9 @@
                     </div>
                 </div>
                 <div class="flex justify-between items-center mt-6">
-                    <button id="prev-card-btn" class="btn btn-secondary btn-lg"><i class="fas fa-arrow-left"></i> Previous</button>
+                    <button id="prev-card-btn" class="btn btn-secondary btn-lg" title="Previous (N)"><i class="fas fa-arrow-left"></i> Previous</button>
                     <button id="end-review-btn" class="btn btn-danger btn-lg">End Review</button>
-                    <button id="next-card-btn" class="btn btn-secondary btn-lg">Next <i class="fas fa-arrow-right"></i></button>
+                    <button id="next-card-btn" class="btn btn-secondary btn-lg" title="Next (M)">Next <i class="fas fa-arrow-right"></i></button>
                 </div>
             </div>
         </div>
@@ -721,6 +721,7 @@
         const EXPORT_SELECT_ALL_ID = 'export-folder-select-all-checkbox';
         const FOLDER_STORAGE_KEY = 'deki-helper-current-folder';
         const LAST_MOVED_FOLDER_STORAGE_KEY = 'deki-helper-last-moved-folder';
+        const LAST_REVIEWED_FOLDER_STORAGE_KEY = 'deki-helper-last-reviewed-folder';
         const FIREBASE_FUNCTIONS_REGION = 'us-central1';
         const EXAMPLE_SOURCE_SLOTS = [
             { id: 'A1', label: 'A1', defaultFileName: 'A1.json' },
@@ -761,6 +762,7 @@
         let currentReviewDate = "all";
         let hasRestoredFolderPreference = false;
         let hasRestoredLastMovedFolderPreference = false;
+        let hasRestoredLastReviewedFolderPreference = false;
         let isFolderSidebarReversed = false;
         let isBulkTranslating = false;
         let isFixingLegacyFronts = false;
@@ -1576,6 +1578,35 @@
             }
         }
 
+        function isReviewFolderValueValid(value) {
+            return value === ALL_FOLDERS_VALUE || value === NO_FOLDER_VALUE || folders.some(folder => folder.id === value);
+        }
+
+        function restoreLastReviewedFolderPreference() {
+            if (hasRestoredLastReviewedFolderPreference) return;
+            hasRestoredLastReviewedFolderPreference = true;
+            try {
+                const storedValue = localStorage.getItem(LAST_REVIEWED_FOLDER_STORAGE_KEY);
+                if (!storedValue) return;
+                currentReviewFolderId = isReviewFolderValueValid(storedValue)
+                    ? storedValue
+                    : ALL_FOLDERS_VALUE;
+                if (currentReviewFolderId !== storedValue) {
+                    persistLastReviewedFolderPreference();
+                }
+            } catch (error) {
+                console.warn('Failed to restore last reviewed folder preference:', error);
+            }
+        }
+
+        function persistLastReviewedFolderPreference() {
+            try {
+                localStorage.setItem(LAST_REVIEWED_FOLDER_STORAGE_KEY, currentReviewFolderId || ALL_FOLDERS_VALUE);
+            } catch (error) {
+                console.warn('Failed to persist last reviewed folder preference:', error);
+            }
+        }
+
         function ensureCurrentFolderIsValid() {
             if (!currentFolderId) return;
             const exists = folders.some(folder => folder.id === currentFolderId);
@@ -1594,9 +1625,20 @@
             }
         }
 
+        function ensureLastReviewedFolderIsValid() {
+            if (isReviewFolderValueValid(currentReviewFolderId)) return;
+            currentReviewFolderId = ALL_FOLDERS_VALUE;
+            persistLastReviewedFolderPreference();
+        }
+
         function rememberLastMovedFolder(value) {
             lastMovedFolderId = value === NO_FOLDER_VALUE ? null : (value || null);
             persistLastMovedFolderPreference();
+        }
+
+        function rememberLastReviewedFolder(value) {
+            currentReviewFolderId = value || ALL_FOLDERS_VALUE;
+            persistLastReviewedFolderPreference();
         }
 
         function updateFolderSelection(value, { persist = true, updateSelect = true } = {}) {
@@ -4180,6 +4222,11 @@
             if (startSessionBtn) startSessionBtn.disabled = relevantCards.length === 0;
         }
 
+        function releaseReviewSetupControlFocus(control) {
+            if (!control || typeof control.blur !== 'function') return;
+            requestAnimationFrame(() => control.blur());
+        }
+
         function updateProgressBar() {
             const bar = document.getElementById('review-progress-bar');
             if(!bar || !reviewSession.cards || reviewSession.cards.length === 0) return;
@@ -4491,8 +4538,16 @@
                 return;
             }
             
-            if (e.key === 'ArrowRight') handleReviewNav(1);
-            if (e.key === 'ArrowLeft') handleReviewNav(-1);
+            if (e.key === 'ArrowRight' || e.key === 'm' || e.key === 'M') {
+                e.preventDefault();
+                handleReviewNav(1);
+                return;
+            }
+            if (e.key === 'ArrowLeft' || e.key === 'n' || e.key === 'N') {
+                e.preventDefault();
+                handleReviewNav(-1);
+                return;
+            }
             if (e.key === 'f' || e.key === 'F') {
                 const frontBtn = document.querySelector('[data-target="review-front"]');
                 if (frontBtn) {
@@ -4552,7 +4607,6 @@
             if (e.key === 'Delete') {
                 document.getElementById('delete-review-card-btn').click();
             }
-            if (e.key === 'm' || e.key === 'M') document.getElementById('mark-edited-btn').click();
             if (e.key === 'v' || e.key === 'V') {
                 e.preventDefault();
                 document.getElementById('move-review-card-btn').click();
@@ -4685,6 +4739,7 @@
                 return;
             }
 
+            rememberLastReviewedFolder(selectedFolder);
             currentReviewSessionId = buildReviewSessionId(selectedDate, selectedFolder, missingOnly);
 
             reviewSession.originalCards = [...cardsForReview];
@@ -5381,6 +5436,7 @@
             currentReviewFolderId = ALL_FOLDERS_VALUE;
             currentReviewSessionId = null;
             currentReviewDate = 'all';
+            hasRestoredLastReviewedFolderPreference = false;
             currentViewFolderId = ALL_FOLDERS_VALUE;
             currentExampleFolderId = ALL_FOLDERS_VALUE;
             updateFolderSelection(NO_FOLDER_VALUE, { persist: false, updateSelect: false });
@@ -5469,8 +5525,10 @@
                 snapshot.forEach(folderDoc => folders.push({ id: folderDoc.id, ...folderDoc.data() }));
                 restoreFolderPreference();
                 restoreLastMovedFolderPreference();
+                restoreLastReviewedFolderPreference();
                 ensureCurrentFolderIsValid();
                 ensureLastMovedFolderIsValid();
+                ensureLastReviewedFolderIsValid();
                 renderFolderOptions();
                 applyPendingExternalEditRequest();
                 filterAndRenderCards();
@@ -6202,6 +6260,7 @@
                 }
                 if (currentReviewFolderId === folderId) {
                     currentReviewFolderId = ALL_FOLDERS_VALUE;
+                    persistLastReviewedFolderPreference();
                     const reviewSelector = document.getElementById('review-folder-selector');
                     if (reviewSelector) reviewSelector.value = ALL_FOLDERS_VALUE;
                 }
@@ -6357,6 +6416,7 @@
             const folderSelectEl = document.getElementById('folder-select');
             const folderNameInput = document.getElementById('folder-name-input');
             const reviewFolderSelector = document.getElementById('review-folder-selector');
+            const reviewDateSelector = document.getElementById('review-date-selector');
             const viewFolderSelector = document.getElementById('view-folder-selector');
             
             document.getElementById('auth-form').addEventListener('submit', handleAuthSubmit);
@@ -6372,18 +6432,29 @@
                 reviewFolderSelector.addEventListener('change', (event) => {
                     currentReviewFolderId = event.target.value;
                     updateReviewDateSelector();
+                    releaseReviewSetupControlFocus(event.target);
+                });
+            }
+            if (reviewDateSelector) {
+                reviewDateSelector.addEventListener('change', (event) => {
+                    currentReviewDate = event.target.value;
+                    releaseReviewSetupControlFocus(event.target);
                 });
             }
             const reviewFolderOrderToggle = document.getElementById('review-folder-order-toggle');
             if (reviewFolderOrderToggle) {
-                reviewFolderOrderToggle.addEventListener('change', () => {
+                reviewFolderOrderToggle.addEventListener('change', (event) => {
                     renderReviewFolderOptions();
                     updateReviewDateSelector();
+                    releaseReviewSetupControlFocus(event.target);
                 });
             }
             const reviewMissingToggle = document.getElementById('review-missing-only-toggle');
             if (reviewMissingToggle) {
-                reviewMissingToggle.addEventListener('change', updateReviewDateSelector);
+                reviewMissingToggle.addEventListener('change', (event) => {
+                    updateReviewDateSelector();
+                    releaseReviewSetupControlFocus(event.target);
+                });
             }
             if (viewFolderSelector) {
                 viewFolderSelector.addEventListener('change', (event) => {
