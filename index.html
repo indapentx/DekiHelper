@@ -894,7 +894,7 @@
             }
 
             if (isReviewBackOnlyMode()) {
-                return normalizedValue;
+                return `Das Wort ist... ${ensureTrailingDot(normalizedValue)}`;
             }
 
             return normalizedValue;
@@ -908,6 +908,13 @@
             if (!backTextToCopy) return false;
             copyPlainTextToClipboard(backTextToCopy);
             return true;
+        }
+
+        function ensureTrailingDot(value) {
+            const trimmed = (value || '').trim();
+            if (!trimmed) return trimmed;
+            if (/[.!?]$/.test(trimmed)) return trimmed;
+            return `${trimmed}.`;
         }
 
         function clearAutoSkipTimer() {
