@@ -931,13 +931,12 @@
             return true;
         }
 
-        function copyRawReviewBackWithDotAndSkip() {
+        function copyRawReviewBackWithDot() {
             clearAutoSkipTimer();
             if (reviewSession.currentIndex === -1) return;
             const card = reviewSession.cards[reviewSession.currentIndex];
             if (!copyRawReviewBackWithDotToClipboard(card)) return;
             showNotification('Copied raw back.', 'success', 1500);
-            handleReviewNav(1);
         }
 
         function clearAutoSkipTimer() {
@@ -4588,7 +4587,7 @@
             if (e.key === 'b' || e.key === 'B') document.querySelector('[data-target="review-back"]').click();
             if (e.key === 'h' || e.key === 'H') {
                 e.preventDefault();
-                copyRawReviewBackWithDotAndSkip();
+                copyRawReviewBackWithDot();
                 return;
             }
             if (e.key === 'd' || e.key === 'D') {
