@@ -376,7 +376,7 @@
                         </div>
                     </div>
                     <div>
-                        <label class="anki-label ml-2 flex justify-between"><span>Back</span> <span class="text-gray-500">Shortcut: B</span></label>
+                        <label class="anki-label ml-2 flex justify-between"><span>Back</span> <span class="text-gray-500">Shortcut: B / H</span></label>
                         <div class="review-card">
                             <span id="review-back" class="review-content"></span>
                             <button class="review-copy-btn" data-target="review-back" title="Copy Back (B)"><i class="fas fa-copy fa-lg"></i></button>
@@ -915,6 +915,29 @@
             if (!trimmed) return trimmed;
             if (/[.!?]$/.test(trimmed)) return trimmed;
             return `${trimmed}.`;
+        }
+
+        function getRawReviewBackCopyTextWithDot(card = null) {
+            const backValue = card && card.back != null
+                ? card.back
+                : (getCurrentReviewCard()?.back ?? document.getElementById('review-back')?.textContent ?? '');
+            return ensureTrailingDot(unformatMultiLine(String(backValue || '')));
+        }
+
+        function copyRawReviewBackWithDotToClipboard(card = null) {
+            const textToCopy = getRawReviewBackCopyTextWithDot(card);
+            if (!textToCopy) return false;
+            copyPlainTextToClipboard(textToCopy);
+            return true;
+        }
+
+        function copyRawReviewBackWithDotAndSkip() {
+            clearAutoSkipTimer();
+            if (reviewSession.currentIndex === -1) return;
+            const card = reviewSession.cards[reviewSession.currentIndex];
+            if (!copyRawReviewBackWithDotToClipboard(card)) return;
+            showNotification('Copied raw back.', 'success', 1500);
+            handleReviewNav(1);
         }
 
         function clearAutoSkipTimer() {
@@ -4563,6 +4586,11 @@
                 }
             }
             if (e.key === 'b' || e.key === 'B') document.querySelector('[data-target="review-back"]').click();
+            if (e.key === 'h' || e.key === 'H') {
+                e.preventDefault();
+                copyRawReviewBackWithDotAndSkip();
+                return;
+            }
             if (e.key === 'd' || e.key === 'D') {
                 e.preventDefault();
                 document.getElementById('delete-review-card-btn').click();
