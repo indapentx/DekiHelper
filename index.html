@@ -905,15 +905,27 @@
                 .filter(Boolean);
         }
 
+        function highlightReviewBackCopyPart(index) {
+            const container = document.getElementById('review-back');
+            if (!container) return;
+
+            container.querySelectorAll('.copy-highlight').forEach(el => el.classList.remove('copy-highlight'));
+
+            const target = container.querySelector(`[data-back-copy-index="${index}"]`) || container;
+            target.classList.add('copy-highlight');
+            setTimeout(() => target.classList.remove('copy-highlight'), 400);
+        }
+
         function copyReviewBackToClipboard(card = null) {
             const backValue = card && card.back
                 ? card.back
-                : (document.getElementById('review-back')?.innerHTML || '');
+                : (document.getElementById('review-back')?.textContent || '');
             const backParts = getReviewBackCopyParts(backValue);
             if (backParts.length === 0) return false;
             const normalizedIndex = (reviewSession.backCopyIndex || 0) % backParts.length;
             const backTextToCopy = backParts[normalizedIndex];
             copyPlainTextToClipboard(backTextToCopy);
+            highlightReviewBackCopyPart(normalizedIndex);
             reviewSession.backCopyIndex = (normalizedIndex + 1) % backParts.length;
             return {
                 copied: true,
@@ -951,6 +963,7 @@
             const normalizedIndex = (reviewSession.rawBackCopyIndex || 0) % parts.length;
             const textToCopy = parts[normalizedIndex];
             copyPlainTextToClipboard(textToCopy);
+            highlightReviewBackCopyPart(normalizedIndex);
             reviewSession.rawBackCopyIndex = (normalizedIndex + 1) % parts.length;
             return {
                 copied: true,
@@ -971,6 +984,17 @@
             const message = result.isMultiPart
                 ? `Copied raw back ${result.index + 1} of ${result.count}.`
                 : 'Copied raw back.';
+            showNotification(message, 'success', 1500);
+        }
+
+        function copyReviewBackShortcutOnly() {
+            clearAutoSkipTimer();
+            if (reviewSession.currentIndex === -1) return;
+            const result = copyReviewBackToClipboard(getCurrentReviewCard());
+            if (!result) return;
+            const message = result.isMultiPart
+                ? `Copied back ${result.index + 1} of ${result.count}.`
+                : 'Copied!';
             showNotification(message, 'success', 1500);
         }
 
@@ -4328,6 +4352,39 @@
             }
         }
 
+        function renderBackForReview(container, backText) {
+            if (!container) return;
+            container.innerHTML = '';
+
+            const normalizedBack = unformatMultiLine(String(backText || ''));
+            if (!normalizedBack) {
+                container.textContent = '—';
+                return;
+            }
+
+            if (!normalizedBack.includes(';')) {
+                container.textContent = normalizedBack;
+                return;
+            }
+
+            const terms = splitSemicolonTerms(normalizedBack);
+            if (terms.length <= 1) {
+                container.textContent = normalizedBack;
+                return;
+            }
+
+            terms.forEach((term, index) => {
+                if (index > 0) {
+                    container.appendChild(document.createTextNode('; '));
+                }
+
+                const span = document.createElement('span');
+                span.dataset.backCopyIndex = String(index);
+                span.textContent = term;
+                container.appendChild(span);
+            });
+        }
+
         function setBeispielSpeechActive(activeIndex = null) {
             const container = document.getElementById('review-beispiel-speech');
             if (!container) return;
@@ -4411,7 +4468,7 @@
 
             const card = reviewSession.cards[reviewSession.currentIndex];
             document.getElementById('review-front').textContent = card.front || '—';
-            document.getElementById('review-back').textContent = card.back || '—';
+            renderBackForReview(document.getElementById('review-back'), card.back);
 
             renderMultiLineForReview(document.getElementById('review-beispiel'), card.beispiel);
             renderBeispielSpeechForReview(document.getElementById('review-beispiel-speech'), card.beispielSpeech);
@@ -4623,7 +4680,7 @@
             }
             if (e.key === 'b' || e.key === 'B') {
                 e.preventDefault();
-                document.querySelector('[data-target="review-back"]').click();
+                copyReviewBackShortcutOnly();
                 return;
             }
             if (e.key === 'h' || e.key === 'H') {
