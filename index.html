@@ -764,6 +764,8 @@
         let hasRestoredLastMovedFolderPreference = false;
         let hasRestoredLastReviewedFolderPreference = false;
         let isFolderSidebarReversed = false;
+        let hasHandledReviewBackLongPress = false;
+        let reviewBackLongPressTimer = null;
         let isBulkTranslating = false;
         let isFixingLegacyFronts = false;
         let exampleWordMap = new Map();
@@ -910,10 +912,27 @@
             if (!container) return;
 
             container.querySelectorAll('.copy-highlight').forEach(el => el.classList.remove('copy-highlight'));
+            container.classList.remove('copy-highlight');
 
             const target = container.querySelector(`[data-back-copy-index="${index}"]`) || container;
             target.classList.add('copy-highlight');
             setTimeout(() => target.classList.remove('copy-highlight'), 400);
+        }
+
+        function highlightFullReviewBack() {
+            const container = document.getElementById('review-back');
+            if (!container) return;
+
+            container.querySelectorAll('.copy-highlight').forEach(el => el.classList.remove('copy-highlight'));
+            container.classList.add('copy-highlight');
+            setTimeout(() => container.classList.remove('copy-highlight'), 400);
+        }
+
+        function getFullReviewBackText(card = null) {
+            const backValue = card && card.back != null
+                ? card.back
+                : (getCurrentReviewCard()?.back ?? document.getElementById('review-back')?.textContent ?? '');
+            return unformatMultiLine(String(backValue || ''));
         }
 
         function copyReviewBackToClipboard(card = null) {
@@ -987,6 +1006,13 @@
             showNotification(message, 'success', 1500);
         }
 
+        function clearReviewBackLongPressTimer() {
+            if (reviewBackLongPressTimer) {
+                clearTimeout(reviewBackLongPressTimer);
+                reviewBackLongPressTimer = null;
+            }
+        }
+
         function copyReviewBackShortcutOnly() {
             clearAutoSkipTimer();
             if (reviewSession.currentIndex === -1) return;
@@ -996,6 +1022,16 @@
                 ? `Copied back ${result.index + 1} of ${result.count}.`
                 : 'Copied!';
             showNotification(message, 'success', 1500);
+        }
+
+        function copyFullReviewBackShortcutOnly() {
+            clearAutoSkipTimer();
+            if (reviewSession.currentIndex === -1) return;
+            const textToCopy = getFullReviewBackText(getCurrentReviewCard());
+            if (!textToCopy) return;
+            copyPlainTextToClipboard(textToCopy);
+            highlightFullReviewBack();
+            showNotification('Copied full back.', 'success', 1500);
         }
 
         function clearAutoSkipTimer() {
@@ -4465,6 +4501,8 @@
             reviewSession.rawBackCopyIndex = 0;
             reviewSession.beispielCopyIndex = 0;
             reviewSession.beispielSpeechCopyIndex = 0;
+            clearReviewBackLongPressTimer();
+            hasHandledReviewBackLongPress = false;
 
             const card = reviewSession.cards[reviewSession.currentIndex];
             document.getElementById('review-front').textContent = card.front || '—';
@@ -4680,7 +4718,16 @@
             }
             if (e.key === 'b' || e.key === 'B') {
                 e.preventDefault();
-                copyReviewBackShortcutOnly();
+                if (e.repeat) {
+                    return;
+                }
+                clearReviewBackLongPressTimer();
+                hasHandledReviewBackLongPress = false;
+                reviewBackLongPressTimer = setTimeout(() => {
+                    reviewBackLongPressTimer = null;
+                    hasHandledReviewBackLongPress = true;
+                    copyFullReviewBackShortcutOnly();
+                }, 400);
                 return;
             }
             if (e.key === 'h' || e.key === 'H') {
@@ -4742,6 +4789,17 @@
             if (e.key === 'v' || e.key === 'V') {
                 e.preventDefault();
                 document.getElementById('move-review-card-btn').click();
+            }
+        }
+
+        function handleReviewKeyboardKeyup(e) {
+            if (e.key === 'b' || e.key === 'B') {
+                const shouldCopyRegularBack = !!reviewBackLongPressTimer && !hasHandledReviewBackLongPress;
+                clearReviewBackLongPressTimer();
+                if (shouldCopyRegularBack) {
+                    copyReviewBackShortcutOnly();
+                }
+                hasHandledReviewBackLongPress = false;
             }
         }
 
@@ -4897,12 +4955,14 @@
             document.getElementById('review-setup').classList.add('hidden');
             document.getElementById('review-session').classList.remove('hidden');
             document.addEventListener('keydown', handleReviewKeyboard);
+            document.addEventListener('keyup', handleReviewKeyboardKeyup);
             renderReviewCard();
             exitReviewEditMode();
         }
         
         function endReviewSession() {
             clearAutoSkipTimer();
+            clearReviewBackLongPressTimer();
             closeReviewMoveCardModal();
             reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, backCopyIndex: 0, rawBackCopyIndex: 0, beispielCopyIndex: 0, beispielSpeechCopyIndex: 0, editedCardIds: new Set(), originalCards: [] };
             currentReviewSessionId = null;
@@ -4912,6 +4972,8 @@
             document.getElementById('review-setup').classList.remove('hidden');
             document.getElementById('review-session').classList.add('hidden');
             document.removeEventListener('keydown', handleReviewKeyboard);
+            document.removeEventListener('keyup', handleReviewKeyboardKeyup);
+            hasHandledReviewBackLongPress = false;
             updateReviewDateSelector();
         }
         
