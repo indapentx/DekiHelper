@@ -752,7 +752,7 @@
         let pendingFolderDeleteId = null;
         let pendingFolderDeleteName = '';
         let pendingFolderDeleteCount = 0;
-        let reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, beispielCopyIndex: 0, beispielSpeechCopyIndex: 0, editedCardIds: new Set(), originalCards: [] };
+        let reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, backCopyIndex: 0, rawBackCopyIndex: 0, beispielCopyIndex: 0, beispielSpeechCopyIndex: 0, editedCardIds: new Set(), originalCards: [] };
         let currentReviewFolderId = ALL_FOLDERS_VALUE;
         let currentReviewSessionId = null;
         let currentViewFolderId = ALL_FOLDERS_VALUE;
@@ -880,16 +880,11 @@
             return strippedValue || normalizedValue;
         }
 
-        function getReviewBackCopyText(value) {
+        function formatReviewBackCopyTerm(value) {
             const normalizedValue = unformatMultiLine(String(value || ''));
             if (!normalizedValue) return '';
 
             if (isReviewWordOnlyMode()) {
-                const backTerms = splitSemicolonTerms(normalizedValue);
-                if (backTerms.length > 1) {
-                    const strippedTerms = backTerms.map(stripLeadingWord).filter(Boolean);
-                    return strippedTerms.length ? strippedTerms.join('; ') : normalizedValue;
-                }
                 return stripLeadingWord(normalizedValue);
             }
 
@@ -900,14 +895,34 @@
             return normalizedValue;
         }
 
+        function getReviewBackCopyParts(value) {
+            const normalizedValue = unformatMultiLine(String(value || ''));
+            if (!normalizedValue) return [];
+            const backTerms = splitSemicolonTerms(normalizedValue);
+            const sourceTerms = normalizedValue.includes(';') ? backTerms : [normalizedValue];
+            return sourceTerms
+                .map(formatReviewBackCopyTerm)
+                .filter(Boolean);
+        }
+
         function copyReviewBackToClipboard(card = null) {
             const backValue = card && card.back
                 ? card.back
                 : (document.getElementById('review-back')?.innerHTML || '');
-            const backTextToCopy = getReviewBackCopyText(backValue);
-            if (!backTextToCopy) return false;
+            const backParts = getReviewBackCopyParts(backValue);
+            if (backParts.length === 0) return false;
+            const normalizedIndex = (reviewSession.backCopyIndex || 0) % backParts.length;
+            const backTextToCopy = backParts[normalizedIndex];
             copyPlainTextToClipboard(backTextToCopy);
-            return true;
+            reviewSession.backCopyIndex = (normalizedIndex + 1) % backParts.length;
+            return {
+                copied: true,
+                index: normalizedIndex,
+                count: backParts.length,
+                isFinalPart: normalizedIndex === backParts.length - 1,
+                isMultiPart: backParts.length > 1,
+                text: backTextToCopy
+            };
         }
 
         function ensureTrailingDot(value) {
@@ -917,26 +932,46 @@
             return `${trimmed}.`;
         }
 
-        function getRawReviewBackCopyTextWithDot(card = null) {
+        function getRawReviewBackCopyPartsWithDot(card = null) {
             const backValue = card && card.back != null
                 ? card.back
                 : (getCurrentReviewCard()?.back ?? document.getElementById('review-back')?.textContent ?? '');
-            return ensureTrailingDot(unformatMultiLine(String(backValue || '')));
+            const normalizedValue = unformatMultiLine(String(backValue || ''));
+            if (!normalizedValue) return [];
+            const backTerms = splitSemicolonTerms(normalizedValue);
+            const sourceTerms = normalizedValue.includes(';') ? backTerms : [normalizedValue];
+            return sourceTerms
+                .map(ensureTrailingDot)
+                .filter(Boolean);
         }
 
         function copyRawReviewBackWithDotToClipboard(card = null) {
-            const textToCopy = getRawReviewBackCopyTextWithDot(card);
-            if (!textToCopy) return false;
+            const parts = getRawReviewBackCopyPartsWithDot(card);
+            if (parts.length === 0) return false;
+            const normalizedIndex = (reviewSession.rawBackCopyIndex || 0) % parts.length;
+            const textToCopy = parts[normalizedIndex];
             copyPlainTextToClipboard(textToCopy);
-            return true;
+            reviewSession.rawBackCopyIndex = (normalizedIndex + 1) % parts.length;
+            return {
+                copied: true,
+                index: normalizedIndex,
+                count: parts.length,
+                isFinalPart: normalizedIndex === parts.length - 1,
+                isMultiPart: parts.length > 1,
+                text: textToCopy
+            };
         }
 
         function copyRawReviewBackWithDot() {
             clearAutoSkipTimer();
             if (reviewSession.currentIndex === -1) return;
             const card = reviewSession.cards[reviewSession.currentIndex];
-            if (!copyRawReviewBackWithDotToClipboard(card)) return;
-            showNotification('Copied raw back.', 'success', 1500);
+            const result = copyRawReviewBackWithDotToClipboard(card);
+            if (!result) return;
+            const message = result.isMultiPart
+                ? `Copied raw back ${result.index + 1} of ${result.count}.`
+                : 'Copied raw back.';
+            showNotification(message, 'success', 1500);
         }
 
         function clearAutoSkipTimer() {
@@ -4369,6 +4404,8 @@
                 return;
             }
 
+            reviewSession.backCopyIndex = 0;
+            reviewSession.rawBackCopyIndex = 0;
             reviewSession.beispielCopyIndex = 0;
             reviewSession.beispielSpeechCopyIndex = 0;
 
@@ -4584,7 +4621,11 @@
                     frontBtn.click();
                 }
             }
-            if (e.key === 'b' || e.key === 'B') document.querySelector('[data-target="review-back"]').click();
+            if (e.key === 'b' || e.key === 'B') {
+                e.preventDefault();
+                document.querySelector('[data-target="review-back"]').click();
+                return;
+            }
             if (e.key === 'h' || e.key === 'H') {
                 e.preventDefault();
                 copyRawReviewBackWithDot();
@@ -4779,6 +4820,8 @@
             reviewSession.originalCards = [...cardsForReview];
             reviewSession.cards = [...cardsForReview];
             reviewSession.currentIndex = 0;
+            reviewSession.backCopyIndex = 0;
+            reviewSession.rawBackCopyIndex = 0;
             reviewSession.editedCardIds = new Set(cardsForReview.filter(card => card.reviewEdited).map(card => card.id));
             // Fetch persisted edited IDs
             if (userId && currentReviewSessionId) {
@@ -4804,7 +4847,7 @@
         function endReviewSession() {
             clearAutoSkipTimer();
             closeReviewMoveCardModal();
-            reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, beispielCopyIndex: 0, beispielSpeechCopyIndex: 0, editedCardIds: new Set(), originalCards: [] };
+            reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, backCopyIndex: 0, rawBackCopyIndex: 0, beispielCopyIndex: 0, beispielSpeechCopyIndex: 0, editedCardIds: new Set(), originalCards: [] };
             currentReviewSessionId = null;
             resetReviewFolderOrderToggle();
             document.getElementById('main-app').classList.remove('hidden');
@@ -6785,14 +6828,23 @@
                     if (!contentEl) return;
 
                     const isBackButton = targetId === 'review-back';
-                    let textToCopy = unformatMultiLine(contentEl.innerHTML);
                     if (isBackButton) {
-                        textToCopy = getReviewBackCopyText(textToCopy);
-                    }
+                        const copyResult = copyReviewBackToClipboard(getCurrentReviewCard());
+                        if (!copyResult) return;
 
-                    copyPlainTextToClipboard(textToCopy);
-                    
-                    showNotification("Copied!", "success", 1500);
+                        const message = copyResult.isMultiPart
+                            ? `Copied back ${copyResult.index + 1} of ${copyResult.count}.`
+                            : 'Copied!';
+                        showNotification(message, "success", 1500);
+
+                        if (copyResult.isMultiPart && !copyResult.isFinalPart) {
+                            return;
+                        }
+                    } else {
+                        const textToCopy = unformatMultiLine(contentEl.innerHTML);
+                        copyPlainTextToClipboard(textToCopy);
+                        showNotification("Copied!", "success", 1500);
+                    }
 
                     const isPauseTimerEnabled = document.getElementById('pause-timer-toggle').checked;
                     const shouldPauseAfterCopy = isBackButton && shouldPauseReviewBackCopy();
