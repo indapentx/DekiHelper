@@ -324,6 +324,7 @@
                         <button id="edit-review-card-btn" class="btn btn-secondary" title="Edit (T)"><i class="fas fa-pencil-alt"></i> Edit</button>
                         <button id="save-review-edit-btn" class="btn btn-success hidden"><i class="fas fa-check"></i> Save</button>
                         <button id="cancel-review-edit-btn" class="btn btn-secondary hidden"><i class="fas fa-times"></i> Cancel</button>
+                        <button id="review-generate-img-tag-btn" class="btn btn-secondary" title="Generate or Cycle Image Tag (I)"><i class="fa-solid fa-wand-magic-sparkles"></i> Image</button>
                         <button id="mark-edited-btn" class="btn btn-secondary" title="Mark as Edited"><i class="fas fa-check"></i></button>
                         <button id="move-review-card-btn" class="btn btn-secondary" title="Move Card (V)"><i class="fas fa-right-left"></i></button>
                         <button id="delete-review-card-btn" class="btn btn-danger" title="Delete Card (D)"><i class="fas fa-trash-alt"></i></button>
@@ -4785,6 +4786,11 @@
                 });
                 return;
             }
+            if (e.key === 'i' || e.key === 'I') {
+                e.preventDefault();
+                handleReviewGenerateOrCycleImage();
+                return;
+            }
             if (e.key === 'Delete') {
                 document.getElementById('delete-review-card-btn').click();
             }
@@ -5535,11 +5541,12 @@
             document.getElementById('export-modal').classList.remove('hidden');
         }
 
-        function handleGenerateOrCycleImage() {
-            const front = document.getElementById('front');
-            let value = normalizeCardFrontValue(front.value);
-            if (value && value !== front.value) {
-                front.value = value;
+        function applyGeneratedOrCycledImageTag(frontInput, backValue) {
+            if (!frontInput) return false;
+
+            let value = normalizeCardFrontValue(frontInput.value);
+            if (value && value !== frontInput.value) {
+                frontInput.value = value;
             }
 
             if (value.startsWith('<img src="') && value.endsWith('">')) {
@@ -5547,7 +5554,7 @@
                 const lastDot = src.lastIndexOf('.');
                 if (lastDot === -1) {
                     showNotification("No extension found in image tag.");
-                    return;
+                    return false;
                 }
                 const base = src.substring(0, lastDot);
                 const ext = src.substring(lastDot + 1).toLowerCase();
@@ -5556,16 +5563,41 @@
                 else if (ext === 'webp') newExt = 'png';
                 else if (ext === 'png') newExt = 'svg';
                 else if (ext === 'svg') newExt = 'jpg';
-                front.value = `<img src="${base}.${newExt}">`;
-            } else {
-                const backValue = document.getElementById('back').value.trim();
-                const imageBase = getPrimaryBackTerm(backValue);
-                if (imageBase) {
-                    front.value = `<img src="${imageBase}.jpg">`;
-                } else {
-                    showNotification("Please enter a word in the 'Back' field first.");
-                }
+                frontInput.value = `<img src="${base}.${newExt}">`;
+                return true;
             }
+
+            const imageBase = getPrimaryBackTerm(backValue);
+            if (imageBase) {
+                frontInput.value = `<img src="${imageBase}.jpg">`;
+                return true;
+            }
+
+            showNotification("Please enter a word in the 'Back' field first.");
+            return false;
+        }
+
+        function handleGenerateOrCycleImage() {
+            const front = document.getElementById('front');
+            const back = document.getElementById('back');
+            applyGeneratedOrCycledImageTag(front, back ? back.value.trim() : '');
+        }
+
+        function handleReviewGenerateOrCycleImage() {
+            const card = getCurrentReviewCard();
+            if (!card) {
+                showNotification('No active review card to update.', 'error');
+                return;
+            }
+
+            clearAutoSkipTimer();
+            if (!isReviewEditing) {
+                enterReviewEditMode();
+            }
+
+            const editFront = document.getElementById('edit-front');
+            const editBack = document.getElementById('edit-back');
+            applyGeneratedOrCycledImageTag(editFront, editBack ? editBack.value.trim() : (card.back || ''));
         }
 
         async function handleAuthSubmit(e) {
@@ -6758,6 +6790,7 @@
             });
 
             document.getElementById('generate-img-tag-btn').addEventListener('click', handleGenerateOrCycleImage);
+            document.getElementById('review-generate-img-tag-btn').addEventListener('click', handleReviewGenerateOrCycleImage);
             document.getElementById('search-input').addEventListener('input', filterAndRenderCards);
             const exampleFilterInput = document.getElementById('example-match-filter');
             if (exampleFilterInput) exampleFilterInput.addEventListener('input', () => refreshExampleMatches({ forceReloadLibrary: false }));
