@@ -372,6 +372,7 @@
                         <label class="anki-label ml-2 flex justify-between"><span>Front</span> <span class="text-gray-500">Shortcut: F</span></label>
                         <div class="review-card">
                             <span id="review-front" class="review-content"></span>
+                            <input type="text" id="edit-front" class="anki-input hidden flex-grow" autocomplete="off">
                             <button class="review-copy-btn" data-target="review-front" title="Copy Front (F)"><i class="fas fa-copy fa-lg"></i></button>
                         </div>
                     </div>
@@ -379,6 +380,7 @@
                         <label class="anki-label ml-2 flex justify-between"><span>Back</span> <span class="text-gray-500">Shortcut: B / H</span></label>
                         <div class="review-card">
                             <span id="review-back" class="review-content"></span>
+                            <input type="text" id="edit-back" class="anki-input hidden flex-grow" autocomplete="off">
                             <button class="review-copy-btn" data-target="review-back" title="Copy Back (B)"><i class="fas fa-copy fa-lg"></i></button>
                         </div>
                     </div>
@@ -6494,6 +6496,18 @@
                 }
             }
             
+            document.getElementById('review-front').classList.add('hidden');
+            const editFront = document.getElementById('edit-front');
+            editFront.classList.remove('hidden');
+            editFront.value = card.front || '';
+            editFront.scrollLeft = 0;
+
+            document.getElementById('review-back').classList.add('hidden');
+            const editBack = document.getElementById('edit-back');
+            editBack.classList.remove('hidden');
+            editBack.value = card.back || '';
+            editBack.scrollLeft = 0;
+
             document.getElementById('review-beispiel').classList.add('hidden');
             const editBeispiel = document.getElementById('edit-beispiel');
             editBeispiel.classList.remove('hidden');
@@ -6518,6 +6532,12 @@
 
         function exitReviewEditMode() {
             renderReviewCard(); 
+            document.getElementById('review-front').classList.remove('hidden');
+            document.getElementById('edit-front').classList.add('hidden');
+
+            document.getElementById('review-back').classList.remove('hidden');
+            document.getElementById('edit-back').classList.add('hidden');
+
             document.getElementById('review-beispiel').classList.remove('hidden');
             document.getElementById('edit-beispiel').classList.add('hidden');
 
@@ -6549,25 +6569,45 @@
 
         async function saveReviewEdit() {
             if (!isReviewEditing || reviewSession.currentIndex === -1) return false;
-            
+
+            const card = reviewSession.cards[reviewSession.currentIndex];
+            const oldFront = card.front || '';
+            const oldBack = card.back || '';
+            const oldBeispiel = card.beispiel || '';
+            const oldTranslation = card.translation || '';
+            const newFront = normalizeCardFrontValue(document.getElementById('edit-front').value);
+            const newBack = document.getElementById('edit-back').value.trim();
             const newBeispiel = formatMultiLine(document.getElementById('edit-beispiel').value);
             const newTranslation = formatMultiLine(document.getElementById('edit-translation').value);
-            const card = reviewSession.cards[reviewSession.currentIndex];
-            
-            const backValue = card.back;
-            const newBeispielSpeech = backValue ? buildBeispielSpeech(backValue, newBeispiel) : '';
+            const newSpeech = newBack === oldBack
+                ? resolveSpeechValue(newBack, card.speech)
+                : buildSpeechValue(newBack);
+            const newBeispielSpeech = newBack === oldBack && newBeispiel === oldBeispiel
+                ? resolveBeispielSpeechValue(newBack, newBeispiel, card.beispielSpeech)
+                : (newBack ? buildBeispielSpeech(newBack, newBeispiel) : '');
 
-            if (newBeispiel === card.beispiel && newTranslation === card.translation) {
+            if (
+                newFront === oldFront &&
+                newBack === oldBack &&
+                newBeispiel === oldBeispiel &&
+                newTranslation === oldTranslation
+            ) {
                 return true;
             }
             
             try {
                 const docRef = doc(db, `artifacts/${appId}/users/${userId}/cards`, card.id);
                 await updateDoc(docRef, {
+                    front: newFront,
+                    back: newBack,
+                    speech: newSpeech,
                     beispiel: newBeispiel,
                     translation: newTranslation,
                     beispielSpeech: newBeispielSpeech
                 });
+                card.front = newFront;
+                card.back = newBack;
+                card.speech = newSpeech;
                 card.beispiel = newBeispiel;
                 card.translation = newTranslation;
                 card.beispielSpeech = newBeispielSpeech;
@@ -7021,7 +7061,7 @@
                     return;
                 }
                 const formInputs = ['front', 'back', 'beispiel', 'translation'];
-                const reviewInputs = ['edit-beispiel', 'edit-translation'];
+                const reviewInputs = ['edit-front', 'edit-back', 'edit-beispiel', 'edit-translation'];
                 const activeId = document.activeElement.id;
 
                 if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -7276,7 +7316,12 @@
 
             document.getElementById('cancel-review-edit-btn').addEventListener('click', exitReviewEditMode);
 
-            [document.getElementById('edit-beispiel'), document.getElementById('edit-translation')].forEach(input => {
+            [
+                document.getElementById('edit-front'),
+                document.getElementById('edit-back'),
+                document.getElementById('edit-beispiel'),
+                document.getElementById('edit-translation')
+            ].forEach(input => {
                 input.addEventListener('keydown', async e => {
                     if (e.key === 'Enter' && !e.shiftKey) { 
                         e.preventDefault(); 
@@ -7288,6 +7333,7 @@
                     if (e.key === 'Escape') { e.preventDefault(); exitReviewEditMode(); }
                 });
                 input.addEventListener('paste', (e) => {
+                    if (e.target.tagName !== 'TEXTAREA') return;
                     setTimeout(() => {
                         const textarea = e.target;
                         if (textarea.value.slice(-1) !== '\n') {
