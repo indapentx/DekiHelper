@@ -6094,6 +6094,11 @@
             }
         }
 
+        function openImportFilePicker() {
+            const importFileInput = document.getElementById('import-file-input');
+            if (importFileInput) importFileInput.click();
+        }
+
         
         function normalizeSearchField(value) {
             if (value === null || value === undefined) return '';
@@ -6823,7 +6828,7 @@
             document.getElementById('cancel-delete-btn').addEventListener('click', () => {
                 closeDeleteModal();
             });
-            document.getElementById('import-btn').addEventListener('click', () => document.getElementById('import-file-input').click());
+            document.getElementById('import-btn').addEventListener('click', openImportFilePicker);
             document.getElementById('import-file-input').addEventListener('change', importCardsFromFile);
             const fixLegacyFrontsBtn = document.getElementById('fix-legacy-fronts-btn');
             if (fixLegacyFrontsBtn) fixLegacyFrontsBtn.addEventListener('click', handleFixLegacyFronts);
@@ -7138,6 +7143,12 @@
                         document.getElementById('review-modal').classList.contains('hidden')
                             ? document.getElementById('review-btn').click()
                             : document.getElementById('start-session-btn').click();
+                    } else if (e.key === 'q' || e.key === 'Q') {
+                        const reviewModal = document.getElementById('review-modal');
+                        if (reviewModal && reviewModal.classList.contains('hidden')) {
+                            e.preventDefault();
+                            openImportFilePicker();
+                        }
                     } else if (e.key === ' ') { 
                         e.preventDefault(); 
                         document.getElementById('review-modal').classList.contains('hidden') ? document.getElementById('review-btn').click() : document.getElementById('start-session-btn').click(); 
