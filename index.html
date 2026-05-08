@@ -32,6 +32,8 @@
         .card-item-content { flex-grow: 1; overflow: hidden; }
         .card-item-front { font-weight: 600; color: #eee; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .card-item-back { color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .card-item-example { color: #a8b3c7; font-size: 0.875rem; line-height: 1.45; margin-top: 8px; white-space: pre-wrap; word-break: break-word; }
+        .card-item-example-label { color: #8b95a7; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
         #review-modal { background-color: #000; }
         .review-card { background-color: #1e1e1e; border-radius: 10px; padding: 14px 16px; min-height: 70px; display: flex; justify-content: space-between; align-items: center; text-align: left; }
         .review-content { font-size: 1.05rem; word-break: break-word; flex-grow: 1; }
@@ -4203,11 +4205,21 @@
                 const frontDisplay = (cardData.front && cardData.front.startsWith('<img')) 
                     ? '🖼️ Image Card' 
                     : (cardData.front || '<em>No Front</em>');
+                const beispielLines = normalizeSentencesFromBeispiel(cardData.beispiel);
+                const beispielPreviewHtml = searchTerm && beispielLines.length
+                    ? `
+                        <div class="card-item-example">
+                            <p class="card-item-example-label">Beispiel</p>
+                            ${beispielLines.map(line => `<p>${escapeHtml(line)}</p>`).join('')}
+                        </div>
+                    `
+                    : '';
 
                 cardEl.innerHTML = `
                     <div class="card-item-content mr-4">
                         <p class="card-item-front">${frontDisplay}</p>
                         <p class="card-item-back">${cardData.back || '<em>No Back</em>'}</p>
+                        ${beispielPreviewHtml}
                         <p class="card-item-folder text-xs text-gray-500 mt-2"></p>
                     </div>
                     <div class="flex items-center space-x-2">
