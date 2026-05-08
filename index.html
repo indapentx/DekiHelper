@@ -32,6 +32,8 @@
         .card-item-content { flex-grow: 1; min-width: 0; overflow: hidden; }
         .card-item-front { font-weight: 600; color: #eee; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .card-item-back { color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .card-item-back-copyable { cursor: pointer; }
+        .card-item-back-copyable:hover { color: #e5e7eb; text-decoration: underline; text-underline-offset: 3px; }
         .card-item-example { color: #aeb8ca; font-size: 0.875rem; line-height: 1.4; margin-top: 10px; display: grid; gap: 3px; word-break: break-word; }
         .card-item-example-label { color: #7f899a; font-size: 0.75rem; font-weight: 600; }
         .card-item-example-line { margin: 0; }
@@ -683,7 +685,7 @@
             </div>
             <div class="flex justify-end items-center space-x-4 mt-8">
                 <button id="cancel-single-card-move-btn" class="btn btn-secondary">Cancel</button>
-                <button id="confirm-single-card-move-btn" class="btn btn-primary">Move Card</button>
+                <button id="confirm-single-card-move-btn" class="btn btn-primary" title="Move Card (V)">Move Card</button>
             </div>
         </div>
     </div>
@@ -4207,8 +4209,9 @@
                 const frontDisplay = (cardData.front && cardData.front.startsWith('<img')) 
                     ? '🖼️ Image Card' 
                     : (cardData.front || '<em>No Front</em>');
+                const isSearchResult = !!searchTerm;
                 const beispielLines = normalizeSentencesFromBeispiel(cardData.beispiel);
-                const beispielPreviewHtml = searchTerm && beispielLines.length
+                const beispielPreviewHtml = isSearchResult && beispielLines.length
                     ? `
                         <div class="card-item-example">
                             <p class="card-item-example-label">Beispiel</p>
@@ -4220,7 +4223,7 @@
                 cardEl.innerHTML = `
                     <div class="card-item-content">
                         <p class="card-item-front">${frontDisplay}</p>
-                        <p class="card-item-back">${cardData.back || '<em>No Back</em>'}</p>
+                        <p class="card-item-back${isSearchResult && cardData.back ? ' card-item-back-copyable' : ''}" title="${isSearchResult && cardData.back ? 'Click to copy back' : ''}">${cardData.back || '<em>No Back</em>'}</p>
                         ${beispielPreviewHtml}
                         <p class="card-item-folder text-xs text-gray-500 mt-2"></p>
                     </div>
@@ -4238,6 +4241,15 @@
                     const folderMeta = cardData.folderId ? folders.find(folder => folder.id === cardData.folderId) : null;
                     const displayName = folderMeta && folderMeta.name ? folderMeta.name : (cardData.folderName || 'No Folder');
                     folderLabelEl.textContent = `Folder: ${displayName}`;
+                }
+                const backLabelEl = cardEl.querySelector('.card-item-back-copyable');
+                if (backLabelEl) {
+                    backLabelEl.addEventListener('click', () => {
+                        const backText = unformatMultiLine(String(cardData.back || ''));
+                        if (!backText) return;
+                        copyPlainTextToClipboard(backText);
+                        showNotification("Back copied to clipboard!", "success", 1500);
+                    });
                 }
                 cardEl.querySelector('.copy-btn').addEventListener('click', (e) => {
                     const backText = e.target.closest('.card-item').querySelector('.card-item-back').textContent;
@@ -7107,9 +7119,19 @@
                     return;
                 }
                 const singleCardMoveModal = document.getElementById('single-card-move-modal');
-                if (e.key === 'Escape' && singleCardMoveModal && !singleCardMoveModal.classList.contains('hidden')) {
-                    e.preventDefault();
-                    closeSingleCardMoveModal();
+                if (singleCardMoveModal && !singleCardMoveModal.classList.contains('hidden')) {
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        closeSingleCardMoveModal();
+                        return;
+                    }
+                    if (e.key === 'v' || e.key === 'V') {
+                        const confirmMoveBtn = document.getElementById('confirm-single-card-move-btn');
+                        if (confirmMoveBtn && !confirmMoveBtn.disabled) {
+                            e.preventDefault();
+                            confirmMoveBtn.click();
+                        }
+                    }
                     return;
                 }
                 const formInputs = ['front', 'back', 'beispiel', 'translation'];
