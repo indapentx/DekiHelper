@@ -28,12 +28,14 @@
         .btn-icon { background: transparent; border: none; color: #777; padding: 4px; border-radius: 50%; } .btn-icon:hover { background-color: #333; color: #eee; }
         .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 50;}
         .modal-content { background-color: #1a1a1a; padding: 30px; border-radius: 12px; width: 90%; max-width: 500px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-        .card-item { background-color: #1e1e1e; border: 1px solid #333; padding: 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .card-item-content { flex-grow: 1; overflow: hidden; }
+        .card-item { background-color: #1e1e1e; border: 1px solid #333; padding: 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; margin-bottom: 12px; }
+        .card-item-content { flex-grow: 1; min-width: 0; overflow: hidden; }
         .card-item-front { font-weight: 600; color: #eee; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .card-item-back { color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
-        .card-item-example { color: #a8b3c7; font-size: 0.875rem; line-height: 1.45; margin-top: 8px; white-space: pre-wrap; word-break: break-word; }
-        .card-item-example-label { color: #8b95a7; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+        .card-item-example { color: #aeb8ca; font-size: 0.875rem; line-height: 1.4; margin-top: 10px; display: grid; gap: 3px; word-break: break-word; }
+        .card-item-example-label { color: #7f899a; font-size: 0.75rem; font-weight: 600; }
+        .card-item-example-line { margin: 0; }
+        .card-item-actions { flex-shrink: 0; padding-top: 2px; }
         #review-modal { background-color: #000; }
         .review-card { background-color: #1e1e1e; border-radius: 10px; padding: 14px 16px; min-height: 70px; display: flex; justify-content: space-between; align-items: center; text-align: left; }
         .review-content { font-size: 1.05rem; word-break: break-word; flex-grow: 1; }
@@ -4210,19 +4212,19 @@
                     ? `
                         <div class="card-item-example">
                             <p class="card-item-example-label">Beispiel</p>
-                            ${beispielLines.map(line => `<p>${escapeHtml(line)}</p>`).join('')}
+                            ${beispielLines.map(line => `<p class="card-item-example-line">${escapeHtml(line)}</p>`).join('')}
                         </div>
                     `
                     : '';
 
                 cardEl.innerHTML = `
-                    <div class="card-item-content mr-4">
+                    <div class="card-item-content">
                         <p class="card-item-front">${frontDisplay}</p>
                         <p class="card-item-back">${cardData.back || '<em>No Back</em>'}</p>
                         ${beispielPreviewHtml}
                         <p class="card-item-folder text-xs text-gray-500 mt-2"></p>
                     </div>
-                    <div class="flex items-center space-x-2">
+                    <div class="card-item-actions flex items-center space-x-2">
                         <button class="btn-icon copy-btn" title="Copy Back (C)"><i class="fas fa-copy"></i></button>
                         <button class="btn-icon export-card-btn" title="Export This Card as TXT"><i class="fas fa-download"></i></button>
                         <button class="btn-icon move-card-btn" title="Move to Folder"><i class="fas fa-folder-open"></i></button>
