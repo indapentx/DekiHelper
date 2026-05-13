@@ -520,16 +520,16 @@
                             <span>TXT (for Anki, empty fields)</span>
                         </label>
                         <label class="flex items-center space-x-2">
+                            <input type="radio" name="export-format" value="clipboard-missing-beispiel-back-only" class="form-radio">
+                            <span>Copy to Clipboard (folders without example sentence, back only)</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
                             <input type="radio" name="export-format" value="json" class="form-radio">
                             <span>JSON</span>
                         </label>
                         <label class="flex items-center space-x-2">
                             <input type="radio" name="export-format" value="category-zip" class="form-radio">
                             <span>Category Folder (.zip)</span>
-                        </label>
-                        <label class="flex items-center space-x-2">
-                            <input type="radio" name="export-format" value="clipboard" class="form-radio">
-                            <span>Copy to Clipboard (Back & Front)</span>
                         </label>
                         <label class="flex items-center space-x-2">
                             <input type="radio" name="export-format" value="clipboard-back-only" class="form-radio">
@@ -539,17 +539,13 @@
                             <input type="radio" name="export-format" value="clipboard-quizlet" class="form-radio">
                             <span>Copy to Clipboard (Quizlet - Back only, one per line)</span>
                         </label>
-                        <label class="flex items-center space-x-2">
-                            <input type="radio" name="export-format" value="beispiel-speech" class="form-radio">
-                            <span>Copy to Clipboard (Beispiel Speech)</span>
-                        </label>
                     </div>
                 </div>
                 <hr class="border-gray-700 !my-6">
                 <div>
                     <h3 class="anki-label mb-2">Cards to Export</h3>
                     <label class="flex items-center space-x-2">
-                        <input type="radio" id="export-all-radio" name="export-range" value="all" class="form-radio" checked>
+                        <input type="radio" id="export-all-radio" name="export-range" value="all" class="form-radio">
                         <span>All cards</span>
                     </label>
                     <label class="flex items-center space-x-2 mt-2">
@@ -560,7 +556,7 @@
                         <!-- Date checkboxes will be inserted here by JS -->
                     </div>
                     <label class="flex items-center space-x-2 mt-2">
-                        <input type="radio" id="export-folder-radio" name="export-range" value="folder" class="form-radio">
+                        <input type="radio" id="export-folder-radio" name="export-range" value="folder" class="form-radio" checked>
                         <span>Cards from selected folders</span>
                     </label>
                     <div id="export-folder-selection" class="hidden pl-6 pt-2 mt-2 max-h-32 overflow-y-auto border-l-2 border-gray-700">
@@ -4323,6 +4319,14 @@
             }).join('\n');
         }
 
+        function buildBackOnlyTextFromCards(cards, separator = '\n') {
+            return [...cards]
+                .sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt))
+                .map(data => sanitizeForExport(data.back))
+                .filter(text => !isBlank(text))
+                .join(separator);
+        }
+
         function exportSingleCardAsTxt(card) {
             if (!card) {
                 showNotification('Card not found.', 'error');
@@ -5412,6 +5416,11 @@
                 return;
             }
 
+            if (format === 'clipboard-missing-beispiel-back-only' && range !== 'folder') {
+                showNotification("Select one or more folders to copy cards without example sentences.");
+                return;
+            }
+
             if (cardsToExport.length === 0) {
                 showNotification("No cards match the selected criteria.", "success");
                 return;
@@ -5419,43 +5428,19 @@
             
             let clipboardText = '';
             let clipboardSuccessMessage = "Copied to clipboard!";
-            if (format === 'clipboard') {
-                clipboardText = cardsToExport
-                    .sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt))
-                    .map(data => {
-                        const sanitizedBack = sanitizeForExport(data.back);
-                        const sanitizedFront = sanitizeForExport(normalizeCardFrontValue(data.front), sanitizedBack);
-                        return `${sanitizedBack}\t${sanitizedFront}`;
-                    })
-                    .join('\n');
-            } else if (format === 'beispiel-speech') {
-                clipboardText = cardsToExport
-                    .sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt))
-                    .map(data => {
-                        const resolvedBeispielSpeech = resolveBeispielSpeechValue(data.back, data.beispiel, data.beispielSpeech);
-                        return sanitizeForExport(resolvedBeispielSpeech, '', {
-                            preserveLeadingBr: true,
-                            preserveSpacingAroundBr: true,
-                            keepOuterWhitespace: true
-                        });
-                    })
-                    .filter(text => !isBlank(text))
-                    .join('\n');
-            } else if (format === 'clipboard-back-only') {
-                clipboardText = cardsToExport
-                    .sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt))
-                    .map(data => sanitizeForExport(data.back))
-                    .filter(text => !isBlank(text))
-                    .join(', ');
+            if (format === 'clipboard-back-only') {
+                clipboardText = buildBackOnlyTextFromCards(cardsToExport, ', ');
             } else if (format === 'clipboard-quizlet') {
-                clipboardText = cardsToExport
-                    .sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt))
-                    .map(data => sanitizeForExport(data.back))
-                    .filter(text => !isBlank(text))
-                    .join('\n');
-                const exportBaseName = buildExportFileBase({ range, cards: cardsToExport, selectedFolders, selectedDates });
-                triggerDownload(clipboardText, `${exportBaseName}-quizlet-back-only.txt`, 'text/plain;charset=utf-8');
-                clipboardSuccessMessage = "Copied to clipboard and exported back-only TXT!";
+                clipboardText = buildBackOnlyTextFromCards(cardsToExport);
+                clipboardSuccessMessage = "Copied Quizlet back-only text to clipboard!";
+            } else if (format === 'clipboard-missing-beispiel-back-only') {
+                const missingBeispielCards = cardsToExport.filter(card => !cardHasBeispiel(card));
+                clipboardText = buildBackOnlyTextFromCards(missingBeispielCards, ', ');
+                if (isBlank(clipboardText)) {
+                    showNotification("Selected folder(s) have no cards without example sentences to copy.", "success");
+                    return;
+                }
+                clipboardSuccessMessage = `Copied ${missingBeispielCards.length} card${missingBeispielCards.length === 1 ? '' : 's'} without example sentences to clipboard!`;
             } else {
                 triggerExportDownload(cardsToExport, format, { range, selectedFolders, selectedDates });
                 document.getElementById('export-modal').classList.add('hidden');
@@ -5478,9 +5463,7 @@
                 showNotification("There are no cards to export.", "success");
                 return;
             }
-            document.getElementById('export-all-radio').checked = true;
             document.getElementById('export-date-selection').classList.add('hidden');
-            document.getElementById('export-folder-selection').classList.add('hidden');
             document.getElementById('clipboard-output-container').classList.add('hidden');
             
             const dates = [...new Set(allCards.map(card => card.createdAt && card.createdAt.split('T')[0]).filter(Boolean))].sort().reverse();
@@ -5561,7 +5544,10 @@
             const exportFolderRadio = document.getElementById('export-folder-radio');
             if (exportFolderRadio) {
                 exportFolderRadio.disabled = options.length === 0;
+                exportFolderRadio.checked = options.length > 0;
             }
+            document.getElementById('export-all-radio').checked = options.length === 0;
+            document.getElementById('export-folder-selection').classList.toggle('hidden', options.length === 0);
 
             syncExportFolderSelectAllCheckbox();
 
@@ -6976,7 +6962,7 @@
                     if (!radio.value.startsWith('clipboard')) {
                         document.getElementById('clipboard-output-container').classList.add('hidden');
                     }
-                    if (radio.checked && radio.value === 'category-zip') {
+                    if (radio.checked && (radio.value === 'category-zip' || radio.value === 'clipboard-missing-beispiel-back-only')) {
                         const folderRadio = document.getElementById('export-folder-radio');
                         if (folderRadio) {
                             folderRadio.checked = true;
