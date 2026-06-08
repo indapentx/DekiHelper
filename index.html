@@ -4072,7 +4072,7 @@
             setBeispielSpeechBoxValue(beispielSpeechBox, rawBeispielSpeech);
         }
         
-        function clearForm() {
+        function clearForm(focusFieldId = 'front') {
             const ankiForm = document.getElementById('anki-form');
             const front = document.getElementById('front');
             const folderSelect = document.getElementById('folder-select');
@@ -4091,7 +4091,8 @@
                 }
             }
             updateSpeechFields();
-            if (front) front.focus();
+            const fieldToFocus = document.getElementById(focusFieldId) || front;
+            if (fieldToFocus) fieldToFocus.focus();
         }
 
         function clearExternalEditCardParamFromUrl() {
@@ -5043,9 +5044,12 @@
                 createdAt: new Date().toISOString()
             };
             if (!cardData.front && !cardData.back) return;
+            const activeFieldId = document.activeElement && document.activeElement.classList.contains('anki-input')
+                ? document.activeElement.id
+                : 'front';
             try {
                 await addDoc(cardsCollectionRef, cardData);
-                clearForm();
+                clearForm(activeFieldId);
             } catch (error) { showNotification("Failed to save the card."); }
         }
 
