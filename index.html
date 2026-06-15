@@ -327,16 +327,17 @@
                 <div class="flex flex-col md:flex-row justify-between items-center mb-2 text-gray-400 gap-4">
                     <div class="flex items-center gap-4">
                         <p id="review-progress-text" class="font-semibold"></p>
-                        <p id="review-edited-text" class="font-semibold"></p>
                     </div>
                     <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-                        <button id="edit-review-card-btn" class="btn btn-secondary" title="Edit (T)"><i class="fas fa-pencil-alt"></i> Edit</button>
+                        <button id="review-show-more-btn" class="btn btn-secondary" title="Show more actions" aria-expanded="false"><i class="fas fa-ellipsis"></i> More</button>
                         <button id="save-review-edit-btn" class="btn btn-success hidden"><i class="fas fa-check"></i> Save</button>
                         <button id="cancel-review-edit-btn" class="btn btn-secondary hidden"><i class="fas fa-times"></i> Cancel</button>
-                        <button id="review-generate-img-tag-btn" class="btn btn-secondary" title="Generate or Cycle Image Tag (I)"><i class="fa-solid fa-wand-magic-sparkles"></i> Image</button>
-                        <button id="mark-edited-btn" class="btn btn-secondary" title="Mark as Edited"><i class="fas fa-check"></i></button>
-                        <button id="move-review-card-btn" class="btn btn-secondary" title="Move Card (V)"><i class="fas fa-right-left"></i></button>
-                        <button id="delete-review-card-btn" class="btn btn-danger" title="Delete Card (D)"><i class="fas fa-trash-alt"></i></button>
+                        <div id="review-actions-extra" class="hidden flex-wrap items-center gap-x-4 gap-y-2">
+                            <button id="edit-review-card-btn" class="btn btn-secondary" title="Edit (T)"><i class="fas fa-pencil-alt"></i> Edit</button>
+                            <button id="review-generate-img-tag-btn" class="btn btn-secondary" title="Generate or Cycle Image Tag (I)"><i class="fa-solid fa-wand-magic-sparkles"></i> Image</button>
+                            <button id="move-review-card-btn" class="btn btn-secondary" title="Move Card (V)"><i class="fas fa-right-left"></i></button>
+                            <button id="delete-review-card-btn" class="btn btn-danger" title="Delete Card (D)"><i class="fas fa-trash-alt"></i></button>
+                        </div>
                         <label class="toggle-label flex items-center cursor-pointer">
                             <span class="mr-2 text-sm font-medium">Skip Delay</span>
                             <div class="relative">
@@ -416,10 +417,10 @@
                         </div>
                     </div>
                 </div>
-                <div class="flex justify-between items-center mt-6">
-                    <button id="prev-card-btn" class="btn btn-secondary btn-lg" title="Previous (N)"><i class="fas fa-arrow-left"></i> Previous</button>
+                <div class="flex justify-center items-center mt-6">
+                    <button id="prev-card-btn" class="btn btn-secondary btn-lg hidden" title="Previous (N)"><i class="fas fa-arrow-left"></i> Previous</button>
                     <button id="end-review-btn" class="btn btn-danger btn-lg">End Review</button>
-                    <button id="next-card-btn" class="btn btn-secondary btn-lg" title="Next (M)">Next <i class="fas fa-arrow-right"></i></button>
+                    <button id="next-card-btn" class="btn btn-secondary btn-lg hidden" title="Next (M)">Next <i class="fas fa-arrow-right"></i></button>
                 </div>
             </div>
         </div>
@@ -784,7 +785,7 @@
         let pendingFolderDeleteId = null;
         let pendingFolderDeleteName = '';
         let pendingFolderDeleteCount = 0;
-        let reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, backCopyIndex: 0, rawBackCopyIndex: 0, beispielCopyIndex: 0, beispielSpeechCopyIndex: 0, editedCardIds: new Set(), originalCards: [] };
+        let reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, backCopyIndex: 0, rawBackCopyIndex: 0, beispielCopyIndex: 0, beispielSpeechCopyIndex: 0, originalCards: [] };
         let currentReviewFolderId = ALL_FOLDERS_VALUE;
         let currentReviewSessionId = null;
         let currentViewFolderId = ALL_FOLDERS_VALUE;
@@ -4710,7 +4711,6 @@
             const beispielSpeechEl = document.getElementById('review-beispiel-speech');
             const translationEl = document.getElementById('review-translation');
             const progressTextEl = document.getElementById('review-progress-text');
-            const editedTextEl = document.getElementById('review-edited-text');
             const prevBtn = document.getElementById('prev-card-btn');
             const nextBtn = document.getElementById('next-card-btn');
             if (frontEl) frontEl.textContent = '—';
@@ -4719,7 +4719,6 @@
             if (beispielSpeechEl) beispielSpeechEl.textContent = '—';
             if (translationEl) translationEl.innerHTML = '';
             if (progressTextEl) progressTextEl.textContent = message;
-            if (editedTextEl) editedTextEl.textContent = '';
             if (prevBtn) prevBtn.disabled = true;
             if (nextBtn) nextBtn.disabled = true;
             const bar = document.getElementById('review-progress-bar');
@@ -4756,20 +4755,9 @@
             renderBeispielSpeechForReview(document.getElementById('review-beispiel-speech'), card.beispielSpeech);
             renderMultiLineForReview(document.getElementById('review-translation'), card.translation);
             
-            // Update counters and marker
-            const editedCount = reviewSession.editedCardIds.size;
+            // Update progress counter
             const totalCount = reviewSession.cards.length;
             document.getElementById('review-progress-text').textContent = `Card ${reviewSession.currentIndex + 1} of ${totalCount}`;
-            document.getElementById('review-edited-text').textContent = `Edited: ${editedCount} / ${totalCount - editedCount} Remaining`;
-            
-            const markEditedBtn = document.getElementById('mark-edited-btn');
-            if (reviewSession.editedCardIds.has(card.id)) {
-                markEditedBtn.classList.add('btn-success');
-                markEditedBtn.classList.remove('btn-secondary');
-            } else {
-                markEditedBtn.classList.add('btn-secondary');
-                markEditedBtn.classList.remove('btn-success');
-            }
 
             document.getElementById('prev-card-btn').disabled = reviewSession.currentIndex === 0;
             document.getElementById('next-card-btn').disabled = reviewSession.currentIndex === reviewSession.cards.length - 1;
@@ -4814,7 +4802,6 @@
                 }
             }
 
-            reviewSession.editedCardIds.delete(cardId);
             return {
                 hasVisibleCards: reviewSession.cards.length > 0,
                 hasRemainingCards: reviewSession.originalCards.length > 0
@@ -4830,16 +4817,6 @@
                 exitReviewEditMode();
             }
 
-            // Mark the card we are leaving as edited
-            if (direction > 0 && reviewSession.currentIndex > -1) {
-                const currentCard = reviewSession.cards[reviewSession.currentIndex];
-                const cardId = currentCard && currentCard.id;
-                if (cardId && !reviewSession.editedCardIds.has(cardId)) {
-                    setLocalEditedState(cardId, true);
-                    await updateEditedCardsInFirestore(cardId, true);
-                }
-            }
-            
             const newIndex = reviewSession.currentIndex + direction;
             if (newIndex >= 0 && newIndex < reviewSession.cards.length) {
                 reviewSession.currentIndex = newIndex;
@@ -5052,50 +5029,6 @@
             }
         }
 
-        function setLocalEditedState(cardId, isEdited) {
-            if (!cardId) return;
-            if (isEdited) reviewSession.editedCardIds.add(cardId);
-            else reviewSession.editedCardIds.delete(cardId);
-
-            const updateInList = (list) => {
-                if (!Array.isArray(list)) return;
-                const card = list.find(c => c.id === cardId);
-                if (card) card.reviewEdited = isEdited;
-            };
-            updateInList(reviewSession.cards);
-            updateInList(reviewSession.originalCards);
-            const allCard = allCards.find(c => c.id === cardId);
-            if (allCard) allCard.reviewEdited = isEdited;
-        }
-
-        async function persistReviewSessionEditedIds() {
-            if (!userId || !currentReviewSessionId) return;
-            const sessionRef = doc(db, `artifacts/${appId}/users/${userId}/review_sessions`, currentReviewSessionId);
-            try {
-                await setDoc(sessionRef, { editedCardIds: Array.from(reviewSession.editedCardIds) }, { merge: true });
-            } catch (error) {
-                console.error('Failed to save review progress:', error);
-                showNotification('Could not save review progress.');
-            }
-        }
-
-        async function updateEditedCardsInFirestore(cardId, isEdited) {
-            if (!userId) return;
-            const writes = [];
-            if (cardId && cardsCollectionRef) {
-                const cardRef = doc(cardsCollectionRef, cardId);
-                const payload = isEdited
-                    ? { reviewEdited: true, reviewEditedAt: new Date().toISOString() }
-                    : { reviewEdited: deleteField(), reviewEditedAt: deleteField() };
-                writes.push(updateDoc(cardRef, payload).catch(error => {
-                    console.error('Failed to update card edited state:', error);
-                    showNotification('Could not update card edited state.', 'error');
-                }));
-            }
-            if (currentReviewSessionId) writes.push(persistReviewSessionEditedIds());
-            await Promise.all(writes);
-        }
-
         async function handleConfirmReviewMoveCard() {
             const targetSelector = document.getElementById('review-move-target-folder-select');
             const confirmBtn = document.getElementById('confirm-review-move-card-btn');
@@ -5120,7 +5053,6 @@
 
                 if (shouldLeaveSession) {
                     removalState = removeCardFromReviewSession(card.id, { preferNextCard: true });
-                    await persistReviewSessionEditedIds();
                     if (!removalState.hasRemainingCards) {
                         endReviewSession();
                         showNotification(`Card moved to "${result.destinationLabel}". Review session finished.`, 'success');
@@ -5192,20 +5124,6 @@
             reviewSession.currentIndex = 0;
             reviewSession.backCopyIndex = 0;
             reviewSession.rawBackCopyIndex = 0;
-            reviewSession.editedCardIds = new Set(cardsForReview.filter(card => card.reviewEdited).map(card => card.id));
-            // Fetch persisted edited IDs
-            if (userId && currentReviewSessionId) {
-                try {
-                    const docRef = doc(db, `artifacts/${appId}/users/${userId}/review_sessions`, currentReviewSessionId);
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists() && docSnap.data().editedCardIds) {
-                        const editedIds = docSnap.data().editedCardIds;
-                        editedIds.forEach(id => setLocalEditedState(id, true));
-                    }
-                } catch (error) {
-                    console.error('Error fetching review session:', error);
-                }
-            }
 
             document.getElementById('review-setup').classList.add('hidden');
             document.getElementById('review-session').classList.remove('hidden');
@@ -5219,7 +5137,7 @@
             clearAutoSkipTimer();
             clearReviewBackLongPressTimer();
             closeReviewMoveCardModal();
-            reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, backCopyIndex: 0, rawBackCopyIndex: 0, beispielCopyIndex: 0, beispielSpeechCopyIndex: 0, editedCardIds: new Set(), originalCards: [] };
+            reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, backCopyIndex: 0, rawBackCopyIndex: 0, beispielCopyIndex: 0, beispielSpeechCopyIndex: 0, originalCards: [] };
             currentReviewSessionId = null;
             resetReviewFolderOrderToggle();
             document.getElementById('main-app').classList.remove('hidden');
@@ -5328,7 +5246,6 @@
                 
                 if (isReviewDelete) {
                     const removalState = removeCardFromReviewSession(cardId, { preferNextCard: true });
-                    await persistReviewSessionEditedIds();
 
                     if (!removalState.hasRemainingCards) {
                         endReviewSession();
@@ -6063,7 +5980,7 @@
                 allCards = [];
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    allCards.push({ id: doc.id, ...data, reviewEdited: !!data.reviewEdited });
+                    allCards.push({ id: doc.id, ...data });
                 });
                 document.getElementById('total-counter').textContent = allCards.length;
                 
@@ -6932,9 +6849,7 @@
                 card.beispiel = newBeispiel;
                 card.translation = newTranslation;
                 card.beispielSpeech = newBeispielSpeech;
-                
-                setLocalEditedState(card.id, true);
-                await updateEditedCardsInFirestore(card.id, true);
+
                 showNotification('Card updated successfully.', 'success');
                 return true;
             } catch (error) { 
@@ -7758,20 +7673,19 @@
                     }, 1);
                 });
             });
-            document.getElementById('mark-edited-btn').addEventListener('click', async () => {
-                clearAutoSkipTimer();
-                if (reviewSession.currentIndex > -1) {
-                    const cardId = reviewSession.cards[reviewSession.currentIndex].id;
-                    if (reviewSession.editedCardIds.has(cardId)) {
-                        setLocalEditedState(cardId, false);
-                        await updateEditedCardsInFirestore(cardId, false);
-                    } else {
-                        setLocalEditedState(cardId, true);
-                        await updateEditedCardsInFirestore(cardId, true);
-                    }
-                    renderReviewCard();
-                }
-            });
+            const reviewShowMoreBtn = document.getElementById('review-show-more-btn');
+            const reviewActionsExtra = document.getElementById('review-actions-extra');
+            if (reviewShowMoreBtn && reviewActionsExtra) {
+                reviewShowMoreBtn.addEventListener('click', () => {
+                    const willShow = reviewActionsExtra.classList.contains('hidden');
+                    reviewActionsExtra.classList.toggle('hidden', !willShow);
+                    reviewActionsExtra.classList.toggle('flex', willShow);
+                    reviewShowMoreBtn.setAttribute('aria-expanded', willShow ? 'true' : 'false');
+                    reviewShowMoreBtn.innerHTML = willShow
+                        ? '<i class="fas fa-ellipsis"></i> Less'
+                        : '<i class="fas fa-ellipsis"></i> More';
+                });
+            }
             const inReviewSearchInput = document.getElementById('in-review-search-input');
             if (inReviewSearchInput) {
                 inReviewSearchInput.addEventListener('focus', clearAutoSkipTimer);
