@@ -59,6 +59,9 @@
         #review-word-only-toggle:checked ~ .block { background-color: #f59e0b; }
         #review-back-only-toggle:checked ~ .dot { transform: translateX(100%); background-color: #007acc; }
         #review-back-only-toggle:checked ~ .block { background-color: #1d72f3; }
+        .review-filter-chip { padding: 9px 12px; border-radius: 8px; border: 1px solid #2a2a2a; background-color: #111; color: #d1d5db; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease; }
+        .review-filter-chip:hover { border-color: #3a3a3a; background-color: #181818; }
+        .review-filter-chip.active { background-color: #007acc; border-color: #007acc; color: #fff; }
         .duplicates-page { min-height: 100vh; }
         .duplicate-group { background-color: #111; border: 1px solid #333; border-radius: 12px; padding: 18px; }
         .duplicate-field-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #888; }
@@ -303,18 +306,14 @@
                                 <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full"></div>
                             </div>
                         </label>
-                        <p class="text-xs text-gray-500 mt-1">Only affects this review setup and resets when you reopen it.</p>
                     </div>
                     <div>
                         <label for="review-date-selector" class="anki-label mb-2 block">Select Date:</label>
                         <select id="review-date-selector" class="anki-input"></select>
                     </div>
-                    <div>
-                        <label class="flex items-center space-x-2 text-sm text-gray-300">
-                            <input type="checkbox" id="review-missing-only-toggle" class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
-                            <span>Only cards without Beispiel</span>
-                        </label>
-                        <p class="text-xs text-gray-500 mt-1">Filter the session to cards that do not have example sentences yet.</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" id="review-missing-only-btn" class="review-filter-chip" aria-pressed="false">Without Beispiel</button>
+                        <button type="button" id="review-image-only-btn" class="review-filter-chip" aria-pressed="false">With Image</button>
                     </div>
                     <button id="start-session-btn" class="btn btn-primary btn-lg w-full mt-6">Start Session</button>
                     <button id="close-review-setup-btn" class="btn btn-secondary btn-lg w-full">Close</button>
@@ -840,9 +839,19 @@
             return normalizeSentencesFromBeispiel(card.beispiel).length > 0;
         }
 
+        function cardHasImageTag(card) {
+            if (!card) return false;
+            return /<img\b/i.test(normalizeCardFrontValue(card.front));
+        }
+
         function isReviewMissingOnly() {
-            const toggle = document.getElementById('review-missing-only-toggle');
-            return !!(toggle && toggle.checked);
+            const btn = document.getElementById('review-missing-only-btn');
+            return !!(btn && btn.classList.contains('active'));
+        }
+
+        function isReviewImageOnly() {
+            const btn = document.getElementById('review-image-only-btn');
+            return !!(btn && btn.classList.contains('active'));
         }
 
         function isReviewFolderOrderReversed() {
@@ -2613,7 +2622,7 @@
             if (modal) modal.classList.add('hidden');
         }
 
-        function buildReviewSessionId(selectedDate, folderValue, missingOnly = false) {
+        function buildReviewSessionId(selectedDate, folderValue, missingOnly = false, imageOnly = false) {
             const datePart = selectedDate === 'all' ? 'date_all' : `date_${selectedDate}`;
             let folderPart = 'folder_none';
             if (folderValue === ALL_FOLDERS_VALUE) {
@@ -2622,7 +2631,8 @@
                 folderPart = `folder_${folderValue}`;
             }
             const missingPart = missingOnly ? '__missing_beispiel' : '';
-            return `${datePart}__${folderPart}${missingPart}`;
+            const imagePart = imageOnly ? '__image_only' : '';
+            return `${datePart}__${folderPart}${missingPart}${imagePart}`;
         }
 
         function parseTsvLine(line) {
@@ -4351,9 +4361,11 @@
             const reviewBtn = document.getElementById('review-btn');
             const startSessionBtn = document.getElementById('start-session-btn');
             const missingOnly = isReviewMissingOnly();
+            const imageOnly = isReviewImageOnly();
             const relevantCards = allCards
                 .filter(card => cardMatchesFolder(card, currentReviewFolderId))
-                .filter(card => !missingOnly || !cardHasBeispiel(card));
+                .filter(card => !missingOnly || !cardHasBeispiel(card))
+                .filter(card => !imageOnly || cardHasImageTag(card));
             const dates = new Set();
             relevantCards.forEach(card => {
                 if (card.createdAt && typeof card.createdAt === 'string') {
@@ -4948,6 +4960,7 @@
             const selectedDate = reviewDateSelector ? reviewDateSelector.value : 'all';
             const selectedFolder = reviewFolderSelector ? reviewFolderSelector.value : ALL_FOLDERS_VALUE;
             const missingOnly = isReviewMissingOnly();
+            const imageOnly = isReviewImageOnly();
 
             currentReviewDate = selectedDate;
             currentReviewFolderId = selectedFolder;
@@ -4959,18 +4972,23 @@
             if (missingOnly) {
                 cardsForReview = cardsForReview.filter(card => !cardHasBeispiel(card));
             }
+            if (imageOnly) {
+                cardsForReview = cardsForReview.filter(card => cardHasImageTag(card));
+            }
             cardsForReview.sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt));
 
             if (cardsForReview.length === 0) {
                 const message = missingOnly
                     ? 'No cards without Beispiele for the selected filters.'
-                    : 'No cards found for the selected filters.';
+                    : (imageOnly
+                        ? 'No cards with image tags for the selected filters.'
+                        : 'No cards found for the selected filters.');
                 showNotification(message);
                 return;
             }
 
             rememberLastReviewedFolder(selectedFolder);
-            currentReviewSessionId = buildReviewSessionId(selectedDate, selectedFolder, missingOnly);
+            currentReviewSessionId = buildReviewSessionId(selectedDate, selectedFolder, missingOnly, imageOnly);
 
             reviewSession.originalCards = [...cardsForReview];
             reviewSession.cards = [...cardsForReview];
@@ -6736,15 +6754,38 @@
             if (reviewFolderOrderToggle) {
                 reviewFolderOrderToggle.addEventListener('change', (event) => {
                     renderReviewFolderOptions();
+                    // A native <select> opens scrolled to its selected option, so reversing
+                    // alone won't reveal the folders that just moved up. Select the new
+                    // top folder so the surfaced folders are immediately reachable.
+                    const selector = document.getElementById('review-folder-selector');
+                    if (selector) {
+                        const firstFolderOption = Array.from(selector.options)
+                            .find(opt => opt.value !== ALL_FOLDERS_VALUE && opt.value !== NO_FOLDER_VALUE);
+                        if (firstFolderOption) {
+                            selector.value = firstFolderOption.value;
+                            currentReviewFolderId = firstFolderOption.value;
+                        }
+                    }
                     updateReviewDateSelector();
                     releaseReviewSetupControlFocus(event.target);
                 });
             }
-            const reviewMissingToggle = document.getElementById('review-missing-only-toggle');
-            if (reviewMissingToggle) {
-                reviewMissingToggle.addEventListener('change', (event) => {
+            const reviewMissingBtn = document.getElementById('review-missing-only-btn');
+            if (reviewMissingBtn) {
+                reviewMissingBtn.addEventListener('click', (event) => {
+                    const active = reviewMissingBtn.classList.toggle('active');
+                    reviewMissingBtn.setAttribute('aria-pressed', active ? 'true' : 'false');
                     updateReviewDateSelector();
-                    releaseReviewSetupControlFocus(event.target);
+                    releaseReviewSetupControlFocus(event.currentTarget);
+                });
+            }
+            const reviewImageBtn = document.getElementById('review-image-only-btn');
+            if (reviewImageBtn) {
+                reviewImageBtn.addEventListener('click', (event) => {
+                    const active = reviewImageBtn.classList.toggle('active');
+                    reviewImageBtn.setAttribute('aria-pressed', active ? 'true' : 'false');
+                    updateReviewDateSelector();
+                    releaseReviewSetupControlFocus(event.currentTarget);
                 });
             }
             if (viewFolderSelector) {
