@@ -5579,7 +5579,8 @@
                 if (ext === 'jpg') newExt = 'webp';
                 else if (ext === 'webp') newExt = 'png';
                 else if (ext === 'png') newExt = 'svg';
-                else if (ext === 'svg') newExt = 'jpg';
+                else if (ext === 'svg') newExt = 'jpeg';
+                else if (ext === 'jpeg') newExt = 'jpg';
                 frontInput.value = `<img src="${base}.${newExt}">`;
                 return true;
             }
