@@ -4883,6 +4883,23 @@
             reviewSession.beispielSpeechCopyIndex = (normalizedIndex + 1) % soundTags.length;
         }
 
+        function restoreFullReviewList() {
+            // Remember the card currently shown (works whether the list is
+            // filtered or already full) so clearing search keeps your place.
+            const currentCard = reviewSession.currentIndex > -1
+                ? reviewSession.cards[reviewSession.currentIndex]
+                : null;
+            reviewSession.cards = [...reviewSession.originalCards];
+            if (reviewSession.cards.length === 0) {
+                reviewSession.currentIndex = -1;
+                return;
+            }
+            const restoredIndex = currentCard
+                ? reviewSession.cards.findIndex(card => card.id === currentCard.id)
+                : -1;
+            reviewSession.currentIndex = restoredIndex > -1 ? restoredIndex : 0;
+        }
+
         function isInReviewSearchVisible() {
             const wrapper = document.getElementById('in-review-search-wrapper');
             return !!(wrapper && !wrapper.classList.contains('hidden'));
@@ -4899,8 +4916,7 @@
             } else {
                 if (input.value) {
                     input.value = '';
-                    reviewSession.cards = [...reviewSession.originalCards];
-                    reviewSession.currentIndex = reviewSession.cards.length > 0 ? 0 : -1;
+                    restoreFullReviewList();
                     renderReviewCard();
                 }
                 input.blur();
@@ -7764,8 +7780,7 @@
                     clearAutoSkipTimer();
                     const searchTerm = e.target.value.toLowerCase().trim();
                     if (!searchTerm) {
-                        reviewSession.cards = [...reviewSession.originalCards];
-                        reviewSession.currentIndex = reviewSession.cards.length > 0 ? 0 : -1;
+                        restoreFullReviewList();
                     } else {
                         const filtered = reviewSession.originalCards.filter(card => {
                             return (card.front || '').toLowerCase().includes(searchTerm) ||
