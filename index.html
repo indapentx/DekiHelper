@@ -570,6 +570,10 @@
                             <input type="radio" name="export-format" value="clipboard-quizlet" class="form-radio">
                             <span>Copy to Clipboard (Quizlet - Back only, one per line)</span>
                         </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="radio" name="export-format" value="clipboard-image-back-only" class="form-radio">
+                            <span>Copy to Clipboard (cards with image tags, back only)</span>
+                        </label>
                     </div>
                 </div>
                 <hr class="border-gray-700 !my-6">
@@ -5696,6 +5700,14 @@
                     return;
                 }
                 clipboardSuccessMessage = `Copied ${missingBeispielCards.length} card${missingBeispielCards.length === 1 ? '' : 's'} without example sentences to clipboard!`;
+            } else if (format === 'clipboard-image-back-only') {
+                const imageCards = cardsToExport.filter(card => cardHasImageTag(card));
+                clipboardText = buildBackOnlyTextFromCards(imageCards, ', ');
+                if (isBlank(clipboardText)) {
+                    showNotification("No cards with image tags match the selected criteria.", "success");
+                    return;
+                }
+                clipboardSuccessMessage = `Copied ${imageCards.length} card${imageCards.length === 1 ? '' : 's'} with image tags to clipboard!`;
             } else {
                 triggerExportDownload(cardsToExport, format, { range, selectedFolders, selectedDates });
                 document.getElementById('export-modal').classList.add('hidden');
