@@ -329,15 +329,6 @@
                         <p id="review-progress-text" class="font-semibold"></p>
                     </div>
                     <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-                        <button id="review-show-more-btn" class="btn btn-secondary" title="Show more actions" aria-expanded="false"><i class="fas fa-ellipsis"></i> More</button>
-                        <button id="save-review-edit-btn" class="btn btn-success hidden"><i class="fas fa-check"></i> Save</button>
-                        <button id="cancel-review-edit-btn" class="btn btn-secondary hidden"><i class="fas fa-times"></i> Cancel</button>
-                        <div id="review-actions-extra" class="hidden flex-wrap items-center gap-x-4 gap-y-2">
-                            <button id="edit-review-card-btn" class="btn btn-secondary" title="Edit (T)"><i class="fas fa-pencil-alt"></i> Edit</button>
-                            <button id="review-generate-img-tag-btn" class="btn btn-secondary" title="Generate or Cycle Image Tag (I)"><i class="fa-solid fa-wand-magic-sparkles"></i> Image</button>
-                            <button id="move-review-card-btn" class="btn btn-secondary" title="Move Card (V)"><i class="fas fa-right-left"></i></button>
-                            <button id="delete-review-card-btn" class="btn btn-danger" title="Delete Card (D)"><i class="fas fa-trash-alt"></i></button>
-                        </div>
                         <label class="toggle-label flex items-center cursor-pointer">
                             <span class="mr-2 text-sm font-medium">Skip Delay</span>
                             <div class="relative">
@@ -370,13 +361,22 @@
                                 <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full"></div>
                             </div>
                         </label>
+                        <button id="save-review-edit-btn" class="btn btn-success hidden"><i class="fas fa-check"></i> Save</button>
+                        <button id="cancel-review-edit-btn" class="btn btn-secondary hidden"><i class="fas fa-times"></i> Cancel</button>
+                        <div id="review-actions-extra" class="hidden flex-wrap items-center gap-x-4 gap-y-2">
+                            <button id="edit-review-card-btn" class="btn btn-secondary" title="Edit (T)"><i class="fas fa-pencil-alt"></i> Edit</button>
+                            <button id="review-generate-img-tag-btn" class="btn btn-secondary" title="Generate or Cycle Image Tag (I)"><i class="fa-solid fa-wand-magic-sparkles"></i> Image</button>
+                            <button id="move-review-card-btn" class="btn btn-secondary" title="Move Card (V)"><i class="fas fa-right-left"></i></button>
+                            <button id="delete-review-card-btn" class="btn btn-danger" title="Delete Card (D)"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                        <button id="review-show-more-btn" class="btn btn-secondary" title="Show more actions" aria-expanded="false"><i class="fas fa-ellipsis"></i> More</button>
                     </div>
                 </div>
                 <div class="progress-bar-container mb-6">
                     <div id="review-progress-bar" class="progress-bar"></div>
                 </div>
                 <div class="flex-grow flex flex-col justify-center space-y-2">
-                     <div class="mb-4">
+                     <div id="in-review-search-wrapper" class="mb-4 hidden">
                         <input type="text" id="in-review-search-input" class="anki-input text-sm" placeholder="Search in current review session...">
                     </div>
                     <div>
@@ -419,7 +419,7 @@
                 </div>
                 <div class="flex justify-center items-center mt-6">
                     <button id="prev-card-btn" class="btn btn-secondary btn-lg hidden" title="Previous (N)"><i class="fas fa-arrow-left"></i> Previous</button>
-                    <button id="end-review-btn" class="btn btn-danger btn-lg">End Review</button>
+                    <button id="end-review-btn" class="btn btn-danger btn-lg hidden">End Review</button>
                     <button id="next-card-btn" class="btn btn-secondary btn-lg hidden" title="Next (M)">Next <i class="fas fa-arrow-right"></i></button>
                 </div>
             </div>
@@ -4618,8 +4618,8 @@
                         span.textContent = trimmedLine;
 
                         const copyBtn = document.createElement('button');
-                        copyBtn.className = 'btn-icon text-gray-400 hover:text-white ml-4 flex-shrink-0 copy-line-btn';
-                        copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+                        copyBtn.className = 'review-copy-btn flex-shrink-0 copy-line-btn';
+                        copyBtn.innerHTML = '<i class="fas fa-copy fa-lg"></i>';
                         copyBtn.title = `Copy: "${trimmedLine}"`;
                         copyBtn.dataset.text = trimmedLine;
 
@@ -4880,6 +4880,40 @@
             reviewSession.beispielSpeechCopyIndex = (normalizedIndex + 1) % soundTags.length;
         }
 
+        let reviewFieldLabelsHidden = false;
+
+        function isInReviewSearchVisible() {
+            const wrapper = document.getElementById('in-review-search-wrapper');
+            return !!(wrapper && !wrapper.classList.contains('hidden'));
+        }
+
+        function setInReviewSearchVisible(visible) {
+            const wrapper = document.getElementById('in-review-search-wrapper');
+            const input = document.getElementById('in-review-search-input');
+            if (!wrapper || !input) return;
+            if (visible) {
+                wrapper.classList.remove('hidden');
+                input.focus();
+                input.select();
+            } else {
+                if (input.value) {
+                    input.value = '';
+                    reviewSession.cards = [...reviewSession.originalCards];
+                    reviewSession.currentIndex = reviewSession.cards.length > 0 ? 0 : -1;
+                    renderReviewCard();
+                }
+                input.blur();
+                wrapper.classList.add('hidden');
+            }
+        }
+
+        function toggleReviewFieldLabels() {
+            reviewFieldLabelsHidden = !reviewFieldLabelsHidden;
+            document.querySelectorAll('#review-session .anki-label').forEach(label => {
+                label.style.display = reviewFieldLabelsHidden ? 'none' : '';
+            });
+        }
+
         function handleReviewKeyboard(e) {
             if (document.activeElement.id === 'in-review-search-input') return;
             if (isReviewEditing) return;
@@ -5016,6 +5050,21 @@
                 e.preventDefault();
                 document.getElementById('move-review-card-btn').click();
             }
+            if (e.key === 'q' || e.key === 'Q') {
+                e.preventDefault();
+                document.getElementById('end-review-btn').click();
+                return;
+            }
+            if (e.key === 'o' || e.key === 'O') {
+                e.preventDefault();
+                setInReviewSearchVisible(!isInReviewSearchVisible());
+                return;
+            }
+            if (e.key === 'u' || e.key === 'U') {
+                e.preventDefault();
+                toggleReviewFieldLabels();
+                return;
+            }
         }
 
         function handleReviewKeyboardKeyup(e) {
@@ -5127,6 +5176,10 @@
 
             document.getElementById('review-setup').classList.add('hidden');
             document.getElementById('review-session').classList.remove('hidden');
+            const inReviewSearchInput = document.getElementById('in-review-search-input');
+            if (inReviewSearchInput) inReviewSearchInput.value = '';
+            const inReviewSearchWrapper = document.getElementById('in-review-search-wrapper');
+            if (inReviewSearchWrapper) inReviewSearchWrapper.classList.add('hidden');
             document.addEventListener('keydown', handleReviewKeyboard);
             document.addEventListener('keyup', handleReviewKeyboardKeyup);
             renderReviewCard();
@@ -7686,9 +7739,28 @@
                         : '<i class="fas fa-ellipsis"></i> More';
                 });
             }
+            const reviewModalForOutsideClick = document.getElementById('review-modal');
+            if (reviewModalForOutsideClick) {
+                reviewModalForOutsideClick.addEventListener('click', (e) => {
+                    if (!isReviewEditing) return;
+                    if (e.target.closest('.review-card') ||
+                        e.target.closest('button') ||
+                        e.target.closest('label') ||
+                        e.target.closest('#in-review-search-wrapper')) {
+                        return;
+                    }
+                    exitReviewEditMode();
+                });
+            }
             const inReviewSearchInput = document.getElementById('in-review-search-input');
             if (inReviewSearchInput) {
                 inReviewSearchInput.addEventListener('focus', clearAutoSkipTimer);
+                inReviewSearchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        setInReviewSearchVisible(false);
+                    }
+                });
                 inReviewSearchInput.addEventListener('input', (e) => {
                     clearAutoSkipTimer();
                     const searchTerm = e.target.value.toLowerCase().trim();
