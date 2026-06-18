@@ -4815,6 +4815,33 @@
             };
         }
 
+        // Keep a running review session in sync with live card changes from other
+        // tabs/windows: drop cards deleted elsewhere and pick up edits, without a refresh.
+        function reconcileActiveReviewSession() {
+            if (!reviewSession.originalCards || reviewSession.originalCards.length === 0) return;
+
+            const byId = new Map(allCards.map(card => [card.id, card]));
+            const currentCard = reviewSession.cards[reviewSession.currentIndex];
+            const currentId = currentCard ? currentCard.id : null;
+
+            const remap = (list) => (Array.isArray(list) ? list.map(card => byId.get(card.id)).filter(Boolean) : []);
+            reviewSession.originalCards = remap(reviewSession.originalCards);
+            reviewSession.cards = remap(reviewSession.cards);
+
+            if (reviewSession.cards.length === 0) {
+                reviewSession.currentIndex = -1;
+            } else {
+                let idx = currentId ? reviewSession.cards.findIndex(card => card.id === currentId) : -1;
+                if (idx === -1) {
+                    idx = Math.min(Math.max(reviewSession.currentIndex, 0), reviewSession.cards.length - 1);
+                }
+                reviewSession.currentIndex = idx;
+            }
+
+            // Avoid clobbering an in-progress edit; renderReviewCard runs on save/cancel.
+            if (!isReviewEditing) renderReviewCard();
+        }
+
         async function handleReviewNav(direction, autoEditNext = false) {
             clearAutoSkipTimer();
             
@@ -6081,6 +6108,7 @@
                 applyPendingExternalEditRequest();
                 filterAndRenderCards();
                 updateReviewDateSelector();
+                reconcileActiveReviewSession();
                 recoverDuplicateViewFiltersAfterDelete();
                 updateDuplicateBadge();
                 updateLegacyBadge();
