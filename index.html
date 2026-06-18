@@ -7347,6 +7347,17 @@
                 document.getElementById('main-app').classList.add('hidden');
                 document.getElementById('review-modal').classList.remove('hidden');
             });
+            // Keep the default review folder in sync across tabs: the storage event
+            // fires in other tabs whenever this preference changes in localStorage.
+            window.addEventListener('storage', (event) => {
+                if (event.key !== LAST_REVIEWED_FOLDER_STORAGE_KEY) return;
+                const newValue = event.newValue || ALL_FOLDERS_VALUE;
+                const nextFolder = isReviewFolderValueValid(newValue) ? newValue : ALL_FOLDERS_VALUE;
+                if (nextFolder === currentReviewFolderId) return;
+                currentReviewFolderId = nextFolder;
+                renderReviewFolderOptions();
+                updateReviewDateSelector();
+            });
             document.getElementById('close-review-setup-btn').addEventListener('click', endReviewSession);
             document.getElementById('start-session-btn').addEventListener('click', startReviewSession);
             document.getElementById('next-card-btn').addEventListener('click', () => handleReviewNav(1));
