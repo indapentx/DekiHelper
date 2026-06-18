@@ -371,6 +371,7 @@
                             <button id="review-generate-img-tag-btn" class="btn btn-secondary" title="Generate or Cycle Image Tag (I)"><i class="fa-solid fa-wand-magic-sparkles"></i> Image</button>
                             <button id="move-review-card-btn" class="btn btn-secondary" title="Move Card (V)"><i class="fas fa-right-left"></i></button>
                             <button id="delete-review-card-btn" class="btn btn-danger" title="Delete Card (D)"><i class="fas fa-trash-alt"></i></button>
+                            <button id="restore-review-card-btn" class="btn btn-secondary" title="Restore Last Deleted (Z)"><i class="fas fa-undo"></i></button>
                         </div>
                         <button id="review-show-more-btn" class="btn btn-secondary" title="Show more actions" aria-expanded="false"><i class="fas fa-ellipsis"></i> More</button>
                     </div>
@@ -793,6 +794,7 @@
         let pendingFolderDeleteName = '';
         let pendingFolderDeleteCount = 0;
         let reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, backCopyIndex: 0, rawBackCopyIndex: 0, beispielCopyIndex: 0, beispielSpeechCopyIndex: 0, originalCards: [] };
+        let lastReviewDeletion = null;
         let currentReviewFolderId = ALL_FOLDERS_VALUE;
         let currentReviewSessionId = null;
         let currentViewFolderId = ALL_FOLDERS_VALUE;
@@ -4141,14 +4143,16 @@
         }
 
         async function archiveCardBeforeDeletion(cardData) {
-            if (!deletedCardsCollectionRef || !cardData || !cardData.id) return;
+            if (!deletedCardsCollectionRef || !cardData || !cardData.id) return null;
             const archivedCard = buildArchivedCardPayload(cardData);
-            if (!archivedCard) return;
+            if (!archivedCard) return null;
             try {
                 const archiveDocRef = doc(deletedCardsCollectionRef);
                 await setDoc(archiveDocRef, archivedCard);
+                return archiveDocRef.id;
             } catch (error) {
                 console.error('Failed to archive card before deletion:', error);
+                return null;
             }
         }
 
@@ -5100,6 +5104,11 @@
                 e.preventDefault();
                 document.getElementById('move-review-card-btn').click();
             }
+            if (e.key === 'z' || e.key === 'Z') {
+                e.preventDefault();
+                undoLastReviewDeletion();
+                return;
+            }
             if (e.key === 'q' || e.key === 'Q') {
                 e.preventDefault();
                 document.getElementById('end-review-btn').click();
@@ -5218,6 +5227,7 @@
             rememberLastReviewedFolder(selectedFolder);
             currentReviewSessionId = buildReviewSessionId(selectedDate, selectedFolder, missingOnly, imageOnly);
 
+            lastReviewDeletion = null;
             reviewSession.originalCards = [...cardsForReview];
             reviewSession.cards = [...cardsForReview];
             reviewSession.currentIndex = 0;
@@ -5241,6 +5251,7 @@
             clearReviewBackLongPressTimer();
             closeReviewMoveCardModal();
             reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, backCopyIndex: 0, rawBackCopyIndex: 0, beispielCopyIndex: 0, beispielSpeechCopyIndex: 0, originalCards: [] };
+            lastReviewDeletion = null;
             currentReviewSessionId = null;
             resetReviewFolderOrderToggle();
             document.getElementById('main-app').classList.remove('hidden');
@@ -5337,8 +5348,9 @@
                         console.error('Failed to fetch card before deletion:', error);
                     }
                 }
+                let archiveDocId = null;
                 if (cardData) {
-                    await archiveCardBeforeDeletion(cardData);
+                    archiveDocId = await archiveCardBeforeDeletion(cardData);
                 }
                 const docRef = doc(db, `artifacts/${appId}/users/${userId}/cards`, cardId);
                 if (shouldRecoverDuplicateView) {
@@ -5348,6 +5360,16 @@
                 closeDeleteModal();
                 
                 if (isReviewDelete) {
+                    if (cardData) {
+                        lastReviewDeletion = {
+                            cardData: { ...cardData },
+                            archiveDocId,
+                            visibleIndex: reviewSession.cards.findIndex(card => card.id === cardId),
+                            originalIndex: reviewSession.originalCards.findIndex(card => card.id === cardId)
+                        };
+                    } else {
+                        lastReviewDeletion = null;
+                    }
                     const removalState = removeCardFromReviewSession(cardId, { preferNextCard: true });
 
                     if (!removalState.hasRemainingCards) {
@@ -5392,6 +5414,38 @@
                 isReviewDelete: reviewSession.cards.length > 0,
                 shouldRecoverDuplicateView: isDuplicatesViewActive()
             });
+        }
+
+        async function undoLastReviewDeletion() {
+            if (!lastReviewDeletion) {
+                showNotification('Nothing to restore.', 'error', 1500);
+                return;
+            }
+            if (reviewSession.originalCards.length === 0 && reviewSession.currentIndex === -1) {
+                showNotification('No active review to restore into.', 'error', 1500);
+                return;
+            }
+
+            const { cardData, archiveDocId, visibleIndex, originalIndex } = lastReviewDeletion;
+            lastReviewDeletion = null;
+
+            // Optimistically put the card back into the running session at its old spot.
+            const cardForSession = { ...cardData };
+            if (!reviewSession.cards.some(card => card.id === cardForSession.id)) {
+                const vIdx = Math.min(Math.max(visibleIndex, 0), reviewSession.cards.length);
+                reviewSession.cards.splice(vIdx, 0, cardForSession);
+            }
+            if (!reviewSession.originalCards.some(card => card.id === cardForSession.id)) {
+                const oIdx = Math.min(Math.max(originalIndex, 0), reviewSession.originalCards.length);
+                reviewSession.originalCards.splice(oIdx, 0, cardForSession);
+            }
+            reviewSession.currentIndex = reviewSession.cards.findIndex(card => card.id === cardForSession.id);
+            renderReviewCard();
+
+            // Recreate the card in Firestore and drop its archived copy (reuses the
+            // Deleted view's restore path). The cards snapshot + reconcile keep it in sync.
+            const archivedEntry = { ...cardData, originalId: cardData.id, id: archiveDocId || cardData.id };
+            await restoreDeletedCard(archivedEntry);
         }
         
         async function applyLegacyFrontFixes(candidates, { triggerButton = null, confirmMessage = null, loadingText = 'Fixing...' } = {}) {
@@ -7303,6 +7357,10 @@
                     openDeleteModal(reviewSession.cards[reviewSession.currentIndex].id);
                 }
             });
+            const restoreReviewCardBtn = document.getElementById('restore-review-card-btn');
+            if (restoreReviewCardBtn) {
+                restoreReviewCardBtn.addEventListener('click', () => { undoLastReviewDeletion(); });
+            }
             document.getElementById('export-btn').addEventListener('click', openExportModal);
             document.getElementById('confirm-export-btn').addEventListener('click', handleConfirmExport);
             document.getElementById('cancel-export-btn').addEventListener('click', () => {
