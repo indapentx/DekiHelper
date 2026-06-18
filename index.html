@@ -5038,10 +5038,12 @@
             }
             if (e.key === 'd' || e.key === 'D') {
                 e.preventDefault();
-                document.getElementById('delete-review-card-btn').click();
+                if (reviewSession.currentIndex > -1) {
+                    deleteCardById(reviewSession.cards[reviewSession.currentIndex].id, { isReviewDelete: true });
+                }
                 return;
             }
-            
+
             if (e.key === 'e' || e.key === 'E') {
                 e.preventDefault();
                 const card = reviewSession.cards[reviewSession.currentIndex];
@@ -5090,7 +5092,9 @@
                 return;
             }
             if (e.key === 'Delete') {
-                document.getElementById('delete-review-card-btn').click();
+                if (reviewSession.currentIndex > -1) {
+                    deleteCardById(reviewSession.cards[reviewSession.currentIndex].id, { isReviewDelete: true });
+                }
             }
             if (e.key === 'v' || e.key === 'V') {
                 e.preventDefault();
