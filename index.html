@@ -575,6 +575,10 @@
                             <input type="radio" name="export-format" value="clipboard-image-back-only" class="form-radio">
                             <span>Copy to Clipboard (cards with image tags, back only)</span>
                         </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="radio" name="export-format" value="clipboard-no-image-back-only" class="form-radio">
+                            <span>Copy to Clipboard (cards without image tags, back only, comma-separated)</span>
+                        </label>
                     </div>
                 </div>
                 <hr class="border-gray-700 !my-6">
@@ -5793,6 +5797,14 @@
                     return;
                 }
                 clipboardSuccessMessage = `Copied ${imageCards.length} card${imageCards.length === 1 ? '' : 's'} with image tags to clipboard!`;
+            } else if (format === 'clipboard-no-image-back-only') {
+                const noImageCards = cardsToExport.filter(card => !cardHasImageTag(card));
+                clipboardText = buildBackOnlyTextFromCards(noImageCards, ', ');
+                if (isBlank(clipboardText)) {
+                    showNotification("No cards without image tags match the selected criteria.", "success");
+                    return;
+                }
+                clipboardSuccessMessage = `Copied ${noImageCards.length} card${noImageCards.length === 1 ? '' : 's'} without image tags to clipboard!`;
             } else {
                 triggerExportDownload(cardsToExport, format, { range, selectedFolders, selectedDates });
                 document.getElementById('export-modal').classList.add('hidden');
@@ -5853,6 +5865,7 @@
                 const nameB = (b.name || '').toLowerCase();
                 return nameA.localeCompare(nameB);
             });
+            sortedFolders.reverse();
 
             sortedFolders.forEach(folder => {
                 const count = counts[folder.id] || 0;
