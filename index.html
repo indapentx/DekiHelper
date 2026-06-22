@@ -4556,14 +4556,14 @@
                 showNotification('Card not found.', 'error');
                 return;
             }
-            const today = getTodayExportStamp();
+            const today = formatExportDateStamp(getTodayExportStamp());
             const folderKey = card.folderId ? card.folderId : NO_FOLDER_VALUE;
             const folderCounts = getFolderCardCounts();
             const folderName = sanitizeFileName(getFolderDisplayName(folderKey), 'folder').slice(0, 40);
             const folderCardCount = Number.isFinite(folderCounts[folderKey]) ? folderCounts[folderKey] : 1;
             const baseName = sanitizeFileName(card.back || card.front || 'card', 'card');
             const clippedBaseName = baseName.slice(0, 60);
-            const fileName = `${today}-${folderName}-${folderCardCount}-cards-${clippedBaseName}.txt`;
+            const fileName = `(${today} - ${folderCardCount}) ${folderName} - ${clippedBaseName}.txt`;
             const content = buildTsvFromCards([card]);
             triggerDownload(content, fileName, 'text/plain;charset=utf-8');
             showNotification('Single card exported as Anki TXT.', 'success', 1500);
@@ -5570,42 +5570,45 @@
             return new Date().toISOString().split('T')[0];
         }
 
+        function formatExportDateStamp(value) {
+            return String(value || '').replace(/-/g, '.');
+        }
+
         function buildExportFileBase({ range = 'all', cards = [], cardCount = null, selectedFolders = [], selectedDates = [] } = {}) {
-            const today = getTodayExportStamp();
+            const today = formatExportDateStamp(getTodayExportStamp());
             const totalCards = Number.isFinite(cardCount) ? cardCount : (Array.isArray(cards) ? cards.length : 0);
+            const wrap = label => {
+                const trimmed = (label || '').toString().trim();
+                return trimmed ? `(${today} - ${totalCards}) ${trimmed}` : `(${today} - ${totalCards})`;
+            };
 
             if (range === 'folder') {
                 if (selectedFolders.length === 1) {
                     const folderName = sanitizeFileName(getFolderDisplayName(selectedFolders[0]), 'folder').slice(0, 60);
-                    return `${today}-${folderName}-${totalCards}-cards`;
+                    return wrap(folderName);
                 }
 
                 if (selectedFolders.length > 1) {
-                    const folderCounts = getFolderCardCounts();
-                    const folderDetails = selectedFolders
-                        .map(folderId => {
-                            const folderName = sanitizeFileName(getFolderDisplayName(folderId), 'folder').slice(0, 24);
-                            const count = Number.isFinite(folderCounts[folderId]) ? folderCounts[folderId] : 0;
-                            return `${folderName}-${count}`;
-                        })
-                        .join('__');
-                    if (folderDetails && folderDetails.length <= 90) {
-                        return `${today}-${folderDetails}`;
+                    const names = selectedFolders
+                        .map(folderId => sanitizeFileName(getFolderDisplayName(folderId), 'folder'))
+                        .join(', ');
+                    if (names && names.length <= 90) {
+                        return wrap(names);
                     }
-                    return `${today}-${selectedFolders.length}-folders-${totalCards}-cards`;
+                    return wrap(`${selectedFolders.length} folders`);
                 }
             }
 
             if (range === 'date') {
                 if (selectedDates.length === 1) {
-                    return `${today}-${selectedDates[0]}-${totalCards}-cards`;
+                    return wrap(formatExportDateStamp(selectedDates[0]));
                 }
                 if (selectedDates.length > 1) {
-                    return `${today}-${selectedDates.length}-dates-${totalCards}-cards`;
+                    return wrap(`${selectedDates.length} dates`);
                 }
             }
 
-            return `${today}-${totalCards}-cards`;
+            return wrap('All cards');
         }
 
         function triggerExportDownload(cards, format, options = {}) {
