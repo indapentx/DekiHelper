@@ -4532,7 +4532,7 @@
                     sanitizedBack,
                     sanitizeForExport(speechValue),
                     sanitizeForExport(data.beispiel, '', { spaceAroundBr: true }),
-                    emptyBeispielSpeech ? '' : sanitizeForExport(resolvedBeispielSpeech, '', {
+                    (emptyBeispielSpeech || !cardHasBeispiel(data)) ? '' : sanitizeForExport(resolvedBeispielSpeech, '', {
                         preserveLeadingBr: true,
                         preserveSpacingAroundBr: true,
                         keepOuterWhitespace: true
