@@ -831,7 +831,7 @@
             const notification = document.getElementById('notification');
             const notificationMessage = document.getElementById('notification-message');
             notificationMessage.innerHTML = message;
-            notification.className = `fixed top-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg ${level === 'error' ? 'bg-red-600' : 'bg-green-600'}`;
+            notification.className = `fixed top-5 right-5 z-[60] text-white py-2 px-4 rounded-lg shadow-lg ${level === 'error' ? 'bg-red-600' : 'bg-green-600'}`;
             notification.classList.remove('hidden');
             setTimeout(() => { notification.classList.add('hidden'); }, duration);
         }
