@@ -799,6 +799,8 @@
         let pendingFolderDeleteCount = 0;
         let reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, backCopyIndex: 0, rawBackCopyIndex: 0, beispielCopyIndex: 0, beispielSpeechCopyIndex: 0, originalCards: [] };
         let lastReviewDeletion = null;
+        const pendingVerbFolderCreations = new Map();
+        let verbedReviewCardIds = new Set();
         let currentReviewFolderId = ALL_FOLDERS_VALUE;
         let currentReviewSessionId = null;
         let currentViewFolderId = ALL_FOLDERS_VALUE;
@@ -2574,6 +2576,31 @@
         function getCurrentReviewCard() {
             if (reviewSession.currentIndex < 0 || !Array.isArray(reviewSession.cards)) return null;
             return reviewSession.cards[reviewSession.currentIndex] || null;
+        }
+
+        async function duplicateReviewCardToVerbsFolder() {
+            const card = getCurrentReviewCard();
+            if (!card) return;
+            if (!userId || !foldersCollectionRef || !cardsCollectionRef) return;
+            if (!card.folderId) { showNotification("This card isn't in a folder.", 'error', 1500); return; }
+            if (verbedReviewCardIds.has(card.id)) { showNotification('Already added to the verbs folder.', 'success', 1500); return; }
+
+            const targetName = `${resolveFolderName(card)} (verbs)`;
+            verbedReviewCardIds.add(card.id);
+            try {
+                const folder = await ensureFolderByExactName(targetName);
+                await addDoc(cardsCollectionRef, {
+                    front: card.front || '', back: card.back || '', speech: card.speech || '',
+                    beispiel: card.beispiel || '', beispielSpeech: card.beispielSpeech || '',
+                    translation: card.translation || '',
+                    folderId: folder.id, folderName: folder.name, createdAt: new Date().toISOString()
+                });
+                showNotification(`Duplicated to "${folder.name}".`, 'success', 1500);
+            } catch (error) {
+                console.error('Failed to duplicate card to verbs folder:', error);
+                verbedReviewCardIds.delete(card.id);
+                showNotification('Could not duplicate the card.', 'error');
+            }
         }
 
         function buildReviewMoveTargetOptions(card) {
@@ -5113,6 +5140,11 @@
                 undoLastReviewDeletion();
                 return;
             }
+            if (e.key === 'x' || e.key === 'X') {
+                e.preventDefault();
+                duplicateReviewCardToVerbsFolder();
+                return;
+            }
             if (e.key === 'q' || e.key === 'Q') {
                 e.preventDefault();
                 document.getElementById('end-review-btn').click();
@@ -5232,6 +5264,7 @@
             currentReviewSessionId = buildReviewSessionId(selectedDate, selectedFolder, missingOnly, imageOnly);
 
             lastReviewDeletion = null;
+            verbedReviewCardIds = new Set();
             reviewSession.originalCards = [...cardsForReview];
             reviewSession.cards = [...cardsForReview];
             reviewSession.currentIndex = 0;
@@ -5256,6 +5289,7 @@
             closeReviewMoveCardModal();
             reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, backCopyIndex: 0, rawBackCopyIndex: 0, beispielCopyIndex: 0, beispielSpeechCopyIndex: 0, originalCards: [] };
             lastReviewDeletion = null;
+            verbedReviewCardIds = new Set();
             currentReviewSessionId = null;
             resetReviewFolderOrderToggle();
             document.getElementById('main-app').classList.remove('hidden');
@@ -6318,6 +6352,21 @@
             }
             existingNames.add(candidate.toLowerCase());
             return candidate;
+        }
+
+        async function ensureFolderByExactName(name) {
+            const existing = folders.find(f => (f.name || '').toLowerCase() === name.toLowerCase());
+            if (existing) return { id: existing.id, name: existing.name || name };
+            const key = name.toLowerCase();
+            if (pendingVerbFolderCreations.has(key)) return pendingVerbFolderCreations.get(key);
+            const creation = (async () => {
+                const createdAt = new Date().toISOString();
+                const docRef = await addDoc(foldersCollectionRef, { name, createdAt });
+                if (!folders.some(f => f.id === docRef.id)) folders.push({ id: docRef.id, name, createdAt });
+                return { id: docRef.id, name };
+            })();
+            pendingVerbFolderCreations.set(key, creation);
+            try { return await creation; } finally { pendingVerbFolderCreations.delete(key); }
         }
 
         async function createFolderForImport(baseName, { reservedNames = null } = {}) {
