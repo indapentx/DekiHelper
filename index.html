@@ -552,6 +552,10 @@
                             <span>TXT (for Anki, empty fields)</span>
                         </label>
                         <label class="flex items-center space-x-2">
+                            <input type="radio" name="export-format" value="txt-empty-first-last" class="form-radio">
+                            <span>TXT (for Anki, empty first &amp; last field)</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
                             <input type="radio" name="export-format" value="clipboard-missing-beispiel-back-only" class="form-radio">
                             <span>Copy to Clipboard (folders without example sentence, back only)</span>
                         </label>
@@ -4544,7 +4548,7 @@
         }
 
         function buildTsvFromCards(cards, options = {}) {
-            const { emptyBeispielSpeech = false, firstTwoFieldsOnly = false } = options;
+            const { emptyBeispielSpeech = false, firstTwoFieldsOnly = false, emptyFirstAndLast = false } = options;
             const sortedCards = [...cards].sort((a, b) => getCreatedAtTime(a.createdAt) - getCreatedAtTime(b.createdAt));
             return sortedCards.map(data => {
                 const sanitizedBack = sanitizeForExport(data.back);
@@ -4555,7 +4559,7 @@
                 const speechValue = resolveSpeechValue(data.back, data.speech);
                 const resolvedBeispielSpeech = resolveBeispielSpeechValue(data.back, data.beispiel, data.beispielSpeech);
                 const fields = [
-                    sanitizedFront,
+                    emptyFirstAndLast ? '' : sanitizedFront,
                     sanitizedBack,
                     sanitizeForExport(speechValue),
                     sanitizeForExport(data.beispiel, '', { spaceAroundBr: true }),
@@ -4564,7 +4568,7 @@
                         preserveSpacingAroundBr: true,
                         keepOuterWhitespace: true
                     }),
-                    sanitizeForExport(data.translation, '', { spaceAroundBr: true })
+                    emptyFirstAndLast ? '' : sanitizeForExport(data.translation, '', { spaceAroundBr: true })
                 ];
                 return fields.join('\t');
             }).join('\n');
@@ -5662,11 +5666,14 @@
             } else {
                 const emptyBeispielSpeech = format === 'txt-empty-beispiel-speech';
                 const firstTwoFieldsOnly = format === 'txt-empty-fields';
-                content = buildTsvFromCards(cards, { emptyBeispielSpeech, firstTwoFieldsOnly });
+                const emptyFirstAndLast = format === 'txt-empty-first-last';
+                content = buildTsvFromCards(cards, { emptyBeispielSpeech, firstTwoFieldsOnly, emptyFirstAndLast });
                 if (emptyBeispielSpeech) {
                     fileName = `${exportBaseName}-empty-beispiel-speech.txt`;
                 } else if (firstTwoFieldsOnly) {
                     fileName = `${exportBaseName}-empty-fields.txt`;
+                } else if (emptyFirstAndLast) {
+                    fileName = `${exportBaseName}-empty-first-last.txt`;
                 } else {
                     fileName = `${exportBaseName}.txt`;
                 }
