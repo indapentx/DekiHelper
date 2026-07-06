@@ -5702,16 +5702,13 @@
                 const folderMeta = folders.find(f => f.id === folderId);
                 const fallbackName = folderId === NO_FOLDER_VALUE ? 'No Folder' : (cards[0]?.folderName || 'Untitled Folder');
                 const folderName = folderMeta && folderMeta.name ? folderMeta.name : fallbackName;
-                const sanitizedFolderName = ensureUniqueName(sanitizeFileName(folderName, 'folder'), usedNames);
-                const folderZip = zip.folder(sanitizedFolderName);
+                const folderNumber = exportedFolders + 1;
+                const safeFolderName = ensureUniqueName(sanitizeFileName(folderName, 'folder'), usedNames);
+                const folderZip = zip.folder(`${folderNumber}. ${safeFolderName}`);
                 if (!folderZip) return;
 
-                folderZip.file('cards.txt', buildTsvFromCards(cards));
-                folderZip.file('metadata.json', JSON.stringify({
-                    name: folderName,
-                    exportedAt: new Date().toISOString(),
-                    cardCount: cards.length
-                }, null, 2));
+                const txtBaseName = buildExportFileBase({ range: 'folder', cardCount: cards.length, selectedFolders: [folderId] });
+                folderZip.file(`${txtBaseName}.txt`, buildTsvFromCards(cards));
 
                 totalCards += cards.length;
                 exportedFolders += 1;
