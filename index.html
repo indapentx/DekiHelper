@@ -568,6 +568,10 @@
                             <span>Category Folder (.zip)</span>
                         </label>
                         <label class="flex items-center space-x-2">
+                            <input type="radio" name="export-format" value="category-zip-empty-first-last" class="form-radio">
+                            <span>Category Folder (.zip, empty first &amp; last field)</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
                             <input type="radio" name="export-format" value="clipboard-back-only" class="form-radio">
                             <span>Copy to Clipboard (Back only)</span>
                         </label>
@@ -5682,7 +5686,7 @@
             triggerDownload(content, fileName, mimeType);
         }
 
-        async function exportFoldersAsPackages(folderIds) {
+        async function exportFoldersAsPackages(folderIds, { emptyFirstAndLast = false } = {}) {
             const ids = Array.isArray(folderIds) ? folderIds : [];
             if (ids.length === 0) {
                 showNotification("Select at least one folder to export.", 'error');
@@ -5708,7 +5712,7 @@
                 if (!folderZip) return;
 
                 const txtBaseName = buildExportFileBase({ range: 'folder', cardCount: cards.length, selectedFolders: [folderId] });
-                folderZip.file(`${txtBaseName}.txt`, buildTsvFromCards(cards));
+                folderZip.file(`${txtBaseName}.txt`, buildTsvFromCards(cards, { emptyFirstAndLast }));
 
                 totalCards += cards.length;
                 exportedFolders += 1;
@@ -5726,7 +5730,7 @@
                 cardCount: totalCards,
                 selectedFolders: exportedFolderIds
             });
-            triggerBlobDownload(blob, `deki-categories-${exportBaseName}.zip`);
+            triggerBlobDownload(blob, `deki-categories-${exportBaseName}${emptyFirstAndLast ? '-empty-first-last' : ''}.zip`);
             showNotification(`Exported ${totalCards} card${totalCards === 1 ? '' : 's'} from ${exportedFolders} categor${exportedFolders === 1 ? 'y' : 'ies'}.`, 'success');
         }
 
@@ -5795,12 +5799,12 @@
                 });
             }
 
-            if (format === 'category-zip') {
+            if (format === 'category-zip' || format === 'category-zip-empty-first-last') {
                 if (range !== 'folder') {
                     showNotification("Select one or more folders to export as categories.");
                     return;
                 }
-                await exportFoldersAsPackages(selectedFolders);
+                await exportFoldersAsPackages(selectedFolders, { emptyFirstAndLast: format === 'category-zip-empty-first-last' });
                 document.getElementById('export-modal').classList.add('hidden');
                 return;
             }
