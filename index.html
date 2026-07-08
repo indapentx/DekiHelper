@@ -370,6 +370,7 @@
                             <button id="edit-review-card-btn" class="btn btn-secondary" title="Edit (T)"><i class="fas fa-pencil-alt"></i> Edit</button>
                             <button id="review-generate-img-tag-btn" class="btn btn-secondary" title="Generate or Cycle Image Tag (I)"><i class="fa-solid fa-wand-magic-sparkles"></i> Image</button>
                             <button id="move-review-card-btn" class="btn btn-secondary" title="Move Card (V)"><i class="fas fa-right-left"></i></button>
+                            <button id="duplicate-review-card-btn" class="btn btn-secondary" title="Duplicate Card Next To This One (C)"><i class="fas fa-clone"></i></button>
                             <button id="delete-review-card-btn" class="btn btn-danger" title="Delete Card (D)"><i class="fas fa-trash-alt"></i></button>
                             <button id="restore-review-card-btn" class="btn btn-secondary" title="Restore Last Deleted (Z)"><i class="fas fa-undo"></i></button>
                         </div>
@@ -2607,6 +2608,40 @@
             } catch (error) {
                 console.error('Failed to duplicate card to verbs folder:', error);
                 verbedReviewCardIds.delete(card.id);
+                showNotification('Could not duplicate the card.', 'error');
+            }
+        }
+
+        async function duplicateReviewCardNextToCurrent() {
+            const card = getCurrentReviewCard();
+            if (!card) return;
+            if (!userId || !cardsCollectionRef) return;
+
+            const cardData = {
+                front: card.front || '', back: card.back || '', speech: card.speech || '',
+                beispiel: card.beispiel || '', beispielSpeech: card.beispielSpeech || '',
+                translation: card.translation || '',
+                createdAt: new Date().toISOString()
+            };
+            if (card.folderId) {
+                cardData.folderId = card.folderId;
+                cardData.folderName = card.folderName || resolveFolderName(card);
+            }
+
+            try {
+                const docRef = await addDoc(cardsCollectionRef, cardData);
+                const newCard = { id: docRef.id, ...cardData };
+                const insertAfterCurrent = (list) => {
+                    if (!Array.isArray(list)) return;
+                    const idx = list.findIndex(entry => entry && entry.id === card.id);
+                    if (idx > -1) list.splice(idx + 1, 0, newCard); else list.push(newCard);
+                };
+                insertAfterCurrent(reviewSession.cards);
+                insertAfterCurrent(reviewSession.originalCards);
+                renderReviewCard();
+                showNotification('Duplicated — the copy is the next card.', 'success', 1500);
+            } catch (error) {
+                console.error('Failed to duplicate card in place:', error);
                 showNotification('Could not duplicate the card.', 'error');
             }
         }
@@ -5151,6 +5186,11 @@
             if (e.key === 'x' || e.key === 'X') {
                 e.preventDefault();
                 duplicateReviewCardToVerbsFolder();
+                return;
+            }
+            if ((e.key === 'c' || e.key === 'C') && !e.metaKey && !e.ctrlKey) {
+                e.preventDefault();
+                if (!e.repeat) duplicateReviewCardNextToCurrent();
                 return;
             }
             if (e.key === 'q' || e.key === 'Q') {
@@ -7731,6 +7771,8 @@
             if (confirmMoveCardsBtn) confirmMoveCardsBtn.addEventListener('click', handleConfirmMoveCards);
             const moveReviewCardBtn = document.getElementById('move-review-card-btn');
             if (moveReviewCardBtn) moveReviewCardBtn.addEventListener('click', openReviewMoveCardModal);
+            const duplicateReviewCardBtn = document.getElementById('duplicate-review-card-btn');
+            if (duplicateReviewCardBtn) duplicateReviewCardBtn.addEventListener('click', duplicateReviewCardNextToCurrent);
             const reviewMoveTargetSelect = document.getElementById('review-move-target-folder-select');
             if (reviewMoveTargetSelect) reviewMoveTargetSelect.addEventListener('change', renderReviewMoveCardSummary);
             const cancelReviewMoveCardBtn = document.getElementById('cancel-review-move-card-btn');
