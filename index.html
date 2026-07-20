@@ -1050,7 +1050,7 @@
             const backTerms = splitSemicolonTerms(normalizedValue);
             const sourceTerms = normalizedValue.includes(';') ? backTerms : [normalizedValue];
             return sourceTerms
-                .map(ensureTrailingDot)
+                .map(term => String(term || '').trim())
                 .filter(Boolean);
         }
 
