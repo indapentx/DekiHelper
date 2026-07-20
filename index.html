@@ -6004,20 +6004,14 @@
             document.getElementById('export-modal').classList.remove('hidden');
         }
 
-        function applyGeneratedOrCycledImageTag(frontInput, backValue) {
-            if (!frontInput) return false;
-
-            let value = normalizeCardFrontValue(frontInput.value);
-            if (value && value !== frontInput.value) {
-                frontInput.value = value;
-            }
+        function computeCycledImageFront(currentFront, backValue) {
+            const value = normalizeCardFrontValue(currentFront || '');
 
             if (value.startsWith('<img src="') && value.endsWith('">')) {
                 const src = value.substring(10, value.length - 2);
                 const lastDot = src.lastIndexOf('.');
                 if (lastDot === -1) {
-                    showNotification("No extension found in image tag.");
-                    return false;
+                    return { error: "No extension found in image tag." };
                 }
                 const base = src.substring(0, lastDot);
                 const ext = src.substring(lastDot + 1).toLowerCase();
@@ -6027,18 +6021,26 @@
                 else if (ext === 'png') newExt = 'svg';
                 else if (ext === 'svg') newExt = 'jpeg';
                 else if (ext === 'jpeg') newExt = 'jpg';
-                frontInput.value = `<img src="${base}.${newExt}">`;
-                return true;
+                return { value: `<img src="${base}.${newExt}">` };
             }
 
             const imageBase = getPrimaryBackTerm(backValue);
             if (imageBase) {
-                frontInput.value = `<img src="${imageBase}.jpg">`;
-                return true;
+                return { value: `<img src="${imageBase}.jpg">` };
             }
 
-            showNotification("Please enter a word in the 'Back' field first.");
-            return false;
+            return { error: "Please enter a word in the 'Back' field first." };
+        }
+
+        function applyGeneratedOrCycledImageTag(frontInput, backValue) {
+            if (!frontInput) return false;
+            const result = computeCycledImageFront(frontInput.value, backValue);
+            if (result.error) {
+                showNotification(result.error);
+                return false;
+            }
+            frontInput.value = result.value;
+            return true;
         }
 
         function handleGenerateOrCycleImage() {
@@ -6047,7 +6049,7 @@
             applyGeneratedOrCycledImageTag(front, back ? back.value.trim() : '');
         }
 
-        function handleReviewGenerateOrCycleImage() {
+        async function handleReviewGenerateOrCycleImage() {
             const card = getCurrentReviewCard();
             if (!card) {
                 showNotification('No active review card to update.', 'error');
@@ -6055,13 +6057,31 @@
             }
 
             clearAutoSkipTimer();
-            if (!isReviewEditing) {
-                enterReviewEditMode();
+
+            // While editing, just cycle the value in the edit form (saved on Save).
+            if (isReviewEditing) {
+                const editFront = document.getElementById('edit-front');
+                const editBack = document.getElementById('edit-back');
+                applyGeneratedOrCycledImageTag(editFront, editBack ? editBack.value.trim() : (card.back || ''));
+                return;
             }
 
-            const editFront = document.getElementById('edit-front');
-            const editBack = document.getElementById('edit-back');
-            applyGeneratedOrCycledImageTag(editFront, editBack ? editBack.value.trim() : (card.back || ''));
+            // Otherwise cycle the file type and persist it immediately, staying on this card.
+            const result = computeCycledImageFront(card.front, card.back || '');
+            if (result.error) {
+                showNotification(result.error);
+                return;
+            }
+            if (!userId || !cardsCollectionRef) return;
+            try {
+                await updateDoc(doc(cardsCollectionRef, card.id), { front: result.value });
+                card.front = result.value;
+                renderReviewCard();
+                showNotification('Image tag updated.', 'success', 1200);
+            } catch (error) {
+                console.error('Failed to update image tag:', error);
+                showNotification('Could not update the image tag.', 'error');
+            }
         }
 
         async function handleAuthSubmit(e) {
