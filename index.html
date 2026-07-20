@@ -552,6 +552,7 @@
                             <input type="radio" name="export-format" value="txt-empty-fields" class="form-radio">
                             <span>TXT (for Anki, empty fields)</span>
                         </label>
+                        <div id="export-format-more" class="hidden space-y-2">
                         <label class="flex items-center space-x-2">
                             <input type="radio" name="export-format" value="txt-empty-first-last" class="form-radio">
                             <span>TXT (for Anki, empty first &amp; last field)</span>
@@ -588,6 +589,8 @@
                             <input type="radio" name="export-format" value="clipboard-no-image-back-only" class="form-radio">
                             <span>Copy to Clipboard (cards without image tags, back only, comma-separated)</span>
                         </label>
+                        </div>
+                        <button type="button" id="export-format-toggle" class="text-sm text-blue-400 hover:text-blue-300 text-left w-fit">Show more</button>
                     </div>
                 </div>
                 <hr class="border-gray-700 !my-6">
@@ -6001,7 +6004,20 @@
 
             syncExportFolderSelectAllCheckbox();
 
+            const checkedFormat = document.querySelector('input[name="export-format"]:checked');
+            const moreContainer = document.getElementById('export-format-more');
+            const selectedIsHidden = !!(checkedFormat && moreContainer && moreContainer.contains(checkedFormat));
+            setExportFormatMoreExpanded(selectedIsHidden);
+
             document.getElementById('export-modal').classList.remove('hidden');
+        }
+
+        function setExportFormatMoreExpanded(expanded) {
+            const more = document.getElementById('export-format-more');
+            const toggle = document.getElementById('export-format-toggle');
+            if (!more || !toggle) return;
+            more.classList.toggle('hidden', !expanded);
+            toggle.textContent = expanded ? 'Show less' : 'Show more';
         }
 
         function computeCycledImageFront(currentFront, backValue) {
@@ -7506,6 +7522,13 @@
                 restoreReviewCardBtn.addEventListener('click', () => { undoLastReviewDeletion(); });
             }
             document.getElementById('export-btn').addEventListener('click', openExportModal);
+            const exportFormatToggle = document.getElementById('export-format-toggle');
+            if (exportFormatToggle) {
+                exportFormatToggle.addEventListener('click', () => {
+                    const more = document.getElementById('export-format-more');
+                    setExportFormatMoreExpanded(more ? more.classList.contains('hidden') : true);
+                });
+            }
             document.getElementById('confirm-export-btn').addEventListener('click', handleConfirmExport);
             document.getElementById('cancel-export-btn').addEventListener('click', () => {
                 document.getElementById('export-modal').classList.add('hidden');
