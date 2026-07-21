@@ -5171,6 +5171,11 @@
                 handleReviewGenerateOrCycleImage();
                 return;
             }
+            if (e.key === 'g' || e.key === 'G') {
+                e.preventDefault();
+                removeReviewCardImageTag();
+                return;
+            }
             if (e.key === 'Delete') {
                 if (reviewSession.currentIndex > -1) {
                     deleteCardById(reviewSession.cards[reviewSession.currentIndex].id, { isReviewDelete: true });
@@ -6096,6 +6101,29 @@
             } catch (error) {
                 console.error('Failed to update image tag:', error);
                 showNotification('Could not update the image tag.', 'error');
+            }
+        }
+
+        async function removeReviewCardImageTag() {
+            const card = getCurrentReviewCard();
+            if (!card) return;
+            clearAutoSkipTimer();
+
+            const front = normalizeCardFrontValue(card.front || '');
+            if (!/<img\b/i.test(front)) {
+                showNotification('This card has no image tag.', 'error', 1500);
+                return;
+            }
+            const newFront = front.replace(/<img\b[^>]*>/gi, '').trim();
+            if (!userId || !cardsCollectionRef) return;
+            try {
+                await updateDoc(doc(cardsCollectionRef, card.id), { front: newFront });
+                card.front = newFront;
+                renderReviewCard();
+                showNotification('Image tag removed.', 'success', 1200);
+            } catch (error) {
+                console.error('Failed to remove image tag:', error);
+                showNotification('Could not remove the image tag.', 'error');
             }
         }
 
