@@ -1102,6 +1102,13 @@
                 ? `Copied back ${result.index + 1} of ${result.count}.`
                 : 'Copied!';
             showNotification(message, 'success', 1500);
+
+            // Chain mode: move on once the whole back has been copied.
+            if (isReviewChainMode() && (!result.isMultiPart || result.isFinalPart)) {
+                if (reviewSession.currentIndex < reviewSession.cards.length - 1) {
+                    handleReviewNav(1);
+                }
+            }
         }
 
         function copyFullReviewBackShortcutOnly() {
