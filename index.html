@@ -2822,8 +2822,23 @@
             return `<img src="${escapedSource}">`;
         }
 
+        function stripSourceQuoteArtifacts(value) {
+            return String(value == null ? '' : value)
+                .replace(/^[\s\\"']+/, '')
+                .replace(/[\s\\"']+$/, '')
+                .trim();
+        }
+
         function extractImageSourceFromTag(tagMarkup) {
             if (typeof tagMarkup !== 'string') return null;
+
+            // Backslash-escaped quotes, e.g. src=\"foo.jpg\" — these come from bad
+            // imports/exports and would otherwise be read as part of the filename.
+            const escapedDoubleMatch = tagMarkup.match(/\bsrc\s*=\s*\\+"([^"\\]*)\\*"/i);
+            if (escapedDoubleMatch) return escapedDoubleMatch[1].trim();
+
+            const escapedSingleMatch = tagMarkup.match(/\bsrc\s*=\s*\\+'([^'\\]*)\\*'/i);
+            if (escapedSingleMatch) return escapedSingleMatch[1].trim();
 
             const doubleQuotedMatch = tagMarkup.match(/\bsrc\s*=\s*"([^"]*)"/i);
             if (doubleQuotedMatch) return doubleQuotedMatch[1].trim();
@@ -2832,7 +2847,7 @@
             if (singleQuotedMatch) return singleQuotedMatch[1].trim();
 
             const unquotedMatch = tagMarkup.match(/\bsrc\s*=\s*([^>]*?)(?=\s+[a-zA-Z_:][\w:.-]*(?:\s*=|$)|\s*\/?>$)/i);
-            if (unquotedMatch) return unquotedMatch[1].trim();
+            if (unquotedMatch) return stripSourceQuoteArtifacts(unquotedMatch[1]);
 
             return null;
         }
