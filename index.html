@@ -7538,6 +7538,21 @@
                     showNotification(`${label} copied.`, 'success', 1200);
                 });
             }
+            // Word Only / Prompted / Chain are mutually exclusive: turning one on
+            // turns the others off (turning them all off is still allowed).
+            const exclusiveReviewToggleIds = ['review-word-only-toggle', 'review-back-only-toggle', 'review-chain-toggle'];
+            exclusiveReviewToggleIds.forEach(id => {
+                const toggle = document.getElementById(id);
+                if (!toggle) return;
+                toggle.addEventListener('change', () => {
+                    if (!toggle.checked) return;
+                    exclusiveReviewToggleIds.forEach(otherId => {
+                        if (otherId === id) return;
+                        const other = document.getElementById(otherId);
+                        if (other) other.checked = false;
+                    });
+                });
+            });
             document.getElementById('review-btn').addEventListener('click', () => {
                 resetReviewFolderOrderToggle();
                 resetReviewFilterChips();
