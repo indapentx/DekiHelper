@@ -356,7 +356,7 @@
                                 <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full"></div>
                             </div>
                         </label>
-                        <label class="toggle-label flex items-center cursor-pointer" title="Paste (Cmd/Ctrl+V) appends to Front; Cmd/Ctrl+Z undoes">
+                        <label class="toggle-label flex items-center cursor-pointer" title="Cmd/Ctrl+V appends to Front; Cmd/Ctrl+Shift+V replaces it; Cmd/Ctrl+Z undoes">
                             <span class="mr-2 text-sm font-medium">Meanings</span>
                             <div class="relative">
                                 <input type="checkbox" id="review-meanings-toggle" class="sr-only">
@@ -812,6 +812,7 @@
         let reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, backCopyIndex: 0, rawBackCopyIndex: 0, beispielCopyIndex: 0, beispielSpeechCopyIndex: 0, originalCards: [] };
         let lastReviewDeletion = null;
         let lastFrontAppend = null;
+        let pasteShouldReplaceFront = false;
         const pendingVerbFolderCreations = new Map();
         let verbedReviewCardIds = new Set();
         let currentReviewFolderId = ALL_FOLDERS_VALUE;
@@ -5089,6 +5090,12 @@
                     e.preventDefault();
                     undoLastFrontAppend();
                 }
+                // The paste event carries no modifier flags, so remember whether Shift
+                // was held here; the paste that follows this keydown reads the flag.
+                if (e.key === 'v' || e.key === 'V') {
+                    pasteShouldReplaceFront = e.shiftKey;
+                    setTimeout(() => { pasteShouldReplaceFront = false; }, 0);
+                }
                 return;
             }
             if (e.altKey) return;
@@ -6185,7 +6192,7 @@
                 .filter(Boolean);
         }
 
-        async function appendMeaningToReviewFront(rawText) {
+        async function appendMeaningToReviewFront(rawText, { replace = false } = {}) {
             const card = getCurrentReviewCard();
             if (!card) return;
             clearAutoSkipTimer();
@@ -6200,7 +6207,8 @@
             const incoming = splitMeaningList(rawText).map(m => m.toLocaleLowerCase('tr'));
             if (incoming.length === 0) return;
 
-            const meanings = splitMeaningList(front);
+            // Replace mode starts from an empty field, so the paste becomes the whole value.
+            const meanings = replace ? [] : splitMeaningList(front);
             const seen = new Set(meanings.map(m => m.toLocaleLowerCase('tr')));
             const added = [];
             incoming.forEach(meaning => {
@@ -6219,12 +6227,16 @@
 
             const previousFront = card.front || '';
             const newFront = meanings.join(', ');
+            if (newFront === previousFront) {
+                showNotification('Already added.', 'success', 1200);
+                return;
+            }
             try {
                 await updateDoc(doc(cardsCollectionRef, card.id), { front: newFront });
                 lastFrontAppend = { cardId: card.id, previousFront };
                 card.front = newFront;
                 renderReviewCard();
-                showNotification(`Added: ${added.join(', ')}`, 'success', 1200);
+                showNotification(`${replace ? 'Replaced with' : 'Added'}: ${added.join(', ')}`, 'success', 1200);
             } catch (error) {
                 console.error('Failed to append meaning:', error);
                 showNotification('Could not add the meaning.', 'error');
@@ -6245,7 +6257,7 @@
                 lastFrontAppend = null;
                 card.front = previousFront;
                 renderReviewCard();
-                showNotification('Append undone.', 'success', 1200);
+                showNotification('Paste undone.', 'success', 1200);
             } catch (error) {
                 console.error('Failed to undo append:', error);
                 showNotification('Could not undo the append.', 'error');
@@ -7649,10 +7661,12 @@
                 if (isReviewEditing) return;
                 const activeTag = document.activeElement && document.activeElement.tagName;
                 if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
+                const replace = pasteShouldReplaceFront;
+                pasteShouldReplaceFront = false;
                 const text = (e.clipboardData || window.clipboardData).getData('text');
                 if (!text || !text.trim()) return;
                 e.preventDefault();
-                appendMeaningToReviewFront(text);
+                appendMeaningToReviewFront(text, { replace });
             });
 
             // Word Only / Prompted / Chain are mutually exclusive: turning one on
