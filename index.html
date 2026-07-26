@@ -6196,14 +6196,15 @@
                 return;
             }
 
-            const incoming = splitMeaningList(rawText);
+            // Pasted meanings are always stored lowercase (Turkish casing, so İ -> i).
+            const incoming = splitMeaningList(rawText).map(m => m.toLocaleLowerCase('tr'));
             if (incoming.length === 0) return;
 
             const meanings = splitMeaningList(front);
-            const seen = new Set(meanings.map(m => m.toLowerCase()));
+            const seen = new Set(meanings.map(m => m.toLocaleLowerCase('tr')));
             const added = [];
             incoming.forEach(meaning => {
-                const key = meaning.toLowerCase();
+                const key = meaning.toLocaleLowerCase('tr');
                 if (seen.has(key)) return;
                 seen.add(key);
                 meanings.push(meaning);
