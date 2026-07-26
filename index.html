@@ -60,6 +60,8 @@
         #review-word-only-toggle:checked ~ .block { background-color: #f59e0b; }
         #review-back-only-toggle:checked ~ .dot { transform: translateX(100%); background-color: #007acc; }
         #review-back-only-toggle:checked ~ .block { background-color: #1d72f3; }
+        #review-meanings-toggle:checked ~ .dot { transform: translateX(100%); background-color: #7c3aed; }
+        #review-meanings-toggle:checked ~ .block { background-color: #8b5cf6; }
         .review-filter-chip { padding: 9px 12px; border-radius: 8px; border: 1px solid #2a2a2a; background-color: #111; color: #d1d5db; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease; }
         .review-filter-chip:hover { border-color: #3a3a3a; background-color: #181818; }
         .review-filter-chip.active { background-color: #007acc; border-color: #007acc; color: #fff; }
@@ -350,6 +352,14 @@
                             <span class="mr-2 text-sm font-medium">Chain</span>
                             <div class="relative">
                                 <input type="checkbox" id="review-chain-toggle" class="sr-only">
+                                <div class="block bg-gray-600 w-10 h-6 rounded-full"></div>
+                                <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full"></div>
+                            </div>
+                        </label>
+                        <label class="toggle-label flex items-center cursor-pointer" title="Paste (Cmd/Ctrl+V) appends to Front; Cmd/Ctrl+Z undoes">
+                            <span class="mr-2 text-sm font-medium">Meanings</span>
+                            <div class="relative">
+                                <input type="checkbox" id="review-meanings-toggle" class="sr-only">
                                 <div class="block bg-gray-600 w-10 h-6 rounded-full"></div>
                                 <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full"></div>
                             </div>
@@ -801,6 +811,7 @@
         let pendingFolderDeleteCount = 0;
         let reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, backCopyIndex: 0, rawBackCopyIndex: 0, beispielCopyIndex: 0, beispielSpeechCopyIndex: 0, originalCards: [] };
         let lastReviewDeletion = null;
+        let lastFrontAppend = null;
         const pendingVerbFolderCreations = new Map();
         let verbedReviewCardIds = new Set();
         let currentReviewFolderId = ALL_FOLDERS_VALUE;
@@ -936,6 +947,11 @@
 
         function isReviewChainMode() {
             const toggle = document.getElementById('review-chain-toggle');
+            return !!(toggle && toggle.checked);
+        }
+
+        function isReviewMeaningsMode() {
+            const toggle = document.getElementById('review-meanings-toggle');
             return !!(toggle && toggle.checked);
         }
 
@@ -5066,6 +5082,17 @@
             if (document.activeElement.id === 'in-review-search-input') return;
             if (isReviewEditing) return;
 
+            // Never let the single-letter shortcuts hijack browser combos
+            // (Cmd+D bookmarking would delete a card, Cmd+R would strip an image tag).
+            if (e.metaKey || e.ctrlKey) {
+                if ((e.key === 'z' || e.key === 'Z') && isReviewMeaningsMode()) {
+                    e.preventDefault();
+                    undoLastFrontAppend();
+                }
+                return;
+            }
+            if (e.altKey) return;
+
             const reviewMoveModal = document.getElementById('review-move-card-modal');
             const isReviewMoveModalOpen = reviewMoveModal && !reviewMoveModal.classList.contains('hidden');
             if (isReviewMoveModalOpen) {
@@ -5341,6 +5368,7 @@
             currentReviewSessionId = buildReviewSessionId(selectedDate, selectedFolder, missingOnly, imageOnly);
 
             lastReviewDeletion = null;
+            lastFrontAppend = null;
             verbedReviewCardIds = new Set();
             reviewSession.originalCards = [...cardsForReview];
             reviewSession.cards = [...cardsForReview];
@@ -5366,6 +5394,7 @@
             closeReviewMoveCardModal();
             reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, backCopyIndex: 0, rawBackCopyIndex: 0, beispielCopyIndex: 0, beispielSpeechCopyIndex: 0, originalCards: [] };
             lastReviewDeletion = null;
+            lastFrontAppend = null;
             verbedReviewCardIds = new Set();
             currentReviewSessionId = null;
             resetReviewFolderOrderToggle();
@@ -6146,6 +6175,79 @@
             } catch (error) {
                 console.error('Failed to remove image tag:', error);
                 showNotification('Could not remove the image tag.', 'error');
+            }
+        }
+
+        function splitMeaningList(value) {
+            return String(value == null ? '' : value)
+                .split(/[\n\r,;]+/)
+                .map(part => part.replace(/\s+/g, ' ').trim())
+                .filter(Boolean);
+        }
+
+        async function appendMeaningToReviewFront(rawText) {
+            const card = getCurrentReviewCard();
+            if (!card) return;
+            clearAutoSkipTimer();
+
+            const front = normalizeCardFrontValue(card.front || '');
+            if (/<img\b/i.test(front)) {
+                showNotification("This card's front is an image.", 'error', 1800);
+                return;
+            }
+
+            const incoming = splitMeaningList(rawText);
+            if (incoming.length === 0) return;
+
+            const meanings = splitMeaningList(front);
+            const seen = new Set(meanings.map(m => m.toLowerCase()));
+            const added = [];
+            incoming.forEach(meaning => {
+                const key = meaning.toLowerCase();
+                if (seen.has(key)) return;
+                seen.add(key);
+                meanings.push(meaning);
+                added.push(meaning);
+            });
+
+            if (added.length === 0) {
+                showNotification('Already added.', 'success', 1200);
+                return;
+            }
+            if (!userId || !cardsCollectionRef) return;
+
+            const previousFront = card.front || '';
+            const newFront = meanings.join(', ');
+            try {
+                await updateDoc(doc(cardsCollectionRef, card.id), { front: newFront });
+                lastFrontAppend = { cardId: card.id, previousFront };
+                card.front = newFront;
+                renderReviewCard();
+                showNotification(`Added: ${added.join(', ')}`, 'success', 1200);
+            } catch (error) {
+                console.error('Failed to append meaning:', error);
+                showNotification('Could not add the meaning.', 'error');
+            }
+        }
+
+        async function undoLastFrontAppend() {
+            const card = getCurrentReviewCard();
+            if (!lastFrontAppend || !card || lastFrontAppend.cardId !== card.id) {
+                showNotification('Nothing to undo.', 'error', 1200);
+                return;
+            }
+            if (!userId || !cardsCollectionRef) return;
+
+            const { previousFront } = lastFrontAppend;
+            try {
+                await updateDoc(doc(cardsCollectionRef, card.id), { front: previousFront });
+                lastFrontAppend = null;
+                card.front = previousFront;
+                renderReviewCard();
+                showNotification('Append undone.', 'success', 1200);
+            } catch (error) {
+                console.error('Failed to undo append:', error);
+                showNotification('Could not undo the append.', 'error');
             }
         }
 
@@ -7538,6 +7640,20 @@
                     showNotification(`${label} copied.`, 'success', 1200);
                 });
             }
+            // Meanings mode: paste appends the clipboard text to the current card's Front.
+            document.addEventListener('paste', (e) => {
+                if (!isReviewMeaningsMode()) return;
+                const sessionEl = document.getElementById('review-session');
+                if (!sessionEl || sessionEl.classList.contains('hidden')) return;
+                if (isReviewEditing) return;
+                const activeTag = document.activeElement && document.activeElement.tagName;
+                if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
+                const text = (e.clipboardData || window.clipboardData).getData('text');
+                if (!text || !text.trim()) return;
+                e.preventDefault();
+                appendMeaningToReviewFront(text);
+            });
+
             // Word Only / Prompted / Chain are mutually exclusive: turning one on
             // turns the others off (turning them all off is still allowed).
             const exclusiveReviewToggleIds = ['review-word-only-toggle', 'review-back-only-toggle', 'review-chain-toggle'];
