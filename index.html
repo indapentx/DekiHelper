@@ -812,7 +812,6 @@
         let reviewSession = { cards: [], currentIndex: -1, autoSkipTimer: null, backCopyIndex: 0, rawBackCopyIndex: 0, beispielCopyIndex: 0, beispielSpeechCopyIndex: 0, originalCards: [] };
         let lastReviewDeletion = null;
         let lastFrontAppend = null;
-        let pasteShouldReplaceFront = false;
         const pendingVerbFolderCreations = new Map();
         let verbedReviewCardIds = new Set();
         let currentReviewFolderId = ALL_FOLDERS_VALUE;
@@ -5089,12 +5088,15 @@
                 if ((e.key === 'z' || e.key === 'Z') && isReviewMeaningsMode()) {
                     e.preventDefault();
                     undoLastFrontAppend();
+                    return;
                 }
-                // The paste event carries no modifier flags, so remember whether Shift
-                // was held here; the paste that follows this keydown reads the flag.
-                if (e.key === 'v' || e.key === 'V') {
-                    pasteShouldReplaceFront = e.shiftKey;
-                    setTimeout(() => { pasteShouldReplaceFront = false; }, 0);
+                // Shift+paste is "paste and match style", which the browser only
+                // dispatches inside an editable field — no paste event reaches us
+                // here, so handle the combo directly and read the clipboard itself.
+                if ((e.key === 'v' || e.key === 'V') && e.shiftKey && isReviewMeaningsMode()) {
+                    e.preventDefault();
+                    replaceReviewFrontFromClipboard();
+                    return;
                 }
                 return;
             }
@@ -6241,6 +6243,23 @@
                 console.error('Failed to append meaning:', error);
                 showNotification('Could not add the meaning.', 'error');
             }
+        }
+
+        async function replaceReviewFrontFromClipboard() {
+            if (!navigator.clipboard || !navigator.clipboard.readText) {
+                showNotification('Clipboard read is not available in this browser.', 'error', 2400);
+                return;
+            }
+            let text = '';
+            try {
+                text = await navigator.clipboard.readText();
+            } catch (error) {
+                console.error('Clipboard read failed:', error);
+                showNotification('Allow clipboard access to use Cmd/Ctrl+Shift+V.', 'error', 2600);
+                return;
+            }
+            if (!text || !text.trim()) return;
+            appendMeaningToReviewFront(text, { replace: true });
         }
 
         async function undoLastFrontAppend() {
@@ -7661,12 +7680,10 @@
                 if (isReviewEditing) return;
                 const activeTag = document.activeElement && document.activeElement.tagName;
                 if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
-                const replace = pasteShouldReplaceFront;
-                pasteShouldReplaceFront = false;
                 const text = (e.clipboardData || window.clipboardData).getData('text');
                 if (!text || !text.trim()) return;
                 e.preventDefault();
-                appendMeaningToReviewFront(text, { replace });
+                appendMeaningToReviewFront(text);
             });
 
             // Word Only / Prompted / Chain are mutually exclusive: turning one on
