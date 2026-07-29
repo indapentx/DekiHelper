@@ -993,14 +993,28 @@
             return normalizedValue;
         }
 
+        function isLastReviewCard() {
+            return Array.isArray(reviewSession.cards)
+                && reviewSession.cards.length > 0
+                && reviewSession.currentIndex === reviewSession.cards.length - 1;
+        }
+
         function getReviewBackCopyParts(value) {
             const normalizedValue = unformatMultiLine(String(value || ''));
             if (!normalizedValue) return [];
             const backTerms = splitSemicolonTerms(normalizedValue);
             const sourceTerms = normalizedValue.includes(';') ? backTerms : [normalizedValue];
-            return sourceTerms
+            const parts = sourceTerms
                 .map(formatReviewBackCopyTerm)
                 .filter(Boolean);
+
+            // Chain mode: the final item of the session ends the list, so it gets no
+            // trailing comma. Earlier parts of that same card still keep theirs.
+            if (isReviewChainMode() && parts.length > 0 && isLastReviewCard()) {
+                parts[parts.length - 1] = parts[parts.length - 1].replace(/\s*,\s*$/, '');
+            }
+
+            return parts;
         }
 
         function highlightReviewBackCopyPart(index) {
