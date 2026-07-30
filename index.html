@@ -647,6 +647,10 @@
                         <input type="radio" id="delete-folder-radio" name="delete-mode" value="folder" class="form-radio">
                         <span>Cards from selected folders</span>
                     </label>
+                    <label class="flex items-center space-x-2 mt-2">
+                        <input type="radio" id="delete-image-radio" name="delete-mode" value="image" class="form-radio">
+                        <span>Only cards with image tags, from selected folders</span>
+                    </label>
                     <div id="delete-folder-selection" class="hidden pl-6 pt-2 mt-2 max-h-32 overflow-y-auto border-l-2 border-gray-700">
                         <!-- Folder checkboxes will be inserted here by JS -->
                     </div>
@@ -6953,7 +6957,7 @@
             const dateSelection = document.getElementById('delete-date-selection');
             const folderSelection = document.getElementById('delete-folder-selection');
             if (!dateSelection || !folderSelection) return;
-            if (mode === 'folder') {
+            if (mode === 'folder' || mode === 'image') {
                 dateSelection.classList.add('hidden');
                 folderSelection.classList.remove('hidden');
             } else {
@@ -6995,13 +6999,16 @@
 
             const deleteDateRadio = document.getElementById('delete-date-radio');
             const deleteFolderRadio = document.getElementById('delete-folder-radio');
+            const deleteImageRadio = document.getElementById('delete-image-radio');
 
             if (deleteDateRadio) deleteDateRadio.disabled = !hasDateOptions;
             if (deleteFolderRadio) deleteFolderRadio.disabled = !hasFolderOptions;
+            if (deleteImageRadio) deleteImageRadio.disabled = !hasFolderOptions;
 
             const defaultMode = hasDateOptions ? 'date' : 'folder';
             if (deleteDateRadio) deleteDateRadio.checked = defaultMode === 'date';
             if (deleteFolderRadio) deleteFolderRadio.checked = defaultMode === 'folder';
+            if (deleteImageRadio) deleteImageRadio.checked = false;
             toggleDeleteModeSections(defaultMode);
 
             document.getElementById('delete-cards-modal').classList.remove('hidden');
@@ -7136,7 +7143,8 @@
             const deleteModeInput = document.querySelector('input[name="delete-mode"]:checked');
             const deleteMode = deleteModeInput ? deleteModeInput.value : 'date';
 
-            if (deleteMode === 'folder') {
+            if (deleteMode === 'folder' || deleteMode === 'image') {
+                const imageOnly = deleteMode === 'image';
                 const selectedFolderNodes = document.querySelectorAll('#delete-folder-selection input[type="checkbox"]:checked');
                 if (selectedFolderNodes.length === 0) {
                     showNotification("Please select at least one folder to delete cards from.");
@@ -7145,11 +7153,18 @@
                 const selectedFolderIds = Array.from(selectedFolderNodes).map(el => el.value);
                 const cardsToDelete = allCards.filter(card => {
                     const folderIdentifier = (card.folderId && String(card.folderId).trim().length > 0) ? card.folderId : NO_FOLDER_VALUE;
-                    return selectedFolderIds.includes(folderIdentifier);
+                    if (!selectedFolderIds.includes(folderIdentifier)) return false;
+                    return !imageOnly || cardHasImageTag(card);
                 });
                 if (cardsToDelete.length === 0) {
-                    showNotification("No cards found for the selected folders.", "success");
+                    showNotification(imageOnly
+                        ? "No cards with image tags found in the selected folders."
+                        : "No cards found for the selected folders.", "success");
                     return;
+                }
+                if (imageOnly) {
+                    const confirmed = window.confirm(`Delete ${cardsToDelete.length} card${cardsToDelete.length === 1 ? '' : 's'} with image tags from the selected folder${selectedFolderIds.length === 1 ? '' : 's'}? They move to Deleted history and can be restored.`);
+                    if (!confirmed) return;
                 }
                 const message = `Moved ${cardsToDelete.length} card${cardsToDelete.length === 1 ? '' : 's'} to Deleted history.`;
                 const success = await deleteCardsWithArchive(cardsToDelete, { successMessage: message });
@@ -7821,7 +7836,13 @@
                     if (deleteFolderRadio.checked) toggleDeleteModeSections('folder');
                 });
             }
-            
+            const deleteImageRadio = document.getElementById('delete-image-radio');
+            if (deleteImageRadio) {
+                deleteImageRadio.addEventListener('change', () => {
+                    if (deleteImageRadio.checked) toggleDeleteModeSections('image');
+                });
+            }
+
             document.getElementById('review-session').addEventListener('click', (e) => {
                 const lineCopyBtn = e.target.closest('.copy-line-btn');
                 if(lineCopyBtn) {
